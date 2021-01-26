@@ -9,12 +9,12 @@
     <packaging>pom</packaging>
     <version>0.0.1-SNAPSHOT</version>
     <modules>
-        <module>linglongdb-config</module>
         <module>linglongdb-base</module>
         <module>linglongdb-engine</module>
         <module>linglongdb-replication</module>
         <module>linglongdb-client</module>
         <module>linglongdb-server</module>
+        <module>linglongdb-assembly</module>
     </modules>
 
     <properties>
