@@ -1,8 +1,7 @@
 package com.glodon.linglong.base.io;
 
-import com.glodon.linglong.base.util.Utils;
+import com.glodon.linglong.base.common.Utils;
 import com.sun.jna.Platform;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.EnumSet;

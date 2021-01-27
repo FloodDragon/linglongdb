@@ -1,17 +1,16 @@
 package com.glodon.linglong.base.io;
 
+
 import com.glodon.linglong.base.concurrent.Latch;
 import com.glodon.linglong.base.concurrent.RWLock;
-import com.glodon.linglong.base.util.UnsafeAccess;
+import com.glodon.linglong.base.common.IOUtils;
+import com.glodon.linglong.base.common.UnsafeAccess;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-
-import static com.glodon.linglong.base.util.IOUtils.closeQuietly;
-import static com.glodon.linglong.base.util.IOUtils.rethrow;
 
 /**
  * 基础文件IO类
@@ -71,7 +70,7 @@ abstract class AbstractFileIO extends FileIO {
         try {
             return doLength();
         } catch (IOException e) {
-            throw rethrow(e, mCause);
+            throw IOUtils.rethrow(e, mCause);
         } finally {
             mAccessLock.releaseShared();
         }
@@ -109,7 +108,7 @@ abstract class AbstractFileIO extends FileIO {
                 }
 
                 if (ex != null) {
-                    throw rethrow(ex);
+                    throw IOUtils.rethrow(ex);
                 }
             } catch (IOException e) {
                 // Ignore.
@@ -211,7 +210,7 @@ abstract class AbstractFileIO extends FileIO {
                 mAccessLock.releaseShared();
             }
         } catch (IOException e) {
-            throw rethrow(e, mCause);
+            throw IOUtils.rethrow(e, mCause);
         }
     }
 
@@ -282,7 +281,7 @@ abstract class AbstractFileIO extends FileIO {
             }
 
         } catch (IOException e) {
-            throw rethrow(e, mCause);
+            throw IOUtils.rethrow(e, mCause);
         }
     }
 
@@ -318,7 +317,7 @@ abstract class AbstractFileIO extends FileIO {
                     mAccessLock.releaseShared();
                 }
             } catch (IOException e) {
-                throw rethrow(e, mCause);
+                throw IOUtils.rethrow(e, mCause);
             } finally {
                 mSyncLatch.releaseShared();
             }
@@ -377,7 +376,7 @@ abstract class AbstractFileIO extends FileIO {
 
             IOException ex = null;
             for (Mapping m : mappings) {
-                ex = closeQuietly(ex, m);
+                ex = IOUtils.closeQuietly(ex, m);
             }
 
             if (reopen) {
@@ -473,7 +472,7 @@ abstract class AbstractFileIO extends FileIO {
         if (oldMappings != null) {
             IOException ex = null;
             while (oldMappingDiscardPos < oldMappings.length) {
-                ex = closeQuietly(ex, oldMappings[oldMappingDiscardPos++]);
+                ex = IOUtils.closeQuietly(ex, oldMappings[oldMappingDiscardPos++]);
             }
             if (ex != null) {
                 throw ex;

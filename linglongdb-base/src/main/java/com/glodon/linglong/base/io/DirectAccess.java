@@ -1,6 +1,6 @@
 package com.glodon.linglong.base.io;
 
-import com.glodon.linglong.base.util.UnsafeAccess;
+import com.glodon.linglong.base.common.UnsafeAccess;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;

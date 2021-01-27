@@ -1,7 +1,7 @@
 package com.glodon.linglong.base.concurrent;
 
-import com.glodon.linglong.base.util.UnsafeAccess;
-import com.glodon.linglong.base.util.IOUtils;
+import com.glodon.linglong.base.common.IOUtils;
+import com.glodon.linglong.base.common.UnsafeAccess;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;

@@ -1,9 +1,8 @@
 package com.glodon.linglong.base.io;
 
-import com.glodon.linglong.base.CauseCloseable;
+import com.glodon.linglong.base.common.CauseCloseable;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;

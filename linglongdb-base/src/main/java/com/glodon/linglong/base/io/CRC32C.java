@@ -1,6 +1,7 @@
 package com.glodon.linglong.base.io;
 
-import com.glodon.linglong.base.util.UnsafeAccess;
+import com.glodon.linglong.base.common.IOUtils;
+import com.glodon.linglong.base.common.UnsafeAccess;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -8,8 +9,6 @@ import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.zip.Checksum;
-
-import static com.glodon.linglong.base.util.IOUtils.rethrow;
 
 /**
  * 摘自Netty工具
@@ -37,7 +36,7 @@ public class CRC32C {
             try {
                 ctor = MethodHandles.lookup().findConstructor(clazz, voidType);
             } catch (Throwable e) {
-                throw rethrow(e);
+                throw IOUtils.rethrow(e);
             }
         }
 
@@ -47,7 +46,7 @@ public class CRC32C {
             UPDATE_BYTE_BUFFER = MethodHandles.lookup().findVirtual
                     (clazz, "update", MethodType.methodType(void.class, ByteBuffer.class));
         } catch (Throwable e) {
-            throw rethrow(e);
+            throw IOUtils.rethrow(e);
         }
     }
 
@@ -55,7 +54,7 @@ public class CRC32C {
         try {
             return (Checksum) INSTANCE_CTOR.invoke();
         } catch (Throwable e) {
-            throw rethrow(e);
+            throw IOUtils.rethrow(e);
         }
     }
 
@@ -63,7 +62,7 @@ public class CRC32C {
         try {
             UPDATE_BYTE_BUFFER.invoke(crc, buffer);
         } catch (Throwable e) {
-            throw rethrow(e);
+            throw IOUtils.rethrow(e);
         }
     }
 

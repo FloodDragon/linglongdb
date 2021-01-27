@@ -1,6 +1,6 @@
 package com.glodon.linglong.base.io;
 
-import com.glodon.linglong.base.util.Utils;
+import com.glodon.linglong.engine.util.Utils;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
 import com.sun.jna.Pointer;

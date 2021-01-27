@@ -1,6 +1,6 @@
 package com.glodon.linglong.base.io;
 
-import com.glodon.linglong.base.CauseCloseable;
+import com.glodon.linglong.base.common.CauseCloseable;
 
 import java.io.IOException;
 

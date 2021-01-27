@@ -1,9 +1,8 @@
 package com.glodon.linglong.base.io;
 
 import com.glodon.linglong.base.exception.DatabaseFullException;
-import com.glodon.linglong.base.util.UnsafeAccess;
+import com.glodon.linglong.base.common.UnsafeAccess;
 import com.sun.jna.Platform;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;

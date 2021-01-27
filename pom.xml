@@ -27,6 +27,7 @@
         <jna.version>[4.2,)</jna.version>
         <junit.version>4.13.1</junit.version>
         <jcip.version>1.0-1</jcip.version>
+        <linglongdb.version>0.0.1-SNAPSHOT</linglongdb.version>
     </properties>
 
     <dependencyManagement>

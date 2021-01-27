@@ -1,8 +1,8 @@
 package com.glodon.linglong.base.exception;
 
-import java.util.concurrent.TimeUnit;
+import com.glodon.linglong.base.common.Utils;
 
-import com.glodon.linglong.base.util.Utils;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by liuj-ai on 2021/1/26.

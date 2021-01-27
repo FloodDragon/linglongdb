@@ -1,6 +1,6 @@
 package com.glodon.linglong.base.io;
 
-import com.glodon.linglong.base.util.Utils;
+import com.glodon.linglong.base.common.Utils;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
