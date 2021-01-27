@@ -9,7 +9,6 @@ import java.io.InputStream;
 import java.util.zip.Checksum;
 
 /**
- *
  * @author Stereo
  */
 class CheckedInputStream extends InputStream {

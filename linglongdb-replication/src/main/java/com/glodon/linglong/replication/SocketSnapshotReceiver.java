@@ -1,23 +1,6 @@
-/*
- *  Copyright (C) 2017 Cojen.org
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Affero General Public License as
- *  published by the Free Software Foundation, either version 3 of the
- *  License, or (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Affero General Public License for more details.
- *
- *  You should have received a copy of the GNU Affero General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 package com.glodon.linglong.replication;
 
-import com.glodon.my.io.Utils;
+import com.glodon.linglong.base.common.Utils;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -28,8 +11,6 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * 
- *
  * @author Stereo
  */
 final class SocketSnapshotReceiver implements SnapshotReceiver {
@@ -41,8 +22,7 @@ final class SocketSnapshotReceiver implements SnapshotReceiver {
     private final Map<String, String> mOptions;
 
     SocketSnapshotReceiver(GroupFile groupFile, Socket socket, Map<String, String> requestOptions)
-        throws IOException
-    {
+            throws IOException {
         OptionsEncoder enc = new OptionsEncoder();
         enc.encodeIntLE(0); // encoding format
         enc.encodeMap(requestOptions == null ? Collections.emptyMap() : requestOptions);
@@ -63,8 +43,8 @@ final class SocketSnapshotReceiver implements SnapshotReceiver {
         }
 
         mSocket = socket;
-        mLength = dec.decodeLongLE(); 
-        mPrevTerm = dec.decodeLongLE(); 
+        mLength = dec.decodeLongLE();
+        mPrevTerm = dec.decodeLongLE();
         mTerm = dec.decodeLongLE();
         mIndex = dec.decodeLongLE();
         mOptions = dec.decodeMap();
@@ -113,6 +93,6 @@ final class SocketSnapshotReceiver implements SnapshotReceiver {
     @Override
     public String toString() {
         return "SnapshotReceiver: {sender=" + senderAddress() + ", length=" + length() +
-            ", prevTerm=" + prevTerm() + ", term=" + term() + ", index=" + index() + '}';
+                ", prevTerm=" + prevTerm() + ", term=" + term() + ", index=" + index() + '}';
     }
 }

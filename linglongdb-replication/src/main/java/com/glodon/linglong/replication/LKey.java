@@ -3,7 +3,7 @@ package com.glodon.linglong.replication;
 /**
  * @author Stereo
  */
-interface LKey<T extends LKey> extends Comparable<LKey<T>> {
+public interface LKey<T extends LKey> extends Comparable<LKey<T>> {
     long key();
 
     @Override

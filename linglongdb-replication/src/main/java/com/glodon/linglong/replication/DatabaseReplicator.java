@@ -2,6 +2,7 @@
 package com.glodon.linglong.replication;
 
 import com.glodon.linglong.engine.extend.ReplicationManager;
+import com.glodon.linglong.replication.confg.ReplicatorConfig;
 
 import java.io.IOException;
 

@@ -1,23 +1,6 @@
-/*
- *  Copyright (C) 2017 Cojen.org
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Affero General Public License as
- *  published by the Free Software Foundation, either version 3 of the
- *  License, or (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Affero General Public License for more details.
- *
- *  You should have received a copy of the GNU Affero General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 package com.glodon.linglong.replication;
 
-import com.glodon.my.io.Utils;
+import com.glodon.linglong.base.common.Utils;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -29,8 +12,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
- * 
- *
  * @author Stereo
  */
 abstract class SocketSnapshotSender extends OutputStream implements SnapshotSender {
@@ -40,7 +21,7 @@ abstract class SocketSnapshotSender extends OutputStream implements SnapshotSend
     private final Map<String, String> mOptions;
 
     private static final AtomicIntegerFieldUpdater<SocketSnapshotSender> cSendingUpdater =
-        AtomicIntegerFieldUpdater.newUpdater(SocketSnapshotSender.class, "mSending");
+            AtomicIntegerFieldUpdater.newUpdater(SocketSnapshotSender.class, "mSending");
 
     private volatile int mSending;
 
@@ -77,8 +58,7 @@ abstract class SocketSnapshotSender extends OutputStream implements SnapshotSend
 
     @Override
     public final OutputStream begin(long length, long index, Map<String, String> options)
-        throws IOException
-    {
+            throws IOException {
         if (!cSendingUpdater.compareAndSet(this, 0, 1)) {
             throw new IllegalStateException("Already began");
         }
@@ -98,11 +78,6 @@ abstract class SocketSnapshotSender extends OutputStream implements SnapshotSend
             enc.encodeMap(options == null ? Collections.emptyMap() : options);
             enc.writeTo(this);
 
-            // Write the current group file, which should be up-to-date, for the given log
-            // index. The receiver accepts the group file if it's newer than what it already
-            // has, bypassing the normal sequence of control messages. This is fine because a
-            // new leader isn't expected to generate new data (and perform consensus checks)
-            // until all outstanding control messages have been applied.
             mGroupFile.writeTo(this);
 
             return this;

@@ -1,5 +1,7 @@
 package com.glodon.linglong.replication;
 
+import com.glodon.linglong.replication.confg.ReplicatorConfig;
+
 import java.io.IOException;
 
 /**

@@ -1,7 +1,9 @@
-package com.glodon.linglong.replication;
+package com.glodon.linglong.replication.confg;
 
 import com.glodon.linglong.base.common.LocalHost;
 import com.glodon.linglong.base.common.Utils;
+import com.glodon.linglong.replication.GroupFile;
+import com.glodon.linglong.replication.Role;
 
 import java.io.File;
 import java.io.Serializable;

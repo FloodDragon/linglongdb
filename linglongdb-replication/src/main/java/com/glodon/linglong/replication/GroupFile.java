@@ -34,7 +34,7 @@ import java.util.zip.Checksum;
  *
  * @author Stereo
  */
-final class GroupFile extends Latch {
+public final class GroupFile extends Latch {
     private final BiConsumer<Level, String> mEventListener;
     private final File mFile;
     private final SocketAddress mLocalMemberAddress;
@@ -966,7 +966,7 @@ final class GroupFile extends Latch {
         }
     }
 
-    static SocketAddress parseSocketAddress(String str) throws UnknownHostException {
+    public static SocketAddress parseSocketAddress(String str) throws UnknownHostException {
         int ix = str.lastIndexOf(':');
         if (ix <= 0) {
             return null;

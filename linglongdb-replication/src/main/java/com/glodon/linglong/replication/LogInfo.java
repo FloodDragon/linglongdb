@@ -3,7 +3,7 @@ package com.glodon.linglong.replication;
 /**
  * @author Stereo
  */
-class LogInfo {
+public class LogInfo {
     long mTerm, mHighestIndex, mCommitIndex;
 
     @Override
