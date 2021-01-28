@@ -1,7 +1,9 @@
 package com.glodon.linglong.engine.core;
 
+import com.glodon.linglong.base.common.Utils;
 import com.glodon.linglong.engine.Ordering;
-import com.glodon.linglong.engine.util.Utils;
+import com.glodon.linglong.engine.core.lock.LockResult;
+import com.glodon.linglong.engine.core.tx.Transaction;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -112,7 +114,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * "findNearby" are considered to move the cursor incrementally. The use of these methods
      * generally indicates that registering the cursor might be beneficial.
      */
-    public default boolean register() throws IOException {
+    default boolean register() throws IOException {
         return false;
     }
 
@@ -121,7 +123,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      *
      * @see #register
      */
-    public default void unregister() {
+    default void unregister() {
     }
 
     /**
@@ -133,7 +135,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_UPGRADABLE OWNED_UPGRADABLE}, or {@link
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      */
-    public LockResult first() throws IOException;
+    LockResult first() throws IOException;
 
     /**
      * Moves the Cursor to find the last available entry. Cursor key and value
@@ -144,7 +146,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_UPGRADABLE OWNED_UPGRADABLE}, or {@link
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      */
-    public LockResult last() throws IOException;
+    LockResult last() throws IOException;
 
     /**
      * Moves the Cursor by a relative amount of entries. Pass a positive amount
@@ -163,7 +165,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      * @throws UnpositionedCursorException if position is undefined at invocation time
      */
-    public LockResult skip(long amount) throws IOException;
+    LockResult skip(long amount) throws IOException;
 
     /**
      * Moves the Cursor by a relative amount of entries, stopping sooner if the limit key is
@@ -186,7 +188,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      * @throws UnpositionedCursorException if position is undefined at invocation time
      */
-    public default LockResult skip(long amount, byte[] limitKey, boolean inclusive)
+    default LockResult skip(long amount, byte[] limitKey, boolean inclusive)
             throws IOException {
         return ViewUtils.skip(this, amount, limitKey, inclusive);
     }
@@ -201,7 +203,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      * @throws UnpositionedCursorException if position is undefined at invocation time
      */
-    public LockResult next() throws IOException;
+    LockResult next() throws IOException;
 
     /**
      * Moves to the Cursor to the next available entry, but only when less than
@@ -215,7 +217,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * @throws NullPointerException        if limit key is null
      * @throws UnpositionedCursorException if position is undefined at invocation time
      */
-    public default LockResult nextLe(byte[] limitKey) throws IOException {
+    default LockResult nextLe(byte[] limitKey) throws IOException {
         return ViewUtils.nextCmp(this, limitKey, 1);
     }
 
@@ -231,7 +233,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * @throws NullPointerException        if limit key is null
      * @throws UnpositionedCursorException if position is undefined at invocation time
      */
-    public default LockResult nextLt(byte[] limitKey) throws IOException {
+    default LockResult nextLt(byte[] limitKey) throws IOException {
         return ViewUtils.nextCmp(this, limitKey, 0);
     }
 
@@ -246,7 +248,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      * @throws UnpositionedCursorException if position is undefined at invocation time
      */
-    public LockResult previous() throws IOException;
+    LockResult previous() throws IOException;
 
     /**
      * Moves to the Cursor to the previous available entry, but only when
@@ -261,7 +263,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * @throws NullPointerException        if limit key is null
      * @throws UnpositionedCursorException if position is undefined at invocation time
      */
-    public default LockResult previousGe(byte[] limitKey) throws IOException {
+    default LockResult previousGe(byte[] limitKey) throws IOException {
         return ViewUtils.previousCmp(this, limitKey, -1);
     }
 
@@ -277,7 +279,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * @throws NullPointerException        if limit key is null
      * @throws UnpositionedCursorException if position is undefined at invocation time
      */
-    public default LockResult previousGt(byte[] limitKey) throws IOException {
+    default LockResult previousGt(byte[] limitKey) throws IOException {
         return ViewUtils.previousCmp(this, limitKey, 0);
     }
 
@@ -293,7 +295,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      * @throws NullPointerException if key is null
      */
-    public LockResult find(byte[] key) throws IOException;
+    LockResult find(byte[] key) throws IOException;
 
     /**
      * Moves the Cursor to find the first available entry greater than or equal
@@ -308,7 +310,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      * @throws NullPointerException if key is null
      */
-    public default LockResult findGe(byte[] key) throws IOException {
+    default LockResult findGe(byte[] key) throws IOException {
         LockResult result = find(key);
         if (value() == null) {
             if (result == LockResult.ACQUIRED) {
@@ -332,7 +334,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      * @throws NullPointerException if key is null
      */
-    public default LockResult findGt(byte[] key) throws IOException {
+    default LockResult findGt(byte[] key) throws IOException {
         ViewUtils.findNoLock(this, key);
         return next();
     }
@@ -350,7 +352,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      * @throws NullPointerException if key is null
      */
-    public default LockResult findLe(byte[] key) throws IOException {
+    default LockResult findLe(byte[] key) throws IOException {
         LockResult result = find(key);
         if (value() == null) {
             if (result == LockResult.ACQUIRED) {
@@ -374,7 +376,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      * @throws NullPointerException if key is null
      */
-    public default LockResult findLt(byte[] key) throws IOException {
+    default LockResult findLt(byte[] key) throws IOException {
         ViewUtils.findNoLock(this, key);
         return previous();
     }
@@ -393,7 +395,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      * @throws NullPointerException if key is null
      */
-    public default LockResult findNearby(byte[] key) throws IOException {
+    default LockResult findNearby(byte[] key) throws IOException {
         return find(key);
     }
 
@@ -411,7 +413,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      * @throws NullPointerException if key is null
      */
-    public default LockResult findNearbyGe(byte[] key) throws IOException {
+    default LockResult findNearbyGe(byte[] key) throws IOException {
         LockResult result = findNearby(key);
         if (value() == null) {
             if (result == LockResult.ACQUIRED) {
@@ -436,7 +438,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      * @throws NullPointerException if key is null
      */
-    public default LockResult findNearbyGt(byte[] key) throws IOException {
+    default LockResult findNearbyGt(byte[] key) throws IOException {
         ViewUtils.findNearbyNoLock(this, key);
         return next();
     }
@@ -455,7 +457,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      * @throws NullPointerException if key is null
      */
-    public default LockResult findNearbyLe(byte[] key) throws IOException {
+    default LockResult findNearbyLe(byte[] key) throws IOException {
         LockResult result = findNearby(key);
         if (value() == null) {
             if (result == LockResult.ACQUIRED) {
@@ -480,7 +482,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      * @throws NullPointerException if key is null
      */
-    public default LockResult findNearbyLt(byte[] key) throws IOException {
+    default LockResult findNearbyLt(byte[] key) throws IOException {
         ViewUtils.findNearbyNoLock(this, key);
         return previous();
     }
@@ -497,7 +499,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_UPGRADABLE OWNED_UPGRADABLE}, or {@link
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      */
-    public LockResult random(byte[] lowKey, byte[] highKey) throws IOException;
+    LockResult random(byte[] lowKey, byte[] highKey) throws IOException;
 
     /**
      * Locks the current entry, as if by calling load. Locking is performed automatically
@@ -514,7 +516,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      * @throws UnpositionedCursorException if position is undefined at invocation time
      */
-    public default LockResult lock() throws IOException {
+    default LockResult lock() throws IOException {
         return load();
     }
 
@@ -528,7 +530,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * LockResult#OWNED_EXCLUSIVE OWNED_EXCLUSIVE}
      * @throws UnpositionedCursorException if position is undefined at invocation time
      */
-    public LockResult load() throws IOException;
+    LockResult load() throws IOException;
 
     /**
      * Stores a value into the current entry, leaving the position
@@ -541,7 +543,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * @throws UnpositionedCursorException if position is undefined at invocation time
      * @throws ViewConstraintException     if value is not permitted
      */
-    public void store(byte[] value) throws IOException;
+    void store(byte[] value) throws IOException;
 
     /**
      * Combined store and commit to the linked transaction. Although similar to storing and
@@ -553,7 +555,7 @@ public interface Cursor extends ValueAccessor, Closeable {
      * @throws UnpositionedCursorException if position is undefined at invocation time
      * @throws ViewConstraintException     if value is not permitted
      */
-    public default void commit(byte[] value) throws IOException {
+    default void commit(byte[] value) throws IOException {
         ViewUtils.commit(this, value);
     }
 
@@ -562,18 +564,18 @@ public interface Cursor extends ValueAccessor, Closeable {
      * linked to the same transaction. The original and copied Cursor can be
      * acted upon without affecting each other's state.
      */
-    public Cursor copy();
+    Cursor copy();
 
     /**
      * Resets the Cursor and moves it to an undefined position. The key and value references
      * are set to null.
      */
-    public void reset();
+    void reset();
 
     /**
      * Equivalent to the reset method, which moves the Cursor to an undefined position. The
      * Cursor is re-opened automatically if positioned again.
      */
     @Override
-    public void close();
+    void close();
 }

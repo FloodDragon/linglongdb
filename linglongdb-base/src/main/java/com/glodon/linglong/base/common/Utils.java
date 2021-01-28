@@ -17,7 +17,7 @@ import static java.lang.System.arraycopy;
  * @author Stereo
  */
 public class Utils extends IOUtils {
-    static final byte[] EMPTY_BYTES = new byte[0];
+    public static final byte[] EMPTY_BYTES = new byte[0];
 
     public static long toNanos(long timeout, TimeUnit unit) {
         return timeout < 0 ? -1 :
@@ -708,7 +708,7 @@ public class Utils extends IOUtils {
         return bob.toString();
     }
 
-    static void deleteNumberedFiles(File baseFile, String pattern) throws IOException {
+    public static void deleteNumberedFiles(File baseFile, String pattern) throws IOException {
         deleteNumberedFiles(baseFile, pattern, 0);
     }
 
@@ -784,13 +784,13 @@ public class Utils extends IOUtils {
         e.setStackTrace(merged);
     }
 
-    static String toMiniString(Object obj) {
+    public static String toMiniString(Object obj) {
         StringBuilder b = new StringBuilder();
         appendMiniString(b, obj);
         return b.toString();
     }
 
-    static void appendMiniString(StringBuilder b, Object obj) {
+    public static void appendMiniString(StringBuilder b, Object obj) {
         if (obj == null) {
             b.append("null");
             return;

@@ -1,6 +1,15 @@
 package com.glodon.linglong.engine.core;
 
+import com.glodon.linglong.base.common.Utils;
+import com.glodon.linglong.base.exception.LockFailureException;
+import com.glodon.linglong.base.exception.ViewConstraintException;
 import com.glodon.linglong.engine.Ordering;
+import com.glodon.linglong.engine.Transformer;
+import com.glodon.linglong.engine.config.DurabilityMode;
+import com.glodon.linglong.engine.core.lock.DeadlockException;
+import com.glodon.linglong.engine.core.lock.LockMode;
+import com.glodon.linglong.engine.core.lock.LockResult;
+import com.glodon.linglong.engine.core.tx.Transaction;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -445,7 +454,7 @@ public interface View {
                 if (result == LockResult.ACQUIRED) {
                     txn.unlock();
                 }
-            } else if (!mode.noReadLock) {
+            } else if (!mode.isNoReadLock()) {
                 if (mode == LockMode.UPGRADABLE_READ) {
                     return lockUpgradable(txn, key);
                 } else {

@@ -11,6 +11,14 @@ public class VerificationObserver {
 
     boolean failed;
 
+    public void setFailed(boolean failed) {
+        this.failed = failed;
+    }
+
+    public boolean isFailed() {
+        return failed;
+    }
+
     public boolean indexBegin(Index index, int height) {
         this.index = index;
         this.height = height;

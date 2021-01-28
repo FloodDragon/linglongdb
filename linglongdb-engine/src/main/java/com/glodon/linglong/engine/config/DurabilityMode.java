@@ -10,7 +10,7 @@ public enum DurabilityMode {
     NO_FLUSH,
     NO_REDO;
 
-    DurabilityMode alwaysRedo() {
+    public DurabilityMode alwaysRedo() {
         return this == NO_REDO ? NO_FLUSH : this;
     }
 }

@@ -5,8 +5,8 @@ import java.util.logging.Level;
 /**
  * @author Stereo
  */
-class SafeEventListener implements EventListener {
-    static EventListener makeSafe(EventListener listener) {
+public class SafeEventListener implements EventListener {
+    public static EventListener makeSafe(EventListener listener) {
         return (listener == null
                 || listener instanceof SafeEventListener
                 || listener.getClass() == EventLogger.class

@@ -8,13 +8,16 @@ import com.glodon.linglong.base.io.OpenOption;
 import com.glodon.linglong.base.io.PageArray;
 import com.glodon.linglong.engine.core.Database;
 import com.glodon.linglong.engine.core.Index;
+import com.glodon.linglong.engine.core.LocalDatabase;
+import com.glodon.linglong.engine.core.page.PageCache;
+import com.glodon.linglong.engine.core.page.PartitionedPageCache;
 import com.glodon.linglong.engine.event.EventListener;
 import com.glodon.linglong.engine.event.EventPrinter;
 import com.glodon.linglong.engine.event.EventType;
 import com.glodon.linglong.engine.extend.RecoveryHandler;
 import com.glodon.linglong.engine.extend.ReplicationManager;
 import com.glodon.linglong.engine.extend.TransactionHandler;
-import com.glodon.linglong.engine.lock.LockUpgradeRule;
+import com.glodon.linglong.engine.core.lock.LockUpgradeRule;
 
 import java.io.*;
 import java.lang.management.ManagementFactory;
@@ -37,35 +40,145 @@ public class DatabaseConfig implements Cloneable, Serializable {
     private static volatile Method cDirectRestore;
 
     File mBaseFile;
+
+    public File getBaseFile() {
+        return mBaseFile;
+    }
+
     boolean mMkdirs;
+
+    public boolean isMkdirs() {
+        return mMkdirs;
+    }
+
     File[] mDataFiles;
     boolean mMapDataFiles;
     transient PageArray mDataPageArray;
+
+    public PageArray getDataPageArray() {
+        return mDataPageArray;
+    }
+
     FileFactory mFileFactory;
+
+    public FileFactory getFileFactory() {
+        return mFileFactory;
+    }
+
     long mMinCachedBytes;
+
+    public void setMinCachedBytes(long mMinCachedBytes) {
+        this.mMinCachedBytes = mMinCachedBytes;
+    }
+
+    public long getMinCachedBytes() {
+        return mMinCachedBytes;
+    }
+
     long mMaxCachedBytes;
+
+    public void setMaxCachedBytes(long mMaxCachedBytes) {
+        this.mMaxCachedBytes = mMaxCachedBytes;
+    }
+
+    public long getMaxCachedBytes() {
+        return mMaxCachedBytes;
+    }
+
     transient RecoveryHandler mRecoveryHandler;
+
+    public RecoveryHandler getRecoveryHandler() {
+        return mRecoveryHandler;
+    }
+
     long mSecondaryCacheSize;
+
+    public void setSecondaryCacheSize(long mSecondaryCacheSize) {
+        this.mSecondaryCacheSize = mSecondaryCacheSize;
+    }
+
+    public long getSecondaryCacheSize() {
+        return mSecondaryCacheSize;
+    }
+
     DurabilityMode mDurabilityMode;
+
+    public DurabilityMode getDurabilityMode() {
+        return mDurabilityMode;
+    }
+
     LockUpgradeRule mLockUpgradeRule;
+
+    public LockUpgradeRule getLockUpgradeRule() {
+        return mLockUpgradeRule;
+    }
+
     long mLockTimeoutNanos;
+
+    public long getLockTimeoutNanos() {
+        return mLockTimeoutNanos;
+    }
+
     long mCheckpointRateNanos;
     long mCheckpointSizeThreshold;
     long mCheckpointDelayThresholdNanos;
     int mMaxCheckpointThreads;
     transient EventListener mEventListener;
+
+    public EventListener getEventListener() {
+        return mEventListener;
+    }
+
+    public void setEventListener(EventListener mEventListener) {
+        this.mEventListener = mEventListener;
+    }
+
     BiConsumer<Database, Index> mIndexOpenListener;
+
+    public BiConsumer<Database, Index> getIndexOpenListener() {
+        return mIndexOpenListener;
+    }
+
     boolean mFileSync;
     boolean mReadOnly;
+
+    public boolean isReadOnly() {
+        return mReadOnly;
+    }
+
     int mPageSize;
+
+    public int getPageSize() {
+        return mPageSize;
+    }
+
     Boolean mDirectPageAccess;
     boolean mCachePriming;
     //ReplicatorConfig mReplConfig;
     transient ReplicationManager mReplManager;
+
+    public ReplicationManager getReplManager() {
+        return mReplManager;
+    }
+
     int mMaxReplicaThreads;
     transient Crypto mCrypto;
+
+    public Crypto getCrypto() {
+        return mCrypto;
+    }
+
     transient TransactionHandler mTxnHandler;
+
+    public TransactionHandler getTxnHandler() {
+        return mTxnHandler;
+    }
+
     Map<String, ? extends Object> mDebugOpen;
+
+    public Map<String, ? extends Object> getDebugOpen() {
+        return mDebugOpen;
+    }
 
     transient long mReplRecoveryStartNanos;
     transient long mReplInitialTxnId;
@@ -311,7 +424,7 @@ public class DatabaseConfig implements Cloneable, Serializable {
         }
     }
 
-    PageCache pageCache(EventListener listener) {
+    public PageCache pageCache(EventListener listener) {
         long size = mSecondaryCacheSize;
         if (size <= 0) {
             return null;
@@ -326,7 +439,7 @@ public class DatabaseConfig implements Cloneable, Serializable {
 
     }
 
-    File[] dataFiles() {
+    public File[] dataFiles() {
         if (mReplManager != null) {
             long encoding = mReplManager.encoding();
             if (encoding == 0) {
@@ -366,7 +479,7 @@ public class DatabaseConfig implements Cloneable, Serializable {
         return dataFiles;
     }
 
-    EnumSet<OpenOption> createOpenOptions() {
+    public EnumSet<OpenOption> createOpenOptions() {
         EnumSet<OpenOption> options = EnumSet.noneOf(OpenOption.class);
         options.add(OpenOption.RANDOM_ACCESS);
         if (mReadOnly) {
@@ -558,7 +671,7 @@ public class DatabaseConfig implements Cloneable, Serializable {
             return null;
         }
         try {
-            return Class.forName("com.glodon.my._LocalDatabase");
+            return Class.forName("com.glodon.my.LocalDatabase");
         } catch (Exception e) {
             handleDirectException(e);
             return null;

@@ -1,5 +1,7 @@
 package com.glodon.linglong.engine.core;
 
+import com.glodon.linglong.engine.core.tx.Transaction;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.Serializable;
