@@ -10,7 +10,7 @@ import com.glodon.linglong.base.io.OpenOption;
 import com.glodon.linglong.base.io.PageArray;
 import com.glodon.linglong.engine.config.DatabaseConfig;
 import com.glodon.linglong.engine.config.DurabilityMode;
-import com.glodon.linglong.engine.core.lock.LockResult;
+import com.glodon.linglong.engine.core.lock.*;
 import com.glodon.linglong.engine.core.page.*;
 import com.glodon.linglong.engine.core.repl.ReplRedoController;
 import com.glodon.linglong.engine.core.repl.ReplRedoWriter;
@@ -21,9 +21,6 @@ import com.glodon.linglong.engine.event.SafeEventListener;
 import com.glodon.linglong.engine.extend.RecoveryHandler;
 import com.glodon.linglong.engine.extend.ReplicationManager;
 import com.glodon.linglong.engine.extend.TransactionHandler;
-import com.glodon.linglong.engine.core.lock.CommitLock;
-import com.glodon.linglong.engine.core.lock.LockManager;
-import com.glodon.linglong.engine.core.lock.LockedFile;
 
 import java.io.*;
 import java.lang.ref.Reference;
@@ -1788,9 +1785,6 @@ final public class LocalDatabase extends AbstractDatabase {
         mLocalTransaction.remove();
     }
 
-    /**
-     * Returns a RedoWriter suitable for transactions to write into.
-     */
     RedoWriter txnRedoWriter() {
         RedoWriter redo = mRedoWriter;
         if (redo != null) {

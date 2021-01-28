@@ -33,6 +33,10 @@ public final class LocalTransaction extends Locker implements Transaction {
 
     RedoWriter mRedo;
 
+    public void setRedo(RedoWriter mRedo) {
+        this.mRedo = mRedo;
+    }
+
     public RedoWriter getRedo() {
         return mRedo;
     }
