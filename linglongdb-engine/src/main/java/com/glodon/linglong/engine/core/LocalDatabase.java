@@ -1805,16 +1805,10 @@ final public class LocalDatabase extends AbstractDatabase {
         }
     }
 
-    /**
-     * Used by auto-commit operations that don't have an explicit transaction.
-     */
     public TransactionContext anyTransactionContext() {
         return selectTransactionContext(ThreadLocalRandom.current().nextInt());
     }
 
-    /**
-     * Called by transaction constructor after hash code has been assigned.
-     */
     public TransactionContext selectTransactionContext(LocalTransaction txn) {
         return selectTransactionContext(txn.hashCode());
     }
@@ -1867,7 +1861,7 @@ final public class LocalDatabase extends AbstractDatabase {
             }
         }
 
-        return new _ParallelSorter(this, executor);
+        return new ParallelSorter(this, executor);
     }
 
     @Override
@@ -1892,19 +1886,12 @@ final public class LocalDatabase extends AbstractDatabase {
             throw new UnsupportedOperationException("Snapshot only allowed for durable databases");
         }
         checkClosed();
-        _DurablePageDb pageDb = (_DurablePageDb) mPageDb;
+        DurablePageDb pageDb = (DurablePageDb) mPageDb;
         return pageDb.beginSnapshot(this);
     }
 
-    /**
-     * Restore from a {@link #beginSnapshot snapshot}, into the data files defined by the given
-     * configuration. All existing data and redo log files at the snapshot destination are
-     * deleted before the restore begins.
-     *
-     * @param in snapshot source; does not require extra buffering; auto-closed
-     */
     public static Database restoreFromSnapshot(DatabaseConfig config, InputStream in) throws IOException {
-        if (config.mReadOnly) {
+        if (config.isReadOnly()) {
             throw new IllegalArgumentException("Cannot restore into a read-only database");
         }
 
@@ -1913,7 +1900,7 @@ final public class LocalDatabase extends AbstractDatabase {
 
         File[] dataFiles = config.dataFiles();
         if (dataFiles == null) {
-            PageArray dataPageArray = config.mDataPageArray;
+            PageArray dataPageArray = config.getDataPageArray();
 
             if (dataPageArray == null) {
                 throw new UnsupportedOperationException
@@ -1923,13 +1910,11 @@ final public class LocalDatabase extends AbstractDatabase {
             dataPageArray = dataPageArray.open();
             dataPageArray.setPageCount(0);
 
-            // Delete old redo log files.
             Utils.deleteNumberedFiles(config.getBaseFile(), REDO_FILE_SUFFIX);
 
             restored = DurablePageDb.restoreFromSnapshot(dataPageArray, null, config.getCrypto(), in);
         } else {
             for (File f : dataFiles) {
-                // Delete old data file.
                 f.delete();
                 if (config.isMkdirs()) {
                     f.getParentFile().mkdirs();
@@ -1982,7 +1967,6 @@ final public class LocalDatabase extends AbstractDatabase {
             }
         }
 
-        // Terminator.
         dout.writeInt(-1);
     }
 
@@ -4812,7 +4796,7 @@ final public class LocalDatabase extends AbstractDatabase {
         }
     }
 
-    static long readRedoPosition(long header, int offset) {
+    public static long readRedoPosition(long header, int offset) {
         return DirectPageOps.p_longGetLE(header, offset + I_REDO_POSITION);
     }
 }

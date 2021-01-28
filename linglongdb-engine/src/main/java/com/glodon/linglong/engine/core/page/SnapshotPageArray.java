@@ -2,6 +2,9 @@ package com.glodon.linglong.engine.core.page;
 
 
 import com.glodon.linglong.base.io.PageArray;
+import com.glodon.linglong.engine.core.LocalDatabase;
+import com.glodon.linglong.engine.core.Snapshot;
+import com.glodon.linglong.engine.core.temp.TempFileManager;
 
 import java.io.File;
 import java.io.IOException;
