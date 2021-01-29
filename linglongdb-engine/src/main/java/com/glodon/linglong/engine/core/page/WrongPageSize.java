@@ -3,8 +3,6 @@ package com.glodon.linglong.engine.core.page;
 import com.glodon.linglong.base.exception.DatabaseException;
 
 /**
- * Used by DurablePageDb.
- *
  * @author Stereo
  */
 class WrongPageSize extends Exception {

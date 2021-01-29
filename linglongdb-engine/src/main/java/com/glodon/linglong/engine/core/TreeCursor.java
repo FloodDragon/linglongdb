@@ -3,7 +3,7 @@ package com.glodon.linglong.engine.core;
 
 import com.glodon.linglong.base.common.CauseCloseable;
 import com.glodon.linglong.base.exception.UnmodifiableReplicaException;
-import com.glodon.linglong.engine.KeyComparator;
+import com.glodon.linglong.base.common.KeyComparator;
 import com.glodon.linglong.engine.Ordering;
 import com.glodon.linglong.engine.config.DurabilityMode;
 import com.glodon.linglong.engine.core.frame.CursorFrame;
@@ -27,20 +27,53 @@ import static com.glodon.linglong.base.common.Utils.*;
  * @author Stereo
  */
 public class TreeCursor extends AbstractValueAccessor implements CauseCloseable, Cursor {
-    // Sign is important because values are passed to Node.retrieveKeyCmp
-    // method. Bit 0 is set for inclusive variants and clear for exclusive.
     private static final int LIMIT_LE = 1, LIMIT_LT = 2, LIMIT_GE = -1, LIMIT_GT = -2;
 
     final Tree mTree;
+
+    public Tree getTree() {
+        return mTree;
+    }
+
     LocalTransaction mTxn;
+
+
+    public void setTxn(LocalTransaction mTxn) {
+        this.mTxn = mTxn;
+    }
+
+    public LocalTransaction getTxn() {
+        return mTxn;
+    }
 
     // Top stack frame for cursor, usually a leaf except during cleanup.
     CursorFrame mFrame;
 
     byte[] mKey;
+
+    public byte[] getKey() {
+        return mKey;
+    }
+
     byte[] mValue;
 
+    public void setValue(byte[] mValue) {
+        this.mValue = mValue;
+    }
+
+    public byte[] getValue() {
+        return mValue;
+    }
+
     boolean mKeyOnly;
+
+    public void setKeyOnly(boolean mKeyOnly) {
+        this.mKeyOnly = mKeyOnly;
+    }
+
+    public boolean isKeyOnly() {
+        return mKeyOnly;
+    }
 
     // Hashcode is defined by LockManager.
     private int mKeyHash;
@@ -49,12 +82,21 @@ public class TreeCursor extends AbstractValueAccessor implements CauseCloseable,
     // high bit is clear, the key must be written into the redo log.
     long mCursorId;
 
-    TreeCursor(Tree tree, Transaction txn) {
+
+    public void setCursorId(long mCursorId) {
+        this.mCursorId = mCursorId;
+    }
+
+    public long getCursorId() {
+        return mCursorId;
+    }
+
+    public TreeCursor(Tree tree, Transaction txn) {
         mTxn = tree.check(txn);
         mTree = tree;
     }
 
-    TreeCursor(Tree tree) {
+    public TreeCursor(Tree tree) {
         mTree = tree;
     }
 
@@ -370,7 +412,7 @@ public class TreeCursor extends AbstractValueAccessor implements CauseCloseable,
     private Node toLastLeaf(CursorFrame frame, Node node) throws IOException {
         try {
             while (true) {
-                _Split split = node.mSplit;
+                Split split = node.mSplit;
                 if (split != null) {
                     // Bind to the highest position and finish the split.
                     frame.bind(node, split.highestPos(node));
@@ -407,7 +449,7 @@ public class TreeCursor extends AbstractValueAccessor implements CauseCloseable,
     private Node toLastInternal(CursorFrame frame, Node node) throws IOException {
         try {
             while (true) {
-                _Split split = node.mSplit;
+                Split split = node.mSplit;
                 if (split != null) {
                     // Bind to the highest position and finish the split.
                     frame.bind(node, split.highestPos(node));
@@ -2163,7 +2205,7 @@ public class TreeCursor extends AbstractValueAccessor implements CauseCloseable,
                 return result;
             }
 
-            _Split split = node.mSplit;
+            Split split = node.mSplit;
             if (split == null) {
                 int childPos;
                 try {
@@ -3354,7 +3396,7 @@ public class TreeCursor extends AbstractValueAccessor implements CauseCloseable,
      *
      * @return false if Tree is closed
      */
-    final boolean deleteGhost(byte[] key) throws IOException {
+    public final boolean deleteGhost(byte[] key) throws IOException {
         try {
             // Find with no lock because it has already been acquired.
             find(null, key, VARIANT_CHECK, new CursorFrame(), latchRootNode());
@@ -3402,7 +3444,7 @@ public class TreeCursor extends AbstractValueAccessor implements CauseCloseable,
      * @param txn   can be null
      * @param value pass null to delete
      */
-    final void storeNoRedo(LocalTransaction txn, byte[] value) throws IOException {
+    public final void storeNoRedo(LocalTransaction txn, byte[] value) throws IOException {
         CursorFrame leaf = frameExclusive();
         CommitLock.Shared shared;
 
@@ -4231,7 +4273,7 @@ public class TreeCursor extends AbstractValueAccessor implements CauseCloseable,
             throw e;
         }
 
-        long result = _TreeValue.action(null, this, frame, _TreeValue.OP_LENGTH, 0, null, 0, 0);
+        long result = TreeValue.action(null, this, frame, TreeValue.OP_LENGTH, 0, null, 0, 0);
         frame.mNode.releaseShared();
         return result;
     }
@@ -4242,7 +4284,7 @@ public class TreeCursor extends AbstractValueAccessor implements CauseCloseable,
             if (length <= 0) {
                 store(length == 0 ? Utils.EMPTY_BYTES : null);
             } else {
-                doValueModify(storeMode(), _TreeValue.OP_SET_LENGTH, length, Utils.EMPTY_BYTES, 0, 0);
+                doValueModify(storeMode(), TreeValue.OP_SET_LENGTH, length, Utils.EMPTY_BYTES, 0, 0);
             }
         } catch (IllegalStateException e) {
             valueCheckOpen();
@@ -4260,7 +4302,7 @@ public class TreeCursor extends AbstractValueAccessor implements CauseCloseable,
             throw e;
         }
 
-        long result = _TreeValue.action(null, this, frame, _TreeValue.OP_READ, pos, buf, off, len);
+        long result = TreeValue.action(null, this, frame, TreeValue.OP_READ, pos, buf, off, len);
         frame.mNode.releaseShared();
         return (int) result;
     }
@@ -4268,7 +4310,7 @@ public class TreeCursor extends AbstractValueAccessor implements CauseCloseable,
     @Override
     final void doValueWrite(long pos, byte[] buf, int off, int len) throws IOException {
         try {
-            doValueModify(storeMode(), _TreeValue.OP_WRITE, pos, buf, off, len);
+            doValueModify(storeMode(), TreeValue.OP_WRITE, pos, buf, off, len);
         } catch (IllegalStateException e) {
             valueCheckOpen();
             throw e;
@@ -4278,7 +4320,7 @@ public class TreeCursor extends AbstractValueAccessor implements CauseCloseable,
     @Override
     final void doValueClear(long pos, long length) throws IOException {
         try {
-            doValueModify(storeMode(), _TreeValue.OP_CLEAR, pos, Utils.EMPTY_BYTES, 0, length);
+            doValueModify(storeMode(), TreeValue.OP_CLEAR, pos, Utils.EMPTY_BYTES, 0, length);
         } catch (IllegalStateException e) {
             valueCheckOpen();
             throw e;
@@ -4343,10 +4385,10 @@ public class TreeCursor extends AbstractValueAccessor implements CauseCloseable,
         final CommitLock.Shared shared = prepareStore(leaf);
 
         try {
-            _TreeValue.action(undoTxn, this, leaf, op, pos, buf, off, len);
+            TreeValue.action(undoTxn, this, leaf, op, pos, buf, off, len);
             Node node = leaf.mNode;
 
-            if (op == _TreeValue.OP_SET_LENGTH && node.shouldLeafMerge()) {
+            if (op == TreeValue.OP_SET_LENGTH && node.shouldLeafMerge()) {
                 // Method always release the node latch, even if an exception is thrown.
                 mergeLeaf(leaf, node);
             } else {
@@ -4710,7 +4752,7 @@ public class TreeCursor extends AbstractValueAccessor implements CauseCloseable,
                         int pLen = pageSize(node.mPage);
                         long pos = 0;
                         while (true) {
-                            int result = _TreeValue.compactCheck(frame, pos, highestNodeId);
+                            int result = TreeValue.compactCheck(frame, pos, highestNodeId);
 
                             if (result < 0) {
                                 break;
@@ -4728,8 +4770,8 @@ public class TreeCursor extends AbstractValueAccessor implements CauseCloseable,
                                 CommitLock.Shared shared = prepareStore(frame);
 
                                 try {
-                                    _TreeValue.action(null, this, frame, _TreeValue.OP_WRITE,
-                                            pos, _TreeValue.TOUCH_VALUE, 0, 0);
+                                    TreeValue.action(null, this, frame, TreeValue.OP_WRITE,
+                                            pos, TreeValue.TOUCH_VALUE, 0, 0);
                                 } finally {
                                     shared.release();
                                 }

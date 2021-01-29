@@ -79,7 +79,7 @@ public final class LockManager {
         return count;
     }
 
-    final boolean isAvailable(LockOwner locker, long indexId, byte[] key, int hash) {
+    public final boolean isAvailable(LockOwner locker, long indexId, byte[] key, int hash) {
         return getLockHT(hash).isAvailable(locker, indexId, key, hash);
     }
 
@@ -142,7 +142,7 @@ public final class LockManager {
         ghosted(indexId, key, hash(indexId, key), frame);
     }
 
-    final void ghosted(long indexId, byte[] key, int hash, GhostFrame frame) {
+    public final void ghosted(long indexId, byte[] key, int hash, GhostFrame frame) {
         LockHT ht = getLockHT(hash);
         ht.acquireExclusive();
         try {

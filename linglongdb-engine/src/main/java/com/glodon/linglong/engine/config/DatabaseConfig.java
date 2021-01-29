@@ -120,9 +120,29 @@ public class DatabaseConfig implements Cloneable, Serializable {
     }
 
     long mCheckpointRateNanos;
+
+    public long getCheckpointRateNanos() {
+        return mCheckpointRateNanos;
+    }
+
     long mCheckpointSizeThreshold;
+
+    public long getCheckpointSizeThreshold() {
+        return mCheckpointSizeThreshold;
+    }
+
     long mCheckpointDelayThresholdNanos;
+
+    public long getCheckpointDelayThresholdNanos() {
+        return mCheckpointDelayThresholdNanos;
+    }
+
     int mMaxCheckpointThreads;
+
+    public int getMaxCheckpointThreads() {
+        return mMaxCheckpointThreads;
+    }
+
     transient EventListener mEventListener;
 
     public EventListener getEventListener() {
@@ -153,7 +173,17 @@ public class DatabaseConfig implements Cloneable, Serializable {
     }
 
     Boolean mDirectPageAccess;
+
+    public void setDirectPageAccess(Boolean mDirectPageAccess) {
+        this.mDirectPageAccess = mDirectPageAccess;
+    }
+
     boolean mCachePriming;
+
+    public boolean isCachePriming() {
+        return mCachePriming;
+    }
+
     //ReplicatorConfig mReplConfig;
     transient ReplicationManager mReplManager;
 
@@ -162,6 +192,11 @@ public class DatabaseConfig implements Cloneable, Serializable {
     }
 
     int mMaxReplicaThreads;
+
+    public int getMaxReplicaThreads() {
+        return mMaxReplicaThreads;
+    }
+
     transient Crypto mCrypto;
 
     public Crypto getCrypto() {
@@ -181,7 +216,24 @@ public class DatabaseConfig implements Cloneable, Serializable {
     }
 
     transient long mReplRecoveryStartNanos;
+
+    public void setReplRecoveryStartNanos(long mReplRecoveryStartNanos) {
+        this.mReplRecoveryStartNanos = mReplRecoveryStartNanos;
+    }
+
+    public long getReplRecoveryStartNanos() {
+        return mReplRecoveryStartNanos;
+    }
+
     transient long mReplInitialTxnId;
+
+    public void setReplInitialTxnId(long mReplInitialTxnId) {
+        this.mReplInitialTxnId = mReplInitialTxnId;
+    }
+
+    public long getReplInitialTxnId() {
+        return mReplInitialTxnId;
+    }
 
     public DatabaseConfig() {
         createFilePath(true);
@@ -497,7 +549,7 @@ public class DatabaseConfig implements Cloneable, Serializable {
         return options;
     }
 
-    void writeInfo(BufferedWriter w) throws IOException {
+    public void writeInfo(BufferedWriter w) throws IOException {
         String pid = ManagementFactory.getRuntimeMXBean().getName();
         String user;
         try {

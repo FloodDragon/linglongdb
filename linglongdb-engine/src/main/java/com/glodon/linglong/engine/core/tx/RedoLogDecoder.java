@@ -1,23 +1,28 @@
 package com.glodon.linglong.engine.core.tx;
 
+import com.glodon.linglong.base.common.Utils;
+import com.glodon.linglong.base.concurrent.Latch;
+import com.glodon.linglong.engine.event.EventListener;
+import com.glodon.linglong.engine.event.EventType;
+
 import java.io.EOFException;
 import java.io.IOException;
 
 /**
  * @author Stereo
  */
-final class RedoLogDecoder extends RedoDecoder {
+public final class RedoLogDecoder extends RedoDecoder {
     private final RedoLog mLog;
     private final EventListener mListener;
 
-    RedoLogDecoder(RedoLog log, DataIn in, EventListener listener) {
+    public RedoLogDecoder(RedoLog log, DataIn in, EventListener listener) {
         super(true, 0, in, new Latch());
         mLog = log;
         mListener = listener;
     }
 
     @Override
-    boolean verifyTerminator(DataIn in) throws IOException {
+    public boolean verifyTerminator(DataIn in) throws IOException {
         try {
             int term = in.readIntLE();
             if (term == mLog.nextTermRnd() || term == Utils.nzHash(mTxnId)) {

@@ -11,7 +11,7 @@ public abstract class LHashTable<E extends LHashTable.Entry<E>> {
     }
 
     public static final class Obj<V> extends LHashTable<ObjEntry<V>> {
-        Obj(int capacity) {
+        public Obj(int capacity) {
             super(capacity);
         }
 
@@ -35,7 +35,7 @@ public abstract class LHashTable<E extends LHashTable.Entry<E>> {
     }
 
     public static final class Int extends LHashTable<IntEntry> {
-        Int(int capacity) {
+        public Int(int capacity) {
             super(capacity);
         }
 

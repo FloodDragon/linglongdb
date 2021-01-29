@@ -1,7 +1,13 @@
 package com.glodon.linglong.engine.core;
 
+import com.glodon.linglong.base.common.KeyComparator;
 import com.glodon.linglong.base.common.Utils;
+import com.glodon.linglong.base.exception.LockFailureException;
 import com.glodon.linglong.engine.Ordering;
+import com.glodon.linglong.engine.config.DurabilityMode;
+import com.glodon.linglong.engine.core.frame.CursorFrame;
+import com.glodon.linglong.engine.core.lock.*;
+import com.glodon.linglong.engine.core.page.DirectPageOps;
 import com.glodon.linglong.engine.core.tx.LocalTransaction;
 import com.glodon.linglong.engine.core.tx.Transaction;
 import com.glodon.linglong.engine.observer.CompactionObserver;
@@ -23,18 +29,23 @@ import java.util.concurrent.ThreadLocalRandom;
 public class Tree implements View, Index {
     // Reserved internal tree ids.
     static final int
-        REGISTRY_ID = 0,
-        REGISTRY_KEY_MAP_ID = 1,
-        CURSOR_REGISTRY_ID = 2,
-        FRAGMENTED_TRASH_ID = 3,
-        MAX_RESERVED_ID = 0xff;
+            REGISTRY_ID = 0,
+            REGISTRY_KEY_MAP_ID = 1,
+            CURSOR_REGISTRY_ID = 2,
+            FRAGMENTED_TRASH_ID = 3,
+            MAX_RESERVED_ID = 0xff;
 
     static boolean isInternal(long id) {
         return (id & ~0xff) == 0;
     }
 
     final LocalDatabase mDatabase;
-    final _LockManager mLockManager;
+
+    public LocalDatabase getDatabase() {
+        return mDatabase;
+    }
+
+    final LockManager mLockManager;
 
     // Id range is [0, 255] for all internal trees.
     final long mId;
@@ -122,7 +133,6 @@ public class Tree implements View, Index {
                 high.mKeyOnly = true;
                 high.find(highKey);
                 if (high.mKey == null) {
-                    // Found nothing.
                     return 0;
                 }
             }
@@ -139,21 +149,16 @@ public class Tree implements View, Index {
     public final byte[] load(Transaction txn, byte[] key) throws IOException {
         LocalTransaction local = check(txn);
 
-        // If lock must be acquired and retained, acquire now and skip the quick check later.
         if (local != null) {
-            int lockType = local.lockMode().repeatable;
+            int lockType = local.lockMode().getRepeatable();
             if (lockType != 0) {
-                int hash = _LockManager.hash(mId, key);
-                local.lock(lockType, mId, key, hash, local.mLockTimeoutNanos);
+                int hash = LockManager.hash(mId, key);
+                local.lock(lockType, mId, key, hash, local.getLockTimeoutNanos());
             }
         }
 
         Node node = mRoot;
         node.acquireShared();
-
-        // Note: No need to check if root has split, since root splits are always completed
-        // before releasing the root latch. Also, Node.used is not invoked for the root node,
-        // because it cannot be evicted.
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -182,15 +187,11 @@ public class Tree implements View, Index {
             }
         }
 
-        // Sub search into leaf with shared latch held.
-
-        // Same code as binarySearch, but instead of returning the position, it directly copies
-        // the value if found. This avoids having to decode the found value location twice.
-
-        _CursorFrame frame;
+        CursorFrame frame;
         int keyHash;
 
-        search: try {
+        search:
+        try {
             final long page = node.mPage;
             final int keyLen = key.length;
             int lowPos = node.searchVecStart();
@@ -199,11 +200,13 @@ public class Tree implements View, Index {
             int lowMatch = 0;
             int highMatch = 0;
 
-            outer: while (lowPos <= highPos) {
+            outer:
+            while (lowPos <= highPos) {
                 int midPos = ((lowPos + highPos) >> 1) & ~1;
 
                 int compareLoc, compareLen, i;
-                compare: {
+                compare:
+                {
                     compareLoc = DirectPageOps.p_ushortGetLE(page, midPos);
                     compareLen = DirectPageOps.p_byteGet(page, compareLoc++);
                     if (compareLen >= 0) {
@@ -215,13 +218,13 @@ public class Tree implements View, Index {
                         if ((header & Node.ENTRY_FRAGMENTED) != 0) {
                             // Note: An optimized version wouldn't need to copy the whole key.
                             byte[] compareKey = mDatabase.reconstructKey
-                                (page, compareLoc, compareLen);
+                                    (page, compareLoc, compareLen);
 
                             int fullCompareLen = compareKey.length;
 
                             int minLen = Math.min(fullCompareLen, keyLen);
                             i = Math.min(lowMatch, highMatch);
-                            for (; i<minLen; i++) {
+                            for (; i < minLen; i++) {
                                 byte cb = compareKey[i];
                                 byte kb = key[i];
                                 if (cb != kb) {
@@ -236,9 +239,6 @@ public class Tree implements View, Index {
                                 }
                             }
 
-                            // Update compareLen and compareLoc for use by the code after the
-                            // current scope. The compareLoc is completely bogus at this point,
-                            // but is corrected when the value is retrieved below.
                             compareLoc += compareLen - fullCompareLen;
                             compareLen = fullCompareLen;
 
@@ -248,7 +248,7 @@ public class Tree implements View, Index {
 
                     int minLen = Math.min(compareLen, keyLen);
                     i = Math.min(lowMatch, highMatch);
-                    for (; i<minLen; i++) {
+                    for (; i < minLen; i++) {
                         byte cb = DirectPageOps.p_byteGet(page, compareLoc + i);
                         byte kb = key[i];
                         if (cb != kb) {
@@ -272,14 +272,11 @@ public class Tree implements View, Index {
                     highMatch = i;
                 } else {
                     if ((local != null && local.lockMode() != LockMode.READ_COMMITTED) ||
-                        mLockManager.isAvailable
-                        (local, mId, key, keyHash = _LockManager.hash(mId, key)))
-                    {
+                            mLockManager.isAvailable
+                                    (local, mId, key, keyHash = LockManager.hash(mId, key))) {
                         return Node.retrieveLeafValueAtLoc(node, page, compareLoc + compareLen);
                     }
-                    // Need to acquire the lock before loading. To prevent deadlock, a cursor
-                    // frame must be bound and then the node latch can be released.
-                    frame = new _CursorFrame();
+                    frame = new CursorFrame();
                     int pos = midPos - node.searchVecStart();
                     if (node.mSplit != null) {
                         pos = node.mSplit.adjustBindPosition(pos);
@@ -290,14 +287,12 @@ public class Tree implements View, Index {
             }
 
             if ((local != null && local.lockMode() != LockMode.READ_COMMITTED) ||
-                mLockManager.isAvailable(local, mId, key, keyHash = _LockManager.hash(mId, key)))
-            {
+                    mLockManager.isAvailable(local, mId, key, keyHash = LockManager.hash(mId, key))) {
                 return null;
             }
 
-            // Need to lock even if no value was found.
-            frame = new _CursorFrame();
-            frame.mNotFoundKey = key;
+            frame = new CursorFrame();
+            frame.setNotFoundKey(key);
             int pos = lowPos - node.searchVecStart();
             if (node.mSplit != null) {
                 pos = node.mSplit.adjustBindPosition(pos);
@@ -309,20 +304,19 @@ public class Tree implements View, Index {
         }
 
         try {
-            _Locker locker;
+            Locker locker;
             if (local == null) {
                 locker = lockSharedLocal(key, keyHash);
             } else if (local.lockShared(mId, key, keyHash) == LockResult.ACQUIRED) {
                 locker = local;
             } else {
-                // Transaction already had the lock for some reason, so don't release it.
                 locker = null;
             }
 
             try {
                 node = frame.acquireShared();
                 try {
-                    int pos = frame.mNodePos;
+                    int pos = frame.getNodePos();
                     if (pos < 0) {
                         return null;
                     } else if (node.mSplit == null) {
@@ -339,7 +333,7 @@ public class Tree implements View, Index {
                 }
             }
         } finally {
-            _CursorFrame.popAll(frame);
+            CursorFrame.popAll(frame);
         }
     }
 
@@ -347,21 +341,16 @@ public class Tree implements View, Index {
     public final boolean exists(Transaction txn, byte[] key) throws IOException {
         LocalTransaction local = check(txn);
 
-        // If lock must be acquired and retained, acquire now and skip the quick check later.
         if (local != null) {
-            int lockType = local.lockMode().repeatable;
+            int lockType = local.lockMode().getRepeatable();
             if (lockType != 0) {
-                int hash = _LockManager.hash(mId, key);
-                local.lock(lockType, mId, key, hash, local.mLockTimeoutNanos);
+                int hash = LockManager.hash(mId, key);
+                local.lock(lockType, mId, key, hash, local.getLockTimeoutNanos());
             }
         }
 
         Node node = mRoot;
         node.acquireShared();
-
-        // Note: No need to check if root has split, since root splits are always completed
-        // before releasing the root latch. Also, Node.used is not invoked for the root node,
-        // because it cannot be evicted.
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -390,30 +379,25 @@ public class Tree implements View, Index {
             }
         }
 
-        // Sub search into leaf with shared latch held.
-
-        _CursorFrame frame;
+        CursorFrame frame;
         int keyHash;
 
         try {
             int pos = node.binarySearch(key);
 
             if ((local != null && local.lockMode() != LockMode.READ_COMMITTED) ||
-                mLockManager.isAvailable(local, mId, key, keyHash = _LockManager.hash(mId, key)))
-            {
+                    mLockManager.isAvailable(local, mId, key, keyHash = LockManager.hash(mId, key))) {
                 return pos >= 0 && node.hasLeafValue(pos) != null;
             }
 
-            // Need to acquire the lock before loading. To prevent deadlock, a cursor
-            // frame must be bound and then the node latch can be released.
-            frame = new _CursorFrame();
+            frame = new CursorFrame();
 
             if (pos >= 0) {
                 if (node.mSplit != null) {
                     pos = node.mSplit.adjustBindPosition(pos);
                 }
             } else {
-                frame.mNotFoundKey = key;
+                frame.setNotFoundKey(key);
                 if (node.mSplit != null) {
                     pos = ~node.mSplit.adjustBindPosition(~pos);
                 }
@@ -425,19 +409,18 @@ public class Tree implements View, Index {
         }
 
         try {
-            _Locker locker;
+            Locker locker;
             if (local == null) {
                 locker = lockSharedLocal(key, keyHash);
             } else if (local.lockShared(mId, key, keyHash) == LockResult.ACQUIRED) {
                 locker = local;
             } else {
-                // Transaction already had the lock for some reason, so don't release it.
                 locker = null;
             }
 
             try {
                 node = frame.acquireShared();
-                int pos = frame.mNodePos;
+                int pos = frame.getNodePos();
                 boolean result = pos >= 0 && node.hasLeafValue(pos) != null;
                 node.releaseShared();
                 return result;
@@ -447,7 +430,7 @@ public class Tree implements View, Index {
                 }
             }
         } finally {
-            _CursorFrame.popAll(frame);
+            CursorFrame.popAll(frame);
         }
     }
 
@@ -503,7 +486,7 @@ public class Tree implements View, Index {
         Utils.keyCheck(key);
         TreeCursor cursor = newCursor(txn);
         try {
-            // TODO: Optimize by disabling autoload and do an in-place comparison.
+            // TODO: 通过禁用自动加载进行优化，并进行就地比较
             return cursor.findAndModify(key, TreeCursor.MODIFY_UPDATE, value);
         } finally {
             cursor.reset();
@@ -512,8 +495,7 @@ public class Tree implements View, Index {
 
     @Override
     public final boolean update(Transaction txn, byte[] key, byte[] oldValue, byte[] newValue)
-        throws IOException
-    {
+            throws IOException {
         Utils.keyCheck(key);
         TreeCursor cursor = newCursor(txn);
         try {
@@ -529,21 +511,21 @@ public class Tree implements View, Index {
 
         LockMode mode;
         if (local == null || (mode = local.lockMode()) == LockMode.READ_COMMITTED) {
-            int hash = _LockManager.hash(mId, key);
+            int hash = LockManager.hash(mId, key);
             if (!isLockAvailable(local, key, hash)) {
                 // Acquire and release.
                 if (local == null) {
                     lockSharedLocal(key, hash).unlock();
                 } else {
-                    LockResult result = local.lock(0, mId, key, hash, local.mLockTimeoutNanos);
+                    LockResult result = local.lock(0, mId, key, hash, local.getLockTimeoutNanos());
                     if (result == LockResult.ACQUIRED) {
                         local.unlock();
                     }
                 }
             }
-        } else if (!mode.noReadLock) {
-            int hash = _LockManager.hash(mId, key);
-            return local.lock(mode.repeatable, mId, key, hash, local.mLockTimeoutNanos);
+        } else if (!mode.isNoReadLock()) {
+            int hash = LockManager.hash(mId, key);
+            return local.lock(mode.getRepeatable(), mId, key, hash, local.getLockTimeoutNanos());
         }
 
         return LockResult.UNOWNED;
@@ -551,8 +533,7 @@ public class Tree implements View, Index {
 
     @Override
     public final LockResult tryLockShared(Transaction txn, byte[] key, long nanosTimeout)
-        throws DeadlockException
-    {
+            throws DeadlockException {
         return check(txn).tryLockShared(mId, key, nanosTimeout);
     }
 
@@ -563,29 +544,25 @@ public class Tree implements View, Index {
 
     @Override
     public final LockResult tryLockUpgradable(Transaction txn, byte[] key, long nanosTimeout)
-        throws DeadlockException
-    {
+            throws DeadlockException {
         return check(txn).tryLockUpgradable(mId, key, nanosTimeout);
     }
 
     @Override
     public final LockResult lockUpgradable(Transaction txn, byte[] key)
-        throws LockFailureException
-    {
+            throws LockFailureException {
         return check(txn).lockUpgradable(mId, key);
     }
 
     @Override
     public final LockResult tryLockExclusive(Transaction txn, byte[] key, long nanosTimeout)
-        throws DeadlockException
-    {
+            throws DeadlockException {
         return check(txn).tryLockExclusive(mId, key, nanosTimeout);
     }
 
     @Override
     public final LockResult lockExclusive(Transaction txn, byte[] key)
-        throws LockFailureException
-    {
+            throws LockFailureException {
         return check(txn).lockExclusive(mId, key);
     }
 
@@ -632,20 +609,20 @@ public class Tree implements View, Index {
     /**
      * Current approach for evicting data is as follows:
      * - Search for a random Node, steered towards un-cached nodes.
-     * - Once a node is picked, iterate through the keys in the node 
-     *   and delete all the entries from it (provided they are within 
-     *   the highkey and lowKey boundaries).
+     * - Once a node is picked, iterate through the keys in the node
+     * and delete all the entries from it (provided they are within
+     * the highkey and lowKey boundaries).
      * - This simple algorithm is an approximate LRU algorithm, which
-     *   is expected to evict entries that are least recently accessed.
-     * 
+     * is expected to evict entries that are least recently accessed.
+     * <p>
      * An alternative approach that was considered:
      * - Search for a random Node, steered towards un-cached nodes.
-     * - Delete the node directly. 
-     * - This works when all the keys and values fit within a page.  
-     *   If they don't, then the entries must be fully decoded. This is
-     *   necessary because there's no quick way of determining if any of
-     *   the entries in a page overflow.  
-     * 
+     * - Delete the node directly.
+     * - This works when all the keys and values fit within a page.
+     * If they don't, then the entries must be fully decoded. This is
+     * necessary because there's no quick way of determining if any of
+     * the entries in a page overflow.
+     * <p>
      * Note: It could be that the node initially has three keys: A, B, D. As eviction is
      * progressing along, a key C could be inserted concurrently, which could then be
      * immediately deleted. This case is expected to be rare and harmless.
@@ -653,8 +630,7 @@ public class Tree implements View, Index {
     @Override
     public long evict(Transaction txn, byte[] lowKey, byte[] highKey,
                       Filter evictionFilter, boolean autoload)
-        throws IOException
-    {
+            throws IOException {
         long length = 0;
         TreeCursor cursor = newCursor(txn);
         cursor.autoload(autoload);
@@ -665,8 +641,8 @@ public class Tree implements View, Index {
                 // We did not find anything to evict.  Move on.
                 return length;
             }
-            
-            if (lowKey != null) { 
+
+            if (lowKey != null) {
                 if (Utils.compareUnsigned(lowKey, endKey) > 0) {
                     // lowKey is past the end key.  Move on.
                     return length;
@@ -679,11 +655,11 @@ public class Tree implements View, Index {
                     cursor.findNearby(lowKey);
                 }
             }
-            
+
             if (highKey != null && Utils.compareUnsigned(highKey, endKey) <= 0) {
-                endKey = highKey; 
+                endKey = highKey;
             }
-            
+
             long[] stats = new long[2];
             while (cursor.key() != null) {
                 byte[] key = cursor.key();
@@ -691,9 +667,8 @@ public class Tree implements View, Index {
                 if (value != null) {
                     cursor.valueStats(stats);
                     if (stats[0] > 0 &&
-                        (evictionFilter == null || evictionFilter.isAllowed(key, value)))
-                    {
-                        length += key.length + stats[0]; 
+                            (evictionFilter == null || evictionFilter.isAllowed(key, value))) {
+                        length += key.length + stats[0];
                         cursor.store(null);
                     }
                 } else {
@@ -734,8 +709,7 @@ public class Tree implements View, Index {
      * @return false if compaction should stop
      */
     final boolean compactTree(Index view, long highestNodeId, CompactionObserver observer)
-        throws IOException
-    {
+            throws IOException {
         try {
             if (!observer.indexBegin(view)) {
                 return false;
@@ -837,8 +811,7 @@ public class Tree implements View, Index {
      * @return root node if forDelete; null if already closed
      */
     private Node close(boolean forDelete, final boolean rootLatched, boolean force)
-        throws IOException
-    {
+            throws IOException {
         Node root = mRoot;
 
         if (!rootLatched) {
@@ -915,7 +888,7 @@ public class Tree implements View, Index {
         }
     }
 
-    @Override 
+    @Override
     public final boolean isClosed() {
         Node root = mRoot;
         root.acquireShared();
@@ -991,7 +964,7 @@ public class Tree implements View, Index {
      * returned. All keys of this tree must be less than all keys of the other tree, which
      * isn't verified or concurrently enforced. No cursors or threads can be active in either
      * tree when grafting them together.
-     *
+     * <p>
      * <p>The victim tree is deleted, although the Tree object isn't completely invalidated.
      * Just discard it and don't close it.
      */
@@ -1028,13 +1001,12 @@ public class Tree implements View, Index {
 
     private static Tree doGraftTempTree(Tree lowTree, Tree highTree,
                                         TreeCursor lowCursor, TreeCursor highCursor)
-        throws IOException
-    {
+            throws IOException {
 
         // Dirty the edge nodes and find the mid key.
 
         byte[] midKey;
-        _CursorFrame lowFrame, highFrame;
+        CursorFrame lowFrame, highFrame;
         {
             lowFrame = lowCursor.frameExclusive();
             Node lowNode = lowCursor.notSplitDirty(lowFrame);
@@ -1054,12 +1026,12 @@ public class Tree implements View, Index {
         // Find the level to perform the graft, which is at the victim root node.
 
         Tree survivor, victim;
-        _CursorFrame survivorFrame;
+        CursorFrame survivorFrame;
         Node victimNode;
 
         while (true) {
-            _CursorFrame lowParent = lowFrame.mParentFrame;
-            _CursorFrame highParent = highFrame.mParentFrame;
+            CursorFrame lowParent = lowFrame.mParentFrame;
+            CursorFrame highParent = highFrame.mParentFrame;
 
             if (highParent == null) {
                 survivor = lowTree;
@@ -1081,7 +1053,7 @@ public class Tree implements View, Index {
 
         Node survivorNode;
         try {
-            _Split split = new _Split(lowTree == survivor, victimNode);
+            Split split = new Split(lowTree == survivor, victimNode);
             split.setKey(survivor, midKey);
             survivorNode = survivorFrame.acquireExclusive();
             survivorNode.mSplit = split;
@@ -1118,7 +1090,8 @@ public class Tree implements View, Index {
                 throw e;
             }
 
-            tryMerge: {
+            tryMerge:
+            {
                 if (leftNode.isLeaf()) {
                     // See TreeCursor.mergeLeaf method.
 
@@ -1126,7 +1099,7 @@ public class Tree implements View, Index {
                     int rightAvail = rightNode.availableLeafBytes();
 
                     int remaining = leftAvail
-                        + rightAvail - survivor.pageSize() + Node.TN_HEADER_SIZE;
+                            + rightAvail - survivor.pageSize() + Node.TN_HEADER_SIZE;
 
                     if (remaining < 0) {
                         // No room to merge.
@@ -1151,7 +1124,7 @@ public class Tree implements View, Index {
                     int rightAvail = rightNode.availableInternalBytes();
 
                     int remaining = leftAvail - rootEntryLen
-                        + rightAvail - survivor.pageSize() + (Node.TN_HEADER_SIZE - 2);
+                            + rightAvail - survivor.pageSize() + (Node.TN_HEADER_SIZE - 2);
 
                     if (remaining < 0) {
                         // No room to merge.
@@ -1160,7 +1133,7 @@ public class Tree implements View, Index {
 
                     try {
                         Node.moveInternalToLeftAndDelete
-                            (survivor, leftNode, rightNode, rootPage, rootEntryLoc, rootEntryLen);
+                                (survivor, leftNode, rightNode, rootPage, rootEntryLoc, rootEntryLen);
                     } catch (Throwable e) {
                         leftNode.releaseExclusive();
                         rootNode.releaseExclusive();
@@ -1187,10 +1160,10 @@ public class Tree implements View, Index {
      * Called by the graft method.
      *
      * @param frame leaf frame
-     * @param stop latched frame to stop at after being cleared (if found)
-     * @param mask ~HIGH_EXTREMITY or ~LOW_EXTREMITY
+     * @param stop  latched frame to stop at after being cleared (if found)
+     * @param mask  ~HIGH_EXTREMITY or ~LOW_EXTREMITY
      */
-    private static void clearExtremityBits(_CursorFrame frame, _CursorFrame stop, int mask) {
+    private static void clearExtremityBits(CursorFrame frame, CursorFrame stop, int mask) {
         do {
             if (frame == stop) {
                 Node node = frame.mNode;
@@ -1219,23 +1192,24 @@ public class Tree implements View, Index {
 
         if (node.mSplit != null) {
             // Create a temporary frame for the root split.
-            _CursorFrame frame = new _CursorFrame();
+            CursorFrame frame = new CursorFrame();
             frame.bind(node, 0);
             try {
                 node = finishSplit(frame, node);
             } catch (Throwable e) {
-                _CursorFrame.popAll(frame);
+                CursorFrame.popAll(frame);
                 throw e;
             }
         }
 
         // Frames are only used for backtracking up the tree. Frame creation and binding is
         // performed late, and none are created for leaf nodes.
-        _CursorFrame frame = null;
+        CursorFrame frame = null;
         int pos = 0;
 
         while (true) {
-            toLower: while (node.isInternal()) {
+            toLower:
+            while (node.isInternal()) {
                 final int highestPos = node.highestInternalPos();
                 while (true) {
                     if (pos > highestPos) {
@@ -1244,7 +1218,7 @@ public class Tree implements View, Index {
                     long childId = node.retrieveChildRefId(pos);
                     Node child = mDatabase.nodeMapGetExclusive(childId);
                     if (child != null) {
-                        frame = new _CursorFrame(frame);
+                        frame = new CursorFrame(frame);
                         frame.bind(node, pos);
                         node.releaseExclusive();
                         node = child;
@@ -1258,7 +1232,7 @@ public class Tree implements View, Index {
             try {
                 visitor.visit(node);
             } catch (Throwable e) {
-                _CursorFrame.popAll(frame);
+                CursorFrame.popAll(frame);
                 throw e;
             }
 
@@ -1272,7 +1246,7 @@ public class Tree implements View, Index {
                 try {
                     node = finishSplit(frame, node);
                 } catch (Throwable e) {
-                    _CursorFrame.popAll(frame);
+                    CursorFrame.popAll(frame);
                     throw e;
                 }
             }
@@ -1400,7 +1374,7 @@ public class Tree implements View, Index {
                             key = new byte[len];
                             mDin.readFully(key);
 
-                            if (mTaskCount < mTaskLimit) spawn: {
+                            if (mTaskCount < mTaskLimit) spawn:{
                                 Thread task;
                                 try {
                                     task = new Thread(() -> prime());
@@ -1440,17 +1414,17 @@ public class Tree implements View, Index {
     /**
      * Caller must hold exclusive latch and it must verify that node has
      * split. Node latch is released if an exception is thrown.
-     *
+     * <p>
      * The caller should also hold at least a shared commit lock, because this function tries
      * to allocate pages, and the page db may try to acquire a shared commit lock. Since the
      * commit lock is reentrant, if the caller already holds a shared commit lock, it
      * guarantees the page db can acquire another shared commit lock.
      *
      * @param frame bound cursor frame
-     * @param node node which is bound to the frame, latched exclusively
+     * @param node  node which is bound to the frame, latched exclusively
      * @return replacement node, still latched
      */
-    final Node finishSplit(final _CursorFrame frame, Node node) throws IOException {
+    final Node finishSplit(final CursorFrame frame, Node node) throws IOException {
         while (true) {
             if (node == mRoot) {
                 // When tree loses a level, a stub node remains for any cursors which were
@@ -1470,7 +1444,7 @@ public class Tree implements View, Index {
                     } finally {
                         node.releaseExclusive();
                     }
-                } else withStub: {
+                } else withStub:{
                     if (!stub.tryAcquireExclusive()) {
                         // Try to relatch in a different order.
 
@@ -1491,7 +1465,7 @@ public class Tree implements View, Index {
                         }
 
                         if (node.mSplit == null) {
-                            // _Split is finished now.
+                            // Split is finished now.
                             stub.releaseExclusive();
                             return node;
                         }
@@ -1531,7 +1505,7 @@ public class Tree implements View, Index {
                 return node;
             }
 
-            final _CursorFrame parentFrame = frame.mParentFrame;
+            final CursorFrame parentFrame = frame.mParentFrame;
             node.releaseExclusive();
 
             Node parentNode = parentFrame.acquireExclusive();
@@ -1597,15 +1571,15 @@ public class Tree implements View, Index {
      *
      * @param locker optional locker
      */
-    final boolean isLockAvailable(_Locker locker, byte[] key, int hash) {
+    final boolean isLockAvailable(Locker locker, byte[] key, int hash) {
         return mLockManager.isAvailable(locker, mId, key, hash);
     }
 
-    final _Locker lockSharedLocal(byte[] key, int hash) throws LockFailureException {
+    final Locker lockSharedLocal(byte[] key, int hash) throws LockFailureException {
         return mLockManager.lockSharedLocal(mId, key, hash);
     }
 
-    final _Locker lockExclusiveLocal(byte[] key, int hash) throws LockFailureException {
+    final Locker lockExclusiveLocal(byte[] key, int hash) throws LockFailureException {
         return mLockManager.lockExclusiveLocal(mId, key, hash);
     }
 
@@ -1621,7 +1595,7 @@ public class Tree implements View, Index {
             return 0;
         }
         return mDatabase.anyTransactionContext().redoStoreAutoCommit
-            (redo.txnRedoWriter(), mId, key, value, mode);
+                (redo.txnRedoWriter(), mId, key, value, mode);
     }
 
     /**
@@ -1636,7 +1610,7 @@ public class Tree implements View, Index {
             return 0;
         }
         return mDatabase.anyTransactionContext().redoStoreNoLockAutoCommit
-            (redo.txnRedoWriter(), mId, key, value, mode);
+                (redo.txnRedoWriter(), mId, key, value, mode);
     }
 
     final void txnCommitSync(LocalTransaction txn, long commitPos) throws IOException {

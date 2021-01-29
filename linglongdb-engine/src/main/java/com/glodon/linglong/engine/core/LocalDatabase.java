@@ -1,20 +1,27 @@
 package com.glodon.linglong.engine.core;
 
+import com.glodon.linglong.base.common.Crypto;
 import com.glodon.linglong.base.common.LHashTable;
 import com.glodon.linglong.base.common.ShutdownHook;
 import com.glodon.linglong.base.common.Utils;
 import com.glodon.linglong.base.concurrent.Latch;
 import com.glodon.linglong.base.exception.*;
 import com.glodon.linglong.base.io.FileFactory;
+import com.glodon.linglong.base.io.MappedPageArray;
 import com.glodon.linglong.base.io.OpenOption;
 import com.glodon.linglong.base.io.PageArray;
+import com.glodon.linglong.base.common.KeyComparator;
 import com.glodon.linglong.engine.config.DatabaseConfig;
 import com.glodon.linglong.engine.config.DurabilityMode;
 import com.glodon.linglong.engine.core.lock.*;
 import com.glodon.linglong.engine.core.page.*;
 import com.glodon.linglong.engine.core.repl.ReplRedoController;
+import com.glodon.linglong.engine.core.repl.ReplRedoDecoder;
+import com.glodon.linglong.engine.core.repl.ReplRedoEngine;
 import com.glodon.linglong.engine.core.repl.ReplRedoWriter;
+import com.glodon.linglong.engine.core.tx.RedoLog;
 import com.glodon.linglong.engine.core.temp.TempFileManager;
+import com.glodon.linglong.engine.core.temp.TempTree;
 import com.glodon.linglong.engine.core.tx.*;
 import com.glodon.linglong.engine.event.EventType;
 import com.glodon.linglong.engine.event.SafeEventListener;
@@ -49,16 +56,14 @@ import static java.util.Arrays.fill;
  */
 final public class LocalDatabase extends AbstractDatabase {
     private static final int DEFAULT_CACHED_NODES = 1000;
-    // +2 for registry and key map root nodes, +1 for one user index, and +2 for at least one
-    // usage list to function correctly.
     private static final int MIN_CACHED_NODES = 5;
 
     private static final long PRIMER_MAGIC_NUMBER = 4943712973215968399L;
 
     private static final String INFO_FILE_SUFFIX = ".info";
     private static final String LOCK_FILE_SUFFIX = ".lock";
-    static final String PRIMER_FILE_SUFFIX = ".primer";
-    static final String REDO_FILE_SUFFIX = ".redo.";
+    public static final String PRIMER_FILE_SUFFIX = ".primer";
+    public static final String REDO_FILE_SUFFIX = ".redo.";
 
     private static int nodeCountFromBytes(long bytes, int pageSize) {
         if (bytes <= 0) {
@@ -100,7 +105,16 @@ final public class LocalDatabase extends AbstractDatabase {
 
     final TransactionHandler mCustomTxnHandler;
 
+    public TransactionHandler getCustomTxnHandler() {
+        return mCustomTxnHandler;
+    }
+
     final RecoveryHandler mRecoveryHandler;
+
+    public RecoveryHandler getRecoveryHandler() {
+        return mRecoveryHandler;
+    }
+
     private LHashTable.Obj<LocalTransaction> mRecoveredTransactions;
 
     private final File mBaseFile;
@@ -172,6 +186,10 @@ final public class LocalDatabase extends AbstractDatabase {
 
     final TempFileManager mTempFileManager;
 
+    public TempFileManager getTempFileManager() {
+        return mTempFileManager;
+    }
+
     final boolean mFullyMapped;
 
     private volatile ExecutorService mSorterExecutor;
@@ -211,7 +229,7 @@ final public class LocalDatabase extends AbstractDatabase {
         }
     }
 
-    static Tree openTemp(TempFileManager tfm, DatabaseConfig config) throws IOException {
+    public static Tree openTemp(TempFileManager tfm, DatabaseConfig config) throws IOException {
         File file = tfm.createTempFile();
         config.baseFile(file);
         config.dataFile(file);
@@ -357,9 +375,7 @@ final public class LocalDatabase extends AbstractDatabase {
                 config.setSecondaryCacheSize(cache.capacity());
             }
 
-            /*P*/ // [|
             boolean fullyMapped = false;
-            /*P*/ // ]
 
             EventListener debugListener = null;
             if (config.getDebugOpen() != null) {
@@ -372,23 +388,21 @@ final public class LocalDatabase extends AbstractDatabase {
                     mPageDb = new NonPageDb(pageSize, cache);
                 } else {
                     dataPageArray = dataPageArray.open();
-                    Crypto crypto = config.mCrypto;
-                    mPageDb = _DurablePageDb.open
+                    Crypto crypto = config.getCrypto();
+                    mPageDb = DurablePageDb.open
                             (debugListener, dataPageArray, cache, crypto, openMode == OPEN_DESTROY);
-                    /*P*/ // [|
                     fullyMapped = crypto == null && cache == null
                             && dataPageArray instanceof MappedPageArray;
-                    /*P*/ // ]
                 }
             } else {
                 EnumSet<OpenOption> options = config.createOpenOptions();
 
                 PageDb pageDb;
                 try {
-                    pageDb = _DurablePageDb.open
+                    pageDb = DurablePageDb.open
                             (debugListener, explicitPageSize, pageSize,
-                                    dataFiles, config.mFileFactory, options,
-                                    cache, config.mCrypto, openMode == OPEN_DESTROY);
+                                    dataFiles, config.getFileFactory(), options,
+                                    cache, config.getCrypto(), openMode == OPEN_DESTROY);
                 } catch (FileNotFoundException e) {
                     if (!mReadOnly) {
                         throw e;
@@ -399,25 +413,17 @@ final public class LocalDatabase extends AbstractDatabase {
                 mPageDb = pageDb;
             }
 
-            /*P*/ // [|
             mFullyMapped = fullyMapped;
-            /*P*/ // ]
 
-            // Actual page size might differ from configured size.
             config.pageSize(pageSize = mPageSize = mPageDb.pageSize());
 
-            /*P*/ // [
-            // config.mDirectPageAccess = false;
-            /*P*/ // |
-            config.mDirectPageAccess = true;
-            /*P*/ // ]
+            // config.setDirectPageAccess(false);
+            config.setDirectPageAccess(true);
 
-            // Write info file of properties, after database has been opened and after page
-            // size is truly known.
             if (mBaseFile != null && openMode != OPEN_TEMP && !mReadOnly) {
                 File infoFile = new File(mBaseFile.getPath() + INFO_FILE_SUFFIX);
 
-                FileFactory factory = config.mFileFactory;
+                FileFactory factory = config.getFileFactory();
                 if (factory != null) {
                     factory.createFile(infoFile);
                 }
@@ -435,10 +441,6 @@ final public class LocalDatabase extends AbstractDatabase {
 
             mCommitLock = mPageDb.commitLock();
 
-            // Pre-allocate nodes. They are automatically added to the node context usage
-            // lists, and so nothing special needs to be done to allow them to get used. Since
-            // the initial state is clean, evicting these nodes does nothing.
-
             if (mEventListener != null) {
                 mEventListener.notify(EventType.CACHE_INIT_BEGIN,
                         "Initializing %1$d cached nodes", minCache);
@@ -446,18 +448,12 @@ final public class LocalDatabase extends AbstractDatabase {
 
             NodeContext[] contexts;
             try {
-                // Try to allocate the minimum cache size into an arena, which has lower memory
-                // overhead, is page aligned, and takes less time to zero-fill.
                 arenaAlloc:
                 {
-                    // If database is fully mapped, then no cached pages are allocated at all.
-                    // Nodes point directly to a mapped region of memory.
-                    /*P*/ // [|
                     if (mFullyMapped) {
                         mArena = null;
                         break arenaAlloc;
                     }
-                    /*P*/ // ]
 
                     try {
                         mArena = DirectPageOps.p_arenaAlloc(pageSize, minCache);
@@ -468,8 +464,6 @@ final public class LocalDatabase extends AbstractDatabase {
                     }
                 }
 
-                // Magic constant was determined empirically against the G1 collector. A higher
-                // constant increases memory thrashing.
                 long usedRate = Utils.roundUpPower2((long) Math.ceil(maxCache / 32768)) - 1;
 
                 int stripes = Utils.roundUpPower2(procCount * 4);
@@ -531,7 +525,7 @@ final public class LocalDatabase extends AbstractDatabase {
             }
             ;
 
-            mSparePagePool = new _PagePool(mPageSize, procCount, mPageDb.isDirectIO());
+            mSparePagePool = new PagePool(mPageSize, procCount, mPageDb.isDirectIO());
 
             mCommitLock.acquireExclusive();
             try {
@@ -543,12 +537,10 @@ final public class LocalDatabase extends AbstractDatabase {
             byte[] header = new byte[HEADER_SIZE];
             mPageDb.readExtraCommitData(header);
 
-            // Also verifies the database and replication encodings.
             //db分析: 读取树的根节点
             Node rootNode = loadRegistryRoot(config, header);
-            // Cannot call newTreeInstance because mRedoWriter isn't set yet.
             //db分析: 此处是加载树的根节点，以及构建数结构
-            if (config.mReplManager != null) {
+            if (config.getReplManager() != null) {
                 mRegistry = new TxnTree(this, Tree.REGISTRY_ID, null, rootNode);
             } else {
                 mRegistry = new Tree(this, Tree.REGISTRY_ID, null, rootNode);
@@ -611,16 +603,10 @@ final public class LocalDatabase extends AbstractDatabase {
                 cursorRegistry = openInternalTree(Tree.CURSOR_REGISTRY_ID, false, config);
             }
 
-            // Limit maximum non-fragmented entry size to 0.75 of usable node size.
             mMaxEntrySize = ((pageSize - Node.TN_HEADER_SIZE) * 3) >> 2;
 
-            // Limit maximum fragmented entry size to guarantee that 2 entries fit. Each also
-            // requires 2 bytes for pointer and up to 3 bytes for value length field.
             mMaxFragmentedEntrySize = (pageSize - Node.TN_HEADER_SIZE - (2 + 3 + 2 + 3)) >> 1;
 
-            // Limit the maximum key size to allow enough room for a fragmented value. It might
-            // require up to 11 bytes for fragment encoding (when length is >= 65536), and
-            // additional bytes are required for the value header inside the tree node.
             mMaxKeySize = Math.min(16383, mMaxFragmentedEntrySize - (2 + 11));
 
             mFragmentInodeLevelCaps = calculateInodeLevelCaps(mPageSize);
@@ -639,8 +625,6 @@ final public class LocalDatabase extends AbstractDatabase {
                     mCheckpointer = new Checkpointer(this, config, mNodeContexts.length);
                 }
 
-                // Perform recovery by examining redo and undo logs.
-
                 if (mEventListener != null) {
                     mEventListener.notify(EventType.RECOVERY_BEGIN, "Database recovery begin");
                     recoveryStart = System.nanoTime();
@@ -655,10 +639,10 @@ final public class LocalDatabase extends AbstractDatabase {
                                     (EventType.RECOVERY_LOAD_UNDO_LOGS, "Loading undo logs");
                         }
 
-                        _UndoLog master = _UndoLog.recoverMasterUndoLog(this, masterNodeId);
+                        UndoLog master = UndoLog.recoverMasterUndoLog(this, masterNodeId);
 
                         boolean trace = debugListener != null &&
-                                Boolean.TRUE.equals(config.mDebugOpen.get("traceUndo"));
+                                Boolean.TRUE.equals(config.getDebugOpen().get("traceUndo"));
 
                         master.recoverTransactions
                                 (debugListener, trace, txns, LockMode.UPGRADABLE_READ, 0);
@@ -681,13 +665,10 @@ final public class LocalDatabase extends AbstractDatabase {
                 }
 
                 if (mCustomTxnHandler != null) {
-                    // Although handler shouldn't access the database yet, be safe and call
-                    // this method at the point that the database is mostly functional. All
-                    // other custom methods will be called soon as well.
                     mCustomTxnHandler.setCheckpointLock(this, mCommitLock);
                 }
 
-                ReplicationManager rm = config.mReplManager;
+                ReplicationManager rm = config.getReplManager();
                 if (rm != null) {
                     if (mEventListener != null) {
                         mEventListener.notify(EventType.REPLICATION_DEBUG,
@@ -700,24 +681,20 @@ final public class LocalDatabase extends AbstractDatabase {
                         mRedoWriter = null;
 
                         if (debugListener != null &&
-                                Boolean.TRUE.equals(config.mDebugOpen.get("traceRedo"))) {
+                                Boolean.TRUE.equals(config.getDebugOpen().get("traceRedo"))) {
                             RedoEventPrinter printer = new RedoEventPrinter
                                     (debugListener, EventType.DEBUG);
                             new ReplRedoDecoder(rm, redoPos, redoTxnId, new Latch()).run(printer);
                         }
                     } else {
-                        _ReplRedoEngine engine = new _ReplRedoEngine
-                                (rm, config.mMaxReplicaThreads, this, txns, cursors);
+                        ReplRedoEngine engine = new ReplRedoEngine
+                                (rm, config.getMaxReplicaThreads(), this, txns, cursors);
                         mRedoWriter = engine.initWriter(redoNum);
 
-                        // Cannot start recovery until constructor is finished and final field
-                        // values are visible to other threads. Pass the state to the caller
-                        // through the config object.
-                        config.mReplRecoveryStartNanos = recoveryStart;
-                        config.mReplInitialTxnId = redoTxnId;
+                        config.setReplRecoveryStartNanos(recoveryStart);
+                        config.setReplInitialTxnId(redoTxnId);
                     }
                 } else {
-                    // Apply cache primer before applying redo logs.
                     applyCachePrimer(config);
 
                     final long logId = redoNum;
@@ -726,46 +703,38 @@ final public class LocalDatabase extends AbstractDatabase {
                         mRedoWriter = null;
 
                         if (debugListener != null &&
-                                Boolean.TRUE.equals(config.mDebugOpen.get("traceRedo"))) {
+                                Boolean.TRUE.equals(config.getDebugOpen().get("traceRedo"))) {
                             RedoEventPrinter printer = new RedoEventPrinter
                                     (debugListener, EventType.DEBUG);
 
-                            _RedoLog replayLog = new _RedoLog(config, logId, redoPos);
+                            RedoLog replayLog = new RedoLog(config, logId, redoPos);
 
                             replayLog.replay
                                     (printer, debugListener, EventType.RECOVERY_APPLY_REDO_LOG,
                                             "Applying redo log: %1$d");
                         }
                     } else {
-                        // Make sure old redo logs are deleted. Process might have exited
-                        // before last checkpoint could delete them.
                         for (int i = 1; i <= 2; i++) {
-                            _RedoLog.deleteOldFile(config.mBaseFile, logId - i);
+                            RedoLog.deleteOldFile(config.getBaseFile(), logId - i);
                         }
 
-                        _RedoLogApplier applier = new _RedoLogApplier(this, txns, cursors);
-                        _RedoLog replayLog = new _RedoLog(config, logId, redoPos);
+                        RedoLogApplier applier = new RedoLogApplier(this, txns, cursors);
+                        RedoLog replayLog = new RedoLog(config, logId, redoPos);
 
-                        // As a side-effect, log id is set one higher than last file scanned.
                         Set<File> redoFiles = replayLog.replay
                                 (applier, mEventListener, EventType.RECOVERY_APPLY_REDO_LOG,
                                         "Applying redo log: %1$d");
 
                         boolean doCheckpoint = !redoFiles.isEmpty();
 
-                        // Avoid re-using transaction ids used by recovery.
-                        redoTxnId = applier.mHighestTxnId;
+                        redoTxnId = applier.getHighestTxnId();
                         if (redoTxnId != 0) {
-                            // Subtract for modulo comparison.
                             if (txnId == 0 || (redoTxnId - txnId) > 0) {
                                 txnId = redoTxnId;
                             }
                         }
 
                         if (txns.size() > 0) {
-                            // Rollback or truncate all remaining transactions. They were never
-                            // explicitly rolled back, or they were committed but not cleaned up.
-
                             if (mEventListener != null) {
                                 mEventListener.notify
                                         (EventType.RECOVERY_PROCESS_REMAINING,
@@ -777,37 +746,29 @@ final public class LocalDatabase extends AbstractDatabase {
                             });
 
                             if (shouldInvokeRecoveryHandler(txns)) {
-                                // Invoke the handler later, when database is fully opened.
                                 mRecoveredTransactions = txns;
                             }
 
                             doCheckpoint = true;
                         }
 
-                        // Reset any lingering registered cursors.
                         applier.resetCursors();
 
-                        // New redo logs begin with identifiers one higher than last scanned.
-                        mRedoWriter = new _RedoLog(config, replayLog, mTxnContexts[0]);
+                        mRedoWriter = new RedoLog(config, replayLog, mTxnContexts[0]);
 
-                        // TODO: If any exception is thrown before checkpoint is complete,
-                        // delete the newly created redo log file.
+                        // TODO: 如果在检查点完成之前抛出任何异常
 
                         if (doCheckpoint) {
-                            // Do this early for checkpoint to store correct transaction id.
                             resetTransactionContexts(txnId);
                             txnId = -1;
 
                             checkpoint(true, 0, 0);
 
-                            // Only cleanup after successful checkpoint.
                             for (File file : redoFiles) {
                                 file.delete();
                             }
                         }
 
-                        // Delete lingering fragmented values after undo logs have been
-                        // processed, ensuring deletes were committed.
                         emptyAllFragmentedTrash(true);
                     }
                     recoveryComplete(recoveryStart);
@@ -821,10 +782,9 @@ final public class LocalDatabase extends AbstractDatabase {
             if (mBaseFile == null || openMode == OPEN_TEMP || debugListener != null) {
                 mTempFileManager = null;
             } else {
-                mTempFileManager = new TempFileManager(mBaseFile, config.mFileFactory);
+                mTempFileManager = new TempFileManager(mBaseFile, config.getFileFactory());
             }
         } catch (Throwable e) {
-            // Close, but don't double report the exception since construction never finished.
             Utils.closeQuietly(this);
             throw e;
         }
@@ -858,31 +818,22 @@ final public class LocalDatabase extends AbstractDatabase {
         }
     }
 
-    /**
-     * Post construction, allow additional threads access to the database.
-     */
     private void finishInit(DatabaseConfig config) throws IOException {
         if (mCheckpointer == null) {
-            // Nothing is durable and nothing to ever clean up.
             return;
         }
 
-        // Register objects to automatically shutdown.
         mCheckpointer.register(new RedoClose(this));
         mCheckpointer.register(mTempFileManager);
 
-        if (mRedoWriter instanceof _ReplRedoWriter) {
-            // Need to do this after mRedoWriter is assigned, ensuring that trees are opened as
-            // TxnTree instances.
+        if (mRedoWriter instanceof ReplRedoWriter) {
             applyCachePrimer(config);
         }
 
-        if (config.mCachePriming && mPageDb.isDurable() && !mReadOnly) {
+        if (config.isCachePriming() && mPageDb.isDurable() && !mReadOnly) {
             mCheckpointer.register(new ShutdownPrimer(this));
         }
 
-        // Must tag the trashed trees before starting replication and recovery. Otherwise,
-        // trees recently deleted might get double deleted.
         Tree trashed = openNextTrashedTree(null);
 
         if (trashed != null) {
@@ -898,12 +849,11 @@ final public class LocalDatabase extends AbstractDatabase {
 
         boolean initialCheckpoint = false;
 
-        if (mRedoWriter instanceof _ReplRedoController) {
-            // Start replication and recovery.
-            _ReplRedoController controller = (_ReplRedoController) mRedoWriter;
+        if (mRedoWriter instanceof ReplRedoController) {
+            ReplRedoController controller = (ReplRedoController) mRedoWriter;
 
             try {
-                controller.ready(config.mReplInitialTxnId, new ReplicationManager.Accessor() {
+                controller.ready(config.getReplInitialTxnId(), new ReplicationManager.Accessor() {
                     @Override
                     public void notify(EventType type, String message, Object... args) {
                         EventListener listener = mEventListener;
@@ -927,7 +877,7 @@ final public class LocalDatabase extends AbstractDatabase {
                 throw e;
             }
 
-            recoveryComplete(config.mReplRecoveryStartNanos);
+            recoveryComplete(config.getReplRecoveryStartNanos());
             initialCheckpoint = true;
         }
 
@@ -943,24 +893,17 @@ final public class LocalDatabase extends AbstractDatabase {
     }
 
     private long writeControlMessage(byte[] message) throws IOException {
-        // Commit lock must be held to prevent a checkpoint from starting. If the control
-        // message fails to be applied, panic the database. If the database is kept open after
-        // a failure and then a checkpoint completes, the control message would be dropped.
-        // Normal transactional operations aren't so sensitive, because they have an undo log.
         CommitLock.Shared shared = mCommitLock.acquireShared();
         try {
             RedoWriter redo = txnRedoWriter();
             TransactionContext context = anyTransactionContext();
             long commitPos = context.redoControl(redo, message);
 
-            // Waiting for confirmation with the shared lock held isn't ideal, but control
-            // messages aren't that frequent.
             redo.commitSync(context, commitPos);
 
             try {
-                ((_ReplRedoController) mRedoWriter).mManager.control(commitPos, message);
+                ((ReplRedoController) mRedoWriter).getManager().control(commitPos, message);
             } catch (Throwable e) {
-                // Panic.
                 Utils.closeQuietly(this, e);
                 throw e;
             }
@@ -975,7 +918,7 @@ final public class LocalDatabase extends AbstractDatabase {
         if (mPageDb.isDurable()) {
             File primer = primerFile();
             try {
-                if (config.mCachePriming && primer.exists()) {
+                if (config.isCachePriming() && primer.exists()) {
                     if (mEventListener != null) {
                         mEventListener.notify(EventType.RECOVERY_CACHE_PRIMING,
                                 "Cache priming");
@@ -999,10 +942,7 @@ final public class LocalDatabase extends AbstractDatabase {
         }
     }
 
-    /**
-     * @return true if a recovery handler exists and should be invoked
-     */
-    boolean shouldInvokeRecoveryHandler(LHashTable.Obj<LocalTransaction> txns) {
+    public boolean shouldInvokeRecoveryHandler(LHashTable.Obj<LocalTransaction> txns) {
         if (txns != null && txns.size() != 0) {
             if (mRecoveryHandler != null) {
                 return true;
@@ -1018,12 +958,7 @@ final public class LocalDatabase extends AbstractDatabase {
         return false;
     }
 
-    /**
-     * To be called only when shouldInvokeRecoveryHandler returns true.
-     *
-     * @param redo non-null RedoWriter assigned to each transaction
-     */
-    void invokeRecoveryHandler(LHashTable.Obj<LocalTransaction> txns, RedoWriter redo) {
+    public void invokeRecoveryHandler(LHashTable.Obj<LocalTransaction> txns, RedoWriter redo) {
         RecoveryHandler handler = mRecoveryHandler;
 
         txns.traverse(entry -> {
@@ -1055,7 +990,7 @@ final public class LocalDatabase extends AbstractDatabase {
         }
 
         @Override
-        void doShutdown(LocalDatabase db) {
+        public void doShutdown(LocalDatabase db) {
             if (db.mReadOnly) {
                 return;
             }
@@ -1134,10 +1069,7 @@ final public class LocalDatabase extends AbstractDatabase {
             if (txn != null) {
                 name = mRegistryKeyMap.load(txn, idKey);
             } else {
-                // Lookup name with exclusive lock, to prevent races with concurrent index
-                // creation. If a replicated operation which requires the newly created index
-                // merely acquired a shared lock, then it might not find the index at all.
-                _Locker locker = mRegistryKeyMap.lockExclusiveLocal
+                Locker locker = mRegistryKeyMap.lockExclusiveLocal
                         (idKey, LockManager.hash(mRegistryKeyMap.getId(), idKey));
                 try {
                     name = mRegistryKeyMap.load(Transaction.BOGUS, idKey);
@@ -1163,16 +1095,12 @@ final public class LocalDatabase extends AbstractDatabase {
         }
 
         if (index == null) {
-            // Registry needs to be repaired to fix this.
             throw new DatabaseException("Unable to find index in registry");
         }
 
         return index;
     }
 
-    /**
-     * @return null if index is not open
-     */
     private Tree lookupIndexById(long id) {
         mOpenTreesLatch.acquireShared();
         try {
@@ -1183,17 +1111,11 @@ final public class LocalDatabase extends AbstractDatabase {
         }
     }
 
-    /**
-     * Allows access to internal indexes which can use the redo log.
-     */
-    Index anyIndexById(long id) throws IOException {
+    public Index anyIndexById(long id) throws IOException {
         return anyIndexById(null, id);
     }
 
-    /**
-     * Allows access to internal indexes which can use the redo log.
-     */
-    Index anyIndexById(Transaction txn, long id) throws IOException {
+    public Index anyIndexById(Transaction txn, long id) throws IOException {
         if (id == Tree.REGISTRY_KEY_MAP_ID) {
             return mRegistryKeyMap;
         } else if (id == Tree.FRAGMENTED_TRASH_ID) {
@@ -1207,18 +1129,8 @@ final public class LocalDatabase extends AbstractDatabase {
         renameIndex(index, newName.clone(), 0);
     }
 
-    /**
-     * @param newName   not cloned
-     * @param redoTxnId non-zero if rename is performed by recovery
-     */
-    void renameIndex(final Index index, final byte[] newName, final long redoTxnId)
+    public void renameIndex(final Index index, final byte[] newName, final long redoTxnId)
             throws IOException {
-        // Design note: Rename is a Database method instead of an Index method because it
-        // offers an extra degree of safety. It's too easy to call rename and pass a byte[] by
-        // an accident when something like remove was desired instead. Requiring access to the
-        // Database instance makes this operation a bit more of a hassle to use, which is
-        // desirable. Rename is not expected to be a common operation.
-
         final Tree tree = accessTree(index);
 
         final byte[] idKey, trashIdKey;
@@ -1258,7 +1170,6 @@ final public class LocalDatabase extends AbstractDatabase {
                 txn.lockTimeout(-1, null);
                 txn.lockExclusive(mRegistryKeyMap.mId, idKey);
                 txn.lockExclusive(mRegistryKeyMap.mId, trashIdKey);
-                // _Lock in a consistent order, avoiding deadlocks.
                 if (Utils.compareUnsigned(oldNameKey, newNameKey) <= 0) {
                     txn.lockExclusive(mRegistryKeyMap.mId, oldNameKey);
                     txn.lockExclusive(mRegistryKeyMap.mId, newNameKey);
@@ -1271,8 +1182,6 @@ final public class LocalDatabase extends AbstractDatabase {
                 throw e;
             }
         } finally {
-            // Can release now that registry entries are locked. Those locks will prevent
-            // concurrent renames of the same index.
             root.releaseExclusive();
         }
 
@@ -1296,24 +1205,21 @@ final public class LocalDatabase extends AbstractDatabase {
                 c.reset();
             }
 
-            if (redoTxnId == 0 && txn.mRedo != null) {
+            if (redoTxnId == 0 && txn.getRedo() != null) {
                 txn.durabilityMode(mDurabilityMode.alwaysRedo());
 
                 long commitPos;
                 CommitLock.Shared shared = mCommitLock.acquireShared();
                 try {
                     txn.check();
-                    commitPos = txn.mContext.redoRenameIndexCommitFinal
-                            (txn.mRedo, txn.txnId(), tree.mId, newName, txn.durabilityMode());
+                    commitPos = txn.getContext().redoRenameIndexCommitFinal
+                            (txn.getRedo(), txn.txnId(), tree.mId, newName, txn.durabilityMode());
                 } finally {
                     shared.release();
                 }
 
                 if (commitPos != 0) {
-                    // Must wait for durability confirmation before performing actions below
-                    // which cannot be easily rolled back. No global latches or locks are held
-                    // while waiting.
-                    txn.mRedo.txnCommitSync(txn, commitPos);
+                    txn.getRedo().txnCommitSync(txn, commitPos);
                 }
             }
 
@@ -1346,23 +1252,16 @@ final public class LocalDatabase extends AbstractDatabase {
                 return tree;
             }
         } catch (ClassCastException e) {
-            // Cast and catch an exception instead of calling instanceof to cause a
-            // NullPointerException to be thrown if index is null.
         }
         throw new IllegalArgumentException("Index belongs to a different database");
     }
 
     @Override
     public Runnable deleteIndex(Index index) throws IOException {
-        // Design note: This is a Database method instead of an Index method because it offers
-        // an extra degree of safety. See notes in renameIndex.
         return accessTree(index).drop(false);
     }
 
-    /**
-     * Returns a deletion task for a tree which just moved to the trash.
-     */
-    Runnable replicaDeleteTree(long treeId) throws IOException {
+    public Runnable replicaDeleteTree(long treeId) throws IOException {
         byte[] treeIdBytes = new byte[8];
         Utils.encodeLongBE(treeIdBytes, 0, treeId);
 
@@ -1371,25 +1270,17 @@ final public class LocalDatabase extends AbstractDatabase {
         return new Deletion(trashed, false, null);
     }
 
-    /**
-     * Called by Tree.drop with root node latch held exclusively.
-     *
-     * @param shared commit lock held shared; always released by this method
-     */
     Runnable deleteTree(Tree tree, CommitLock.Shared shared) throws IOException {
         try {
-            if (!(tree instanceof _TempTree) && !moveToTrash(tree.mId, tree.mIdBytes)) {
-                // Handle concurrent delete attempt.
+            if (!(tree instanceof TempTree) && !moveToTrash(tree.mId, tree.mIdBytes)) {
                 throw new ClosedIndexException();
             }
         } finally {
-            // Always release before calling close, which might require an exclusive lock.
             shared.release();
         }
 
         Node root = tree.close(true, true);
         if (root == null) {
-            // Handle concurrent close attempt.
             throw new ClosedIndexException();
         }
 
@@ -1398,15 +1289,11 @@ final public class LocalDatabase extends AbstractDatabase {
         return new Deletion(trashed, false, null);
     }
 
-    /**
-     * Quickly delete an empty temporary tree, which has no active threads and cursors.
-     */
     void quickDeleteTemporaryTree(Tree tree) throws IOException {
         mOpenTreesLatch.acquireExclusive();
         try {
             TreeRef ref = mOpenTreesById.removeValue(tree.mId);
             if (ref == null || ref.get() != tree) {
-                // Tree is likely being closed by a concurrent database close.
                 return;
             }
             ref.clear();
@@ -1431,32 +1318,20 @@ final public class LocalDatabase extends AbstractDatabase {
                 shared.release();
             }
 
-            // Tree isn't truly empty -- it might be composed of many empty leaf nodes.
             tree.deleteAll();
         }
 
         removeFromTrash(tree, root);
     }
 
-    /**
-     * @param lastIdBytes null to start with first
-     * @return null if none available
-     */
     private Tree openNextTrashedTree(byte[] lastIdBytes) throws IOException {
         return openTrashedTree(lastIdBytes, true);
     }
 
-    /**
-     * @param idBytes null to start with first
-     * @param next    true to find tree with next higher id
-     * @return null if not found
-     */
     private Tree openTrashedTree(byte[] idBytes, boolean next) throws IOException {
         View view = mRegistryKeyMap.viewPrefix(new byte[]{KEY_TYPE_TRASH_ID}, 1);
 
         if (idBytes == null) {
-            // Tag all the entries that should be deleted automatically. Entries created later
-            // will have a different prefix, and so they'll be ignored.
             Cursor c = view.newCursor(Transaction.BOGUS);
             try {
                 for (c.first(); c.key() != null; c.next()) {
@@ -1493,12 +1368,10 @@ final public class LocalDatabase extends AbstractDatabase {
                 rootIdBytes = mRegistry.load(Transaction.BOGUS, treeIdBytes);
 
                 if (rootIdBytes == null) {
-                    // Clear out bogus entry in the trash.
                     c.store(null);
                 } else {
                     name = c.value();
                     if (name[0] < 0) {
-                        // Found a tagged entry.
                         break;
                     }
                 }
@@ -1518,7 +1391,6 @@ final public class LocalDatabase extends AbstractDatabase {
         if ((name[0] & 0x7f) == 0) {
             name = null;
         } else {
-            // Trim off the tag byte.
             byte[] actual = new byte[name.length - 1];
             System.arraycopy(name, 1, actual, 0, actual.length);
             name = actual;
@@ -1564,7 +1436,6 @@ final public class LocalDatabase extends AbstractDatabase {
                     Node root = mTrashed.close(true, false);
                     removeFromTrash(mTrashed, root);
                 } else {
-                    // Database is closed.
                     return;
                 }
 
@@ -1613,14 +1484,9 @@ final public class LocalDatabase extends AbstractDatabase {
         }
     }
 
-    /**
-     * Caller must hold commit lock. Pass true to preallocate a dirty root node for the tree,
-     * which will be held exclusive. Caller is then responsible for initializing it
-     */
     Tree newTemporaryTree(boolean preallocate) throws IOException {
         checkClosed();
 
-        // Cleanup before opening more trees.
         cleanupUnreferencedTrees();
 
         long treeId;
@@ -1643,7 +1509,6 @@ final public class LocalDatabase extends AbstractDatabase {
                 Utils.encodeLongBE(treeIdBytes, 0, treeId);
             } while (!mRegistry.insert(Transaction.BOGUS, treeIdBytes, rootIdBytes));
 
-            // Register temporary index as trash, unreplicated.
             Transaction createTxn = newNoRedoTransaction();
             try {
                 createTxn.lockTimeout(-1, null);
@@ -1661,13 +1526,9 @@ final public class LocalDatabase extends AbstractDatabase {
                 root = allocLatchedNode(rootId, NodeContext.MODE_UNEVICTABLE);
                 root.mId = rootId;
                 try {
-                    // Note: Same as redirty method, except mPage is assigned when fully mapped.
-                    // The redirty method assumes that the page doesn't change.
-                    /*P*/ // [|
                     if (mFullyMapped) {
                         root.mPage = mPageDb.dirtyPage(rootId);
                     }
-                    /*P*/ // ]
                     root.mContext.addDirty(root, mCommitState);
                 } catch (Throwable e) {
                     root.releaseExclusive();
@@ -1678,7 +1539,7 @@ final public class LocalDatabase extends AbstractDatabase {
             }
 
             try {
-                Tree tree = new _TempTree(this, treeId, treeIdBytes, root);
+                Tree tree = new TempTree(this, treeId, treeIdBytes, root);
                 TreeRef treeRef = new TreeRef(tree, mOpenTreesRefQueue);
 
                 mOpenTreesLatch.acquireExclusive();
@@ -1743,29 +1604,16 @@ final public class LocalDatabase extends AbstractDatabase {
         return doNewTransaction(mDurabilityMode.alwaysRedo());
     }
 
-    /**
-     * Convenience method which returns a transaction intended for locking and undo. Caller can
-     * make modifications, but they won't go to the redo log.
-     */
     private LocalTransaction newNoRedoTransaction() {
         return doNewTransaction(DurabilityMode.NO_REDO);
     }
 
-    /**
-     * Convenience method which returns a transaction intended for locking and undo. Caller can
-     * make modifications, but they won't go to the redo log.
-     *
-     * @param redoTxnId non-zero if operation is performed by recovery
-     */
     private LocalTransaction newNoRedoTransaction(long redoTxnId) {
         return redoTxnId == 0 ? newNoRedoTransaction() :
                 new LocalTransaction(this, redoTxnId, LockMode.UPGRADABLE_READ,
                         mDefaultLockTimeoutNanos);
     }
 
-    /**
-     * Returns a transaction which should be briefly used and reset.
-     */
     LocalTransaction threadLocalTransaction(DurabilityMode durabilityMode) {
         SoftReference<LocalTransaction> txnRef = mLocalTransaction.get();
         LocalTransaction txn;
@@ -1773,10 +1621,10 @@ final public class LocalDatabase extends AbstractDatabase {
             txn = doNewTransaction(durabilityMode);
             mLocalTransaction.set(new SoftReference<>(txn));
         } else {
-            txn.mRedo = txnRedoWriter();
-            txn.mDurabilityMode = durabilityMode;
-            txn.mLockMode = LockMode.UPGRADABLE_READ;
-            txn.mLockTimeoutNanos = mDefaultLockTimeoutNanos;
+            txn.setRedo(txnRedoWriter());
+            txn.setDurabilityMode(durabilityMode);
+            txn.setLockMode(LockMode.UPGRADABLE_READ);
+            txn.setLockTimeoutNanos(mDefaultLockTimeoutNanos);
         }
         return txn;
     }
@@ -2247,7 +2095,6 @@ final public class LocalDatabase extends AbstractDatabase {
 
     @Override
     public boolean verify(VerificationObserver observer) throws IOException {
-        // TODO: Verify free lists.
         if (false) {
             mPageDb.scanFreeList(id -> System.out.println(id));
         }
@@ -2275,15 +2122,9 @@ final public class LocalDatabase extends AbstractDatabase {
 
     @FunctionalInterface
     interface ScanVisitor {
-        /**
-         * @return false if should stop
-         */
         boolean apply(Tree tree) throws IOException;
     }
 
-    /**
-     * @return false if stopped
-     */
     private boolean scanAllIndexes(ScanVisitor visitor) throws IOException {
         if (!visitor.apply(mRegistry)) {
             return false;
@@ -2529,7 +2370,7 @@ final public class LocalDatabase extends AbstractDatabase {
         }
     }
 
-    Throwable closedCause() {
+    public Throwable closedCause() {
         return mClosedCause;
     }
 
@@ -2625,10 +2466,6 @@ final public class LocalDatabase extends AbstractDatabase {
         }
     }
 
-    /**
-     * Removes all references to a temporary tree which was grafted to another one. Caller must
-     * hold shared commit lock.
-     */
     void removeGraftedTempTree(Tree tree) throws IOException {
         try {
             mOpenTreesLatch.acquireExclusive();
@@ -2648,9 +2485,6 @@ final public class LocalDatabase extends AbstractDatabase {
         }
     }
 
-    /**
-     * Should be called before attempting to register a cursor, in case an exception is thrown.
-     */
     Tree openCursorRegistry() throws IOException {
         Tree cursorRegistry = mCursorRegistry;
         if (cursorRegistry == null) {
@@ -2668,9 +2502,6 @@ final public class LocalDatabase extends AbstractDatabase {
         return cursorRegistry;
     }
 
-    /**
-     * Should be called after the cursor id has been assigned, with the commit lock held.
-     */
     void registerCursor(Tree cursorRegistry, TreeCursor cursor) throws IOException {
         try {
             byte[] cursorIdBytes = new byte[8];
@@ -2686,7 +2517,7 @@ final public class LocalDatabase extends AbstractDatabase {
         }
     }
 
-    void unregisterCursor(TreeCursor cursor) {
+    public void unregisterCursor(TreeCursor cursor) {
         try {
             byte[] cursorIdBytes = new byte[8];
             Utils.encodeLongBE(cursorIdBytes, 0, cursor.mCursorId);
@@ -2697,34 +2528,24 @@ final public class LocalDatabase extends AbstractDatabase {
         }
     }
 
-    /**
-     * @param treeId pass zero if unknown or not applicable
-     * @param rootId pass zero to create
-     * @return unlatched and unevictable root node
-     */
     private Node loadTreeRoot(final long treeId, final long rootId) throws IOException {
         if (rootId == 0) {
-            // Pass tree identifier to spread allocations around.
             Node rootNode = allocLatchedNode(treeId, NodeContext.MODE_UNEVICTABLE);
 
             try {
-                /*P*/ // [
                 // rootNode.asEmptyRoot();
-                /*P*/ // |
                 if (mFullyMapped) {
-                    rootNode.mPage = DirectPageOps.p_nonTreePage(); // always an empty leaf node
+                    rootNode.mPage = DirectPageOps.p_nonTreePage();
                     rootNode.mId = 0;
                     rootNode.mCachedState = Node.CACHED_CLEAN;
                 } else {
                     rootNode.asEmptyRoot();
                 }
-                /*P*/ // ]
                 return rootNode;
             } finally {
                 rootNode.releaseExclusive();
             }
         } else {
-            // Check if root node is still around after tree was closed.
             Node rootNode = nodeMapGetAndRemove(rootId);
 
             if (rootNode != null) {
@@ -2752,10 +2573,6 @@ final public class LocalDatabase extends AbstractDatabase {
         }
     }
 
-    /**
-     * Loads the root registry node, or creates one if store is new. Root node
-     * is not eligible for eviction.
-     */
     private Node loadRegistryRoot(DatabaseConfig config, byte[] header) throws IOException {
         int version = Utils.decodeIntLE(header, I_ENCODING_VERSION);
 
@@ -2766,7 +2583,6 @@ final public class LocalDatabase extends AbstractDatabase {
         long rootId;
         if (version == 0) {
             rootId = 0;
-            // No registry; clearly nothing has been checkpointed.
             mInitialReadState = Node.CACHED_DIRTY_0;
         } else {
             if (version != ENCODING_VERSION) {
@@ -3184,12 +3000,11 @@ final public class LocalDatabase extends AbstractDatabase {
         return key;
     }
 
-    int pageSize() {
+    public int pageSize() {
         return mPageSize;
     }
 
     private int pageSize(long page) {
-        // return page.length;
         return mPageSize;
     }
 
@@ -3227,7 +3042,7 @@ final public class LocalDatabase extends AbstractDatabase {
         }
     }
 
-    Node nodeMapGet(final long nodeId) {
+    public Node nodeMapGet(final long nodeId) {
         return nodeMapGet(nodeId, Long.hashCode(nodeId));
     }
 
@@ -3260,7 +3075,7 @@ final public class LocalDatabase extends AbstractDatabase {
         return null;
     }
 
-    void nodeMapPut(final Node node) {
+    public void nodeMapPut(final Node node) {
         nodeMapPut(node, Long.hashCode(node.mId));
     }
 
@@ -3453,7 +3268,7 @@ final public class LocalDatabase extends AbstractDatabase {
         return node;
     }
 
-    Node nodeMapGetAndRemove(long nodeId) {
+    public Node nodeMapGetAndRemove(long nodeId) {
         Node node = nodeMapGetExclusive(nodeId);
         if (node != null) {
             nodeMapRemove(node);
@@ -3656,7 +3471,7 @@ final public class LocalDatabase extends AbstractDatabase {
         return allocDirtyNode(0);
     }
 
-    Node allocDirtyNode(int mode) throws IOException {
+    public Node allocDirtyNode(int mode) throws IOException {
         Node node = mPageDb.allocLatchedNode(this, mode);
 
         if (mFullyMapped) {
@@ -3673,7 +3488,7 @@ final public class LocalDatabase extends AbstractDatabase {
         return node;
     }
 
-    boolean isMutable(Node node) {
+    public boolean isMutable(Node node) {
         return node.mCachedState == mCommitState && node.mId > 1;
     }
 
@@ -3731,7 +3546,7 @@ final public class LocalDatabase extends AbstractDatabase {
         }
     }
 
-    void markUnmappedDirty(Node node) throws IOException {
+    public void markUnmappedDirty(Node node) throws IOException {
         if (node.mCachedState != mCommitState) {
             node.write(mPageDb);
 
@@ -3849,7 +3664,7 @@ final public class LocalDatabase extends AbstractDatabase {
         deleteNode(node, true);
     }
 
-    void deleteNode(Node node, boolean canRecycle) throws IOException {
+    public void deleteNode(Node node, boolean canRecycle) throws IOException {
         prepareToDelete(node);
         finishDeleteNode(node, canRecycle);
     }

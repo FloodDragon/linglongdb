@@ -712,7 +712,7 @@ public class Utils extends IOUtils {
         deleteNumberedFiles(baseFile, pattern, 0);
     }
 
-    static void deleteNumberedFiles(File baseFile, String pattern, long min) throws IOException {
+    public static void deleteNumberedFiles(File baseFile, String pattern, long min) throws IOException {
         File parentFile = baseFile.getParentFile();
         File[] files;
         if (parentFile == null || (files = parentFile.listFiles()) == null) {
@@ -738,7 +738,7 @@ public class Utils extends IOUtils {
         }
     }
 
-    static void initCause(Throwable e, Throwable cause) {
+    public static void initCause(Throwable e, Throwable cause) {
         if (e != null && cause != null && !cycleCheck(e, cause) && !cycleCheck(cause, e)) {
             try {
                 e.initCause(cause);

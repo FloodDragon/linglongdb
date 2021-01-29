@@ -10,6 +10,7 @@ import com.glodon.linglong.engine.core.tx.Transaction;
  * @author Stereo
  */
 public final class TempTree extends Tree {
+    
     public TempTree(LocalDatabase db, long id, byte[] idBytes, Node root) {
         super(db, id, idBytes, root);
     }

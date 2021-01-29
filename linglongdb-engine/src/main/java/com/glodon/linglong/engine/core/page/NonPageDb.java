@@ -32,7 +32,7 @@ public final class NonPageDb extends PageDb {
     }
 
     @Override
-    void delete() {
+    public void delete() {
     }
 
     @Override
@@ -55,7 +55,6 @@ public final class NonPageDb extends PageDb {
         Node node = db.allocLatchedNode(ThreadLocalRandom.current().nextLong(), mode);
         long nodeId = node.getId();
         if (nodeId < 0) {
-            // Recycle the id.
             nodeId = -nodeId;
             mFreePageCount.decrement();
         } else {
@@ -77,18 +76,15 @@ public final class NonPageDb extends PageDb {
 
     @Override
     public void pageLimit(long limit) {
-        // Ignored.
     }
 
     @Override
     public long pageLimit() {
-        // No explicit limit.
         return -1;
     }
 
     @Override
     public void pageLimitOverride(long limit) {
-        // Ignored.
     }
 
     @Override
@@ -160,13 +156,11 @@ public final class NonPageDb extends PageDb {
 
     @Override
     public long allocatePages(long pageCount) throws IOException {
-        // Do nothing.
         return 0;
     }
 
     @Override
     public void scanFreeList(LongConsumer dst) throws IOException {
-        // No durable pages to scan.
         return;
     }
 

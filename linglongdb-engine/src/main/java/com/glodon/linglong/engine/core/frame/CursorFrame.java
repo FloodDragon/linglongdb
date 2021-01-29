@@ -1,5 +1,6 @@
 package com.glodon.linglong.engine.core.frame;
 
+import com.glodon.linglong.base.common.Utils;
 import com.glodon.linglong.engine.core.Node;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -14,27 +15,64 @@ public class CursorFrame extends AtomicReference<CursorFrame> {
 
     private static final CursorFrame REBIND_FRAME = new CursorFrame();
 
-    static final AtomicReferenceFieldUpdater<Node, CursorFrame>
+    public static final AtomicReferenceFieldUpdater<Node, CursorFrame>
             cLastUpdater = AtomicReferenceFieldUpdater.newUpdater
             (Node.class, CursorFrame.class, "mLastCursorFrame");
 
     volatile CursorFrame mPrevCousin;
 
+    public CursorFrame getPrevCousin() {
+        return mPrevCousin;
+    }
+
     Node mNode;
+
+    public void setNode(Node mNode) {
+        this.mNode = mNode;
+    }
+
+    public Node getNode() {
+        return mNode;
+    }
+
     int mNodePos;
+
+    public void setNodePos(int mNodePos) {
+        this.mNodePos = mNodePos;
+    }
+
+    public int getNodePos() {
+        return mNodePos;
+    }
 
     CursorFrame mParentFrame;
 
-    byte[] mNotFoundKey;
-
-    CursorFrame() {
+    public void setParentFrame(CursorFrame mParentFrame) {
+        this.mParentFrame = mParentFrame;
     }
 
-    CursorFrame(CursorFrame parentFrame) {
+    public CursorFrame getParentFrame() {
+        return mParentFrame;
+    }
+
+    byte[] mNotFoundKey;
+
+    public void setNotFoundKey(byte[] mNotFoundKey) {
+        this.mNotFoundKey = mNotFoundKey;
+    }
+
+    public byte[] getNotFoundKey() {
+        return mNotFoundKey;
+    }
+
+    public CursorFrame() {
+    }
+
+    public CursorFrame(CursorFrame parentFrame) {
         mParentFrame = parentFrame;
     }
 
-    final Node acquireShared() {
+    public final Node acquireShared() {
         Node node = mNode;
         while (true) {
             node.acquireShared();
@@ -87,7 +125,7 @@ public class CursorFrame extends AtomicReference<CursorFrame> {
         return null;
     }
 
-    final Node tryAcquireExclusive() {
+    public final Node tryAcquireExclusive() {
         Node node = mNode;
         while (node.tryAcquireExclusive()) {
             Node actualNode = mNode;
@@ -100,21 +138,21 @@ public class CursorFrame extends AtomicReference<CursorFrame> {
         return null;
     }
 
-    final void adjustParentPosition(int amount) {
+    public final void adjustParentPosition(int amount) {
         CursorFrame parent = mParentFrame;
         if (parent != null) {
             parent.mNodePos += amount;
         }
     }
 
-    final void bind(Node node, int nodePos) {
+    public final void bind(Node node, int nodePos) {
         mNode = node;
         mNodePos = nodePos;
 
         this.set(this);
 
         for (int trials = SPIN_LIMIT; ; ) {
-            CursorFrame last = node.mLastCursorFrame;
+            CursorFrame last = node.getLastCursorFrame();
             mPrevCousin = last;
             if (last == null) {
                 if (cLastUpdater.compareAndSet(node, null, this)) {
@@ -122,9 +160,9 @@ public class CursorFrame extends AtomicReference<CursorFrame> {
                 }
             } else if (last.get() == last && last.compareAndSet(last, this)) {
 
-                while (node.mLastCursorFrame != last) ;
+                while (node.getLastCursorFrame() != last) ;
 
-                node.mLastCursorFrame = this;
+                node.setLastCursorFrame(this);
                 return;
             }
 
@@ -145,7 +183,7 @@ public class CursorFrame extends AtomicReference<CursorFrame> {
         }
     }
 
-    final void rebind(Node node, int nodePos) {
+    public final void rebind(Node node, int nodePos) {
         if (unbind(REBIND_FRAME)) {
             bind(node, nodePos);
         }
@@ -161,15 +199,15 @@ public class CursorFrame extends AtomicReference<CursorFrame> {
 
             if (n == this) {
                 Node node = mNode;
-                if (node != null && node.mLastCursorFrame == this && this.compareAndSet(n, to)) {
-                    if (node != mNode || node.mLastCursorFrame != this) {
+                if (node != null && node.getLastCursorFrame() == this && this.compareAndSet(n, to)) {
+                    if (node != mNode || node.getLastCursorFrame() != this) {
                         this.set(n);
                     } else {
                         CursorFrame p;
                         do {
                             p = this.mPrevCousin;
                         } while (p != null && (p.get() != this || !p.compareAndSet(this, p)));
-                        node.mLastCursorFrame = p;
+                        node.setLastCursorFrame(p);
                         return true;
                     }
                 }
@@ -191,7 +229,7 @@ public class CursorFrame extends AtomicReference<CursorFrame> {
         }
     }
 
-    final CursorFrame tryLock(CursorFrame lock) {
+    public final CursorFrame tryLock(CursorFrame lock) {
         for (int trials = SPIN_LIMIT; ; ) {
             CursorFrame n = this.get();
 
@@ -201,8 +239,8 @@ public class CursorFrame extends AtomicReference<CursorFrame> {
 
             if (n == this) {
                 Node node = mNode;
-                if (node != null && node.mLastCursorFrame == this && this.compareAndSet(n, lock)) {
-                    if (node != mNode || node.mLastCursorFrame != this) {
+                if (node != null && node.getLastCursorFrame() == this && this.compareAndSet(n, lock)) {
+                    if (node != mNode || node.getLastCursorFrame() != this) {
                         this.set(n);
                     } else {
                         return n;
@@ -221,7 +259,7 @@ public class CursorFrame extends AtomicReference<CursorFrame> {
         }
     }
 
-    final CursorFrame tryLockPrevious(CursorFrame lock) {
+    public final CursorFrame tryLockPrevious(CursorFrame lock) {
         CursorFrame p;
         do {
             p = this.mPrevCousin;
@@ -229,7 +267,7 @@ public class CursorFrame extends AtomicReference<CursorFrame> {
         return p;
     }
 
-    final void unlock(CursorFrame n) {
+    public final void unlock(CursorFrame n) {
         this.set(n);
     }
 
@@ -242,7 +280,7 @@ public class CursorFrame extends AtomicReference<CursorFrame> {
         return parent;
     }
 
-    static void popAll(CursorFrame frame) {
+    public static void popAll(CursorFrame frame) {
         do {
             frame = frame.mNode == null ? frame.mParentFrame : frame.pop();
         } while (frame != null);

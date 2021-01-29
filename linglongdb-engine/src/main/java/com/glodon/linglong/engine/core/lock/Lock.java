@@ -3,6 +3,7 @@ package com.glodon.linglong.engine.core.lock;
 import com.glodon.linglong.base.concurrent.Latch;
 import com.glodon.linglong.base.concurrent.LatchCondition;
 import com.glodon.linglong.engine.core.Database;
+import com.glodon.linglong.engine.core.LocalDatabase;
 import com.glodon.linglong.engine.core.frame.GhostFrame;
 import com.glodon.linglong.engine.core.tx.PendingTxn;
 
@@ -17,14 +18,52 @@ import java.util.Arrays;
  */
 public final class Lock {
     long mIndexId;
+
+    public void setIndexId(long mIndexId) {
+        this.mIndexId = mIndexId;
+    }
+
+    public long getIndexId() {
+        return mIndexId;
+    }
+
     byte[] mKey;
+
+    public void setKey(byte[] mKey) {
+        this.mKey = mKey;
+    }
+
+    public byte[] getKey() {
+        return mKey;
+    }
+
     int mHashCode;
 
+    public void setHashCode(int mHashCode) {
+        this.mHashCode = mHashCode;
+    }
+
+    public int getHashCode() {
+        return mHashCode;
+    }
+
     Lock mLockManagerNext;
+
+    public void setLockManagerNext(Lock mLockManagerNext) {
+        this.mLockManagerNext = mLockManagerNext;
+    }
+
+    public Lock getLockManagerNext() {
+        return mLockManagerNext;
+    }
 
     int mLockCount;
 
     LockOwner mOwner;
+
+    public LockOwner getOwner() {
+        return mOwner;
+    }
 
     private Object mSharedLockOwnersObj;
 
@@ -32,9 +71,6 @@ public final class Lock {
 
     LatchCondition mQueueSX;
 
-    public byte[] getKey() {
-        return mKey;
-    }
 
     public boolean isAvailable(LockOwner locker) {
         return mLockCount >= 0 || mOwner == locker;
@@ -453,7 +489,7 @@ public final class Lock {
         final GhostFrame frame = (GhostFrame) obj;
         mSharedLockOwnersObj = null;
 
-        final Database db = mOwner.getDatabase();
+        final LocalDatabase db = mOwner.getDatabase();
         if (db == null) {
             return;
         }
@@ -482,7 +518,7 @@ public final class Lock {
         return mHashCode == hash && mIndexId == indexId && Arrays.equals(mKey, key);
     }
 
-    void setGhostFrame(GhostFrame frame) {
+    public void setGhostFrame(GhostFrame frame) {
         mSharedLockOwnersObj = frame;
     }
 

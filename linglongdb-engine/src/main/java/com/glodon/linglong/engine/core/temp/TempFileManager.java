@@ -73,7 +73,7 @@ public final class TempFileManager implements CauseCloseable, ShutdownHook {
         mFiles.put(file, c);
     }
 
-    void deleteTempFile(File file) {
+    public void deleteTempFile(File file) {
         Closeable c;
         synchronized (this) {
             if (mFiles == null || !mFiles.containsKey(file)) {

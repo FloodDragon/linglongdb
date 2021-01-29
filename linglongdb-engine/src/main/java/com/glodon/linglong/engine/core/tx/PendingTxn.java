@@ -1,6 +1,5 @@
 package com.glodon.linglong.engine.core.tx;
 
-import com.glodon.linglong.engine.core.Database;
 import com.glodon.linglong.engine.core.LocalDatabase;
 import com.glodon.linglong.engine.core.lock.Lock;
 import com.glodon.linglong.engine.core.lock.LockManager;

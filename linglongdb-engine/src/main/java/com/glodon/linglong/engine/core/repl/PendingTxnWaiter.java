@@ -11,7 +11,7 @@ import java.io.IOException;
 /**
  * @author Stereo
  */
-final class PendingTxnWaiter extends Thread {
+public final class PendingTxnWaiter extends Thread {
     private static final int TIMEOUT_MILLIS = 60000;
 
     static final int PENDING = 1, DO_COMMIT = 2, DO_ROLLBACK = 3, EXITED = 4;
@@ -117,8 +117,6 @@ final class PendingTxnWaiter extends Thread {
             }
 
             if (!mWriter.confirm(behind)) {
-                // Don't set the exited flag, allowing pending transactions to accumulate until
-                // the flipped method is called.
                 return;
             }
 
@@ -130,8 +128,6 @@ final class PendingTxnWaiter extends Thread {
                 mBehind = mAhead;
                 mAhead = null;
             }
-
-            // Commit all the confirmed transactions.
 
             LocalDatabase db = mWriter.mEngine.mDatabase;
             do {

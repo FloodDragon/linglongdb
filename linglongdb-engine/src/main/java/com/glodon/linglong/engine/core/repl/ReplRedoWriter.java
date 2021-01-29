@@ -127,7 +127,6 @@ public class ReplRedoWriter extends RedoWriter {
             if (waiter == null) {
                 waiter = new PendingTxnWaiter(this);
                 mPendingWaiter = waiter;
-                // Don't start it.
             }
             waiter.flipped(commitPos);
         } finally {
@@ -137,13 +136,7 @@ public class ReplRedoWriter extends RedoWriter {
         waiter.finishAll();
     }
 
-    /**
-     * Block waiting for the given committed position to be confirmed. Returns false if not the
-     * leader.
-     */
     final boolean confirm(PendingTxn pending) {
-        // Note: Similar to txnCommitSync.
-
         ReplicationManager.Writer writer = mReplWriter;
         if (writer == null) {
             return false;
@@ -156,7 +149,6 @@ public class ReplRedoWriter extends RedoWriter {
                 return true;
             }
         } catch (IOException e) {
-            // Treat as leader switch.
         }
 
         mEngine.mController.switchToReplica(mReplWriter);
@@ -214,7 +206,7 @@ public class ReplRedoWriter extends RedoWriter {
     }
 
     @Override
-    void checkpointFlushed() throws IOException {
+    public void checkpointFlushed() throws IOException {
         throw fail();
     }
 
@@ -225,11 +217,6 @@ public class ReplRedoWriter extends RedoWriter {
 
     @Override
     public DurabilityMode opWriteCheck(DurabilityMode mode) throws IOException {
-        // All redo methods which accept a DurabilityMode must always use SYNC mode. This
-        // ensures that write commit option is true, for capturing the log position. If
-        // Transaction.commit sees that DurabilityMode wasn't actually SYNC, it prepares a
-        // _PendingTxn instead of immediately calling txnCommitSync. Replication makes no
-        // distinction between NO_FLUSH and NO_SYNC mode.
         return DurabilityMode.SYNC;
     }
 
@@ -253,10 +240,6 @@ public class ReplRedoWriter extends RedoWriter {
             }
 
             if (commitLen > 0) {
-                // Store the last commit info early, before the position is adjusted when
-                // looping over large messages. There's no harm in doing this early, even if an
-                // exception is thrown due to replica mode switchover. The commit position must
-                // always be confirmed later.
                 mLastCommitPos = mWritePos + commitLen;
                 mLastCommitTxnId = mLastTxnId;
             }
@@ -290,17 +273,10 @@ public class ReplRedoWriter extends RedoWriter {
                 int amt;
                 //assert mBufferHead != mBufferTail;
                 if (mBufferHead < mBufferTail) {
-                    // Allow filling up to the end of the buffer without wrapping around. The
-                    // next iteration of this loop will wrap around in the buffer if necessary.
                     amt = buffer.length - mBufferTail;
                 } else if (mBufferTail >= 0) {
-                    // The tail has wrapped around, but the head has not. Allow filling up to
-                    // the head.
                     amt = mBufferHead - mBufferTail;
                 } else {
-                    // The buffer is empty, so allow filling the whole thing. Note that this is
-                    // an intermediate state, which implies that the buffer is full. After the
-                    // arraycopy, the tail is set correctly.
                     if (length != 0) {
                         mBufferHead = 0;
                         mBufferTail = 0;
@@ -312,7 +288,6 @@ public class ReplRedoWriter extends RedoWriter {
                     try {
                         System.arraycopy(bytes, offset, buffer, mBufferTail, length);
                     } catch (Throwable e) {
-                        // Fix any intermediate state.
                         if (mBufferHead == mBufferTail) {
                             mBufferTail = -1;
                         }
@@ -325,10 +300,7 @@ public class ReplRedoWriter extends RedoWriter {
                         mBufferTail = 0;
                     }
 
-                    // TODO: If consumer is parked, attempt to do the write immediately.
-                    // Still do the arraycopy, to support auto-tuning. Release the latch and
-                    // then do the write. This creates a race condition with the consumer
-                    // thread, and so something extra is needed.
+                    // TODO: 如果消费者停车，尝试立即写入。
                     if (mConsumerParked) {
                         mConsumerParked = false;
                         LockSupport.unpark(mConsumer);
@@ -340,7 +312,6 @@ public class ReplRedoWriter extends RedoWriter {
                 try {
                     System.arraycopy(bytes, offset, buffer, mBufferTail, amt);
                 } catch (Throwable e) {
-                    // Fix any intermediate state.
                     if (mBufferHead == mBufferTail) {
                         mBufferTail = -1;
                     }
@@ -362,12 +333,10 @@ public class ReplRedoWriter extends RedoWriter {
 
     @Override
     public final void alwaysFlush(boolean enable) {
-        // Always flushes already.
     }
 
     @Override
     public final void flush() {
-        // Nothing to flush.
     }
 
     @Override
@@ -404,7 +373,6 @@ public class ReplRedoWriter extends RedoWriter {
     }
 
     private UnsupportedOperationException fail() {
-        // ReplRedoController subclass supports checkpoint operations.
         return new UnsupportedOperationException();
     }
 
@@ -412,10 +380,6 @@ public class ReplRedoWriter extends RedoWriter {
         return mEngine.mController.nowUnmodifiable(mReplWriter);
     }
 
-    /**
-     * Consumes data from the circular buffer and writes into the replication log. Method doesn't
-     * exit until leadership is revoked.
-     */
     private void consume() {
         mBufferLatch.acquireExclusive();
 
@@ -428,36 +392,27 @@ public class ReplRedoWriter extends RedoWriter {
 
             try {
                 if (head == tail) {
-                    // Buffer is full, so consume everything with the latch held.
-
-                    // Write the head section.
                     if (!mReplWriter.write(buffer, head, buffer.length - head, commitPos)) {
                         break;
                     }
 
                     if (head > 0) {
-                        // Write the tail section.
                         mBufferHead = 0;
                         if (!mReplWriter.write(buffer, 0, tail, commitPos)) {
                             break;
                         }
                     }
 
-                    // Buffer is now empty.
                     mBufferTail = -1;
                 } else if (tail >= 0) {
-                    // Buffer is partially full. Consume it with the latch released, to
-                    // allow a producer to fill in a bit more.
                     mBufferLatch.releaseExclusive();
                     try {
                         if (head < tail) {
-                            // No circular wraparound.
                             if (!mReplWriter.write(buffer, head, tail - head, commitPos)) {
                                 break;
                             }
                             head = tail;
                         } else {
-                            // Write only the head section.
                             int len = buffer.length - head;
                             if (!mReplWriter.write(buffer, head, len, commitPos)) {
                                 break;
@@ -469,26 +424,22 @@ public class ReplRedoWriter extends RedoWriter {
                     }
 
                     if (head != mBufferTail) {
-                        // More data to consume.
                         mBufferHead = head;
                         continue;
                     }
 
-                    // Buffer is now empty.
                     mBufferTail = -1;
                 }
             } catch (Throwable e) {
                 if (!(e instanceof IOException)) {
                     Utils.uncaught(e);
                 }
-                // Keep consuming until an official leadership change is observed.
                 mBufferLatch.releaseExclusive();
                 Thread.yield();
                 mBufferLatch.acquireExclusive();
                 continue;
             }
 
-            // Wait for producer and loop back.
             mConsumerParked = true;
             Thread producer = mProducer;
             mBufferLatch.releaseExclusive();

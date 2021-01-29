@@ -13,7 +13,7 @@ import java.io.IOException;
 public abstract class RedoWriter extends Latch implements Closeable, Flushable {
     protected long mLastTxnId;
 
-    volatile Throwable mCloseCause;
+    protected volatile Throwable mCloseCause;
 
     public RedoWriter() {
     }
@@ -58,7 +58,7 @@ public abstract class RedoWriter extends Latch implements Closeable, Flushable {
 
     public abstract void checkpointFinished() throws IOException;
 
-    long adjustTransactionId(long txnId) {
+    public long adjustTransactionId(long txnId) {
         return txnId;
     }
 

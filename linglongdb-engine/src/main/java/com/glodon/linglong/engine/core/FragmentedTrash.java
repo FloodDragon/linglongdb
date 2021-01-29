@@ -1,7 +1,13 @@
 package com.glodon.linglong.engine.core;
 
 
+import com.glodon.linglong.base.common.Utils;
+import com.glodon.linglong.engine.core.lock.CommitLock;
+import com.glodon.linglong.engine.core.page.DirectPageOps;
+import com.glodon.linglong.engine.core.tx.LocalTransaction;
+import com.glodon.linglong.engine.core.tx.Transaction;
 import com.glodon.linglong.engine.event.EventListener;
+import com.glodon.linglong.engine.event.EventType;
 
 import java.io.IOException;
 
@@ -17,52 +23,30 @@ public final class FragmentedTrash {
         mTrash = trash;
     }
 
-    /**
-     * Copies a fragmented value to the trash and pushes an entry to the undo
-     * log. Caller must hold commit lock.
-     *
-     * @param entry      _Node page; starts with variable length key
-     * @param keyStart   inclusive index into entry for key; includes key header
-     * @param keyLen     length of key
-     * @param valueStart inclusive index into entry for fragmented value; excludes value header
-     * @param valueLen   length of value
-     */
     void add(LocalTransaction txn, long indexId,
              long entry, int keyStart, int keyLen, int valueStart, int valueLen)
             throws IOException {
-        // It would be nice if cursor store supported array slices. Instead, a
-        // temporary array needs to be created.
         byte[] payload = new byte[valueLen];
         DirectPageOps.p_copyToArray(entry, valueStart, payload, 0, valueLen);
 
         TreeCursor cursor = prepareEntry(txn.txnId());
         byte[] key = cursor.key();
         try {
-            // Write trash entry first, ensuring that the undo log entry will refer to
-            // something valid. Cursor is bound to a bogus transaction, and so it won't acquire
-            // locks or attempt to write to the redo log. A failure here is pretty severe,
-            // since it implies that the main database file cannot be written to. One possible
-            // "recoverable" cause is a disk full, but this can still cause a database panic if
-            // it occurs during critical operations like internal node splits.
             txn.setHasTrash();
             cursor.store(payload);
             cursor.reset();
         } catch (Throwable e) {
             try {
-                // Always expected to rethrow an exception, not necessarily the original.
                 txn.borked(e, false, true);
             } catch (Throwable e2) {
                 e = e2;
             }
-            throw com.glodon.my.io.Utils.closeOnFailure(cursor, e);
+            throw Utils.closeOnFailure(cursor, e);
         }
-
-        // Now write the undo log entry.
 
         int tidLen = key.length - 8;
         int payloadLen = keyLen + tidLen;
         if (payloadLen > payload.length) {
-            // Cannot re-use existing temporary array.
             payload = new byte[payloadLen];
         }
         DirectPageOps.p_copyToArray(entry, keyStart, payload, 0, keyLen);
@@ -71,14 +55,7 @@ public final class FragmentedTrash {
         txn.pushUndeleteFragmented(indexId, payload, 0, payloadLen);
     }
 
-    /**
-     * Returns a cursor ready to store a new trash entry. Caller must reset or
-     * close the cursor when done.
-     */
     private TreeCursor prepareEntry(long txnId) throws IOException {
-        // Key entry format is transaction id prefix, followed by a variable
-        // length integer. Integer is reverse encoded, and newer entries within
-        // the transaction have lower integer values.
 
         byte[] prefix = new byte[8];
         Utils.encodeLongBE(prefix, 0, txnId);
@@ -89,17 +66,12 @@ public final class FragmentedTrash {
             cursor.findGt(prefix);
             byte[] key = cursor.key();
             if (key == null || Utils.compareUnsigned(key, 0, 8, prefix, 0, 8) != 0) {
-                // Create first entry for this transaction.
                 key = new byte[8 + 1];
                 arraycopy(prefix, 0, key, 0, 8);
                 key[8] = (byte) 0xff;
                 cursor.findNearby(key);
             } else {
-                // Decrement from previously created entry. Although key will
-                // be modified, it doesn't need to be cloned because no
-                // transaction was used by the search. The key instance is not
-                // shared with the lock manager.
-                cursor.findNearby(com.glodon.my.Utils.decrementReverseUnsignedVar(key, 8));
+                cursor.findNearby(Utils.decrementReverseUnsignedVar(key, 8));
             }
             return cursor;
         } catch (Throwable e) {
@@ -107,23 +79,15 @@ public final class FragmentedTrash {
         }
     }
 
-    /**
-     * Remove an entry from the trash, as an undo operation. Original entry is
-     * stored back into index.
-     *
-     * @param index index to store entry into; pass null to fully delete it instead
-     */
-    void remove(long txnId, Tree index, byte[] undoEntry) throws IOException {
-        // Extract the index and trash keys.
-
+    public void remove(long txnId, Tree index, byte[] undoEntry) throws IOException {
         long undo = DirectPageOps.p_transfer(undoEntry, false);
 
         byte[] indexKey, trashKey;
         try {
-            _DatabaseAccess dbAccess = mTrash.mRoot;
-            indexKey = _Node.retrieveKeyAtLoc(dbAccess, undo, 0);
+            DatabaseAccess dbAccess = mTrash.mRoot;
+            indexKey = Node.retrieveKeyAtLoc(dbAccess, undo, 0);
 
-            int tidLoc = _Node.keyLengthAtLoc(undo, 0);
+            int tidLoc = Node.keyLengthAtLoc(undo, 0);
             int tidLen = undoEntry.length - tidLoc;
             trashKey = new byte[8 + tidLen];
             Utils.encodeLongBE(trashKey, 0, txnId);
@@ -135,13 +99,7 @@ public final class FragmentedTrash {
         remove(index, indexKey, trashKey);
     }
 
-    /**
-     * Remove an entry from the trash, as an undo operation. Original entry is
-     * stored back into index.
-     *
-     * @param index index to store entry into; pass null to fully delete it instead
-     */
-    void remove(Tree index, byte[] indexKey, byte[] trashKey) throws IOException {
+    public void remove(Tree index, byte[] indexKey, byte[] trashKey) throws IOException {
         TreeCursor trashCursor = new TreeCursor(mTrash, Transaction.BOGUS);
         try {
             trashCursor.find(trashKey);
@@ -169,15 +127,11 @@ public final class FragmentedTrash {
         }
     }
 
-    /**
-     * Non-transactionally deletes all fragmented values for the given
-     * top-level transaction.
-     */
     public void emptyTrash(long txnId) throws IOException {
         byte[] prefix = new byte[8];
         Utils.encodeLongBE(prefix, 0, txnId);
 
-        _LocalDatabase db = mTrash.mDatabase;
+        LocalDatabase db = mTrash.mDatabase;
         final CommitLock commitLock = db.commitLock();
 
         TreeCursor cursor = new TreeCursor(mTrash, Transaction.BOGUS);
@@ -207,16 +161,10 @@ public final class FragmentedTrash {
         }
     }
 
-    /**
-     * Non-transactionally deletes all fragmented values. Expected to be called only during
-     * recovery, and never when other calls into the trash are being made concurrently.
-     *
-     * @return true if any trash was found
-     */
     boolean emptyAllTrash(EventListener listener) throws IOException {
         boolean found = false;
 
-        _LocalDatabase db = mTrash.mDatabase;
+        LocalDatabase db = mTrash.mDatabase;
         final CommitLock commitLock = db.commitLock();
 
         TreeCursor cursor = new TreeCursor(mTrash, Transaction.BOGUS);
@@ -250,7 +198,7 @@ public final class FragmentedTrash {
         return found;
     }
 
-    private static boolean deleteFragmented(_LocalDatabase db, Cursor cursor) throws IOException {
+    private static boolean deleteFragmented(LocalDatabase db, Cursor cursor) throws IOException {
         cursor.load();
         byte[] value = cursor.value();
         if (value == null) {

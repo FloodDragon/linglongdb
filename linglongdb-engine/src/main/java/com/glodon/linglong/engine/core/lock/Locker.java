@@ -84,7 +84,7 @@ public class Locker extends LockOwner {
         return result;
     }
 
-    final LockResult lock(int lockType, long indexId, byte[] key, int hash, long nanosTimeout)
+    public final LockResult lock(int lockType, long indexId, byte[] key, int hash, long nanosTimeout)
             throws LockFailureException {
         LockResult result = manager().getLockHT(hash)
                 .tryLock(lockType, this, indexId, key, hash, nanosTimeout);
@@ -125,7 +125,7 @@ public class Locker extends LockOwner {
         return lock(LockManager.TYPE_SHARED, indexId, key, LockManager.hash(indexId, key), nanosTimeout);
     }
 
-    final LockResult lockShared(long indexId, byte[] key, int hash, long nanosTimeout)
+    public final LockResult lockShared(long indexId, byte[] key, int hash, long nanosTimeout)
             throws LockFailureException {
         return lock(LockManager.TYPE_SHARED, indexId, key, hash, nanosTimeout);
     }
@@ -150,7 +150,7 @@ public class Locker extends LockOwner {
         return lock(LockManager.TYPE_UPGRADABLE, indexId, key, LockManager.hash(indexId, key), nanosTimeout);
     }
 
-    final LockResult lockUpgradable(long indexId, byte[] key, int hash, long nanosTimeout)
+    public final LockResult lockUpgradable(long indexId, byte[] key, int hash, long nanosTimeout)
             throws LockFailureException {
         return lock(LockManager.TYPE_UPGRADABLE, indexId, key, hash, nanosTimeout);
     }
@@ -175,12 +175,12 @@ public class Locker extends LockOwner {
         return lock(LockManager.TYPE_EXCLUSIVE, indexId, key, LockManager.hash(indexId, key), nanosTimeout);
     }
 
-    final LockResult lockExclusive(long indexId, byte[] key, int hash, long nanosTimeout)
+    public final LockResult lockExclusive(long indexId, byte[] key, int hash, long nanosTimeout)
             throws LockFailureException {
         return lock(LockManager.TYPE_EXCLUSIVE, indexId, key, hash, nanosTimeout);
     }
 
-    final LockResult lockExclusive(Lock lock, long nanosTimeout) throws LockFailureException {
+    public final LockResult lockExclusive(Lock lock, long nanosTimeout) throws LockFailureException {
         LockResult result = mManager.getLockHT(lock.mHashCode)
                 .tryLockExclusive(this, lock, nanosTimeout);
         if (result.isHeld()) {
@@ -200,7 +200,7 @@ public class Locker extends LockOwner {
                 | (lockUpgradeRule == LockUpgradeRule.LENIENT & count == 1);
     }
 
-    final Lock lockSharedNoPush(long indexId, byte[] key) throws LockFailureException {
+    public final Lock lockSharedNoPush(long indexId, byte[] key) throws LockFailureException {
         int hash = LockManager.hash(indexId, key);
         LockManager.LockHT ht = mManager.getLockHT(hash);
 
@@ -222,7 +222,7 @@ public class Locker extends LockOwner {
         return result == LockResult.ACQUIRED ? lock : null;
     }
 
-    final Lock lockUpgradableNoPush(long indexId, byte[] key) throws LockFailureException {
+    public final Lock lockUpgradableNoPush(long indexId, byte[] key) throws LockFailureException {
         int hash = LockManager.hash(indexId, key);
         LockManager.LockHT ht = mManager.getLockHT(hash);
 
@@ -384,7 +384,7 @@ public class Locker extends LockOwner {
         }
     }
 
-    protected final void scopeUnlockAll() {
+    public final void scopeUnlockAll() {
         ParentScope parent = mParentScope;
         Object parentTailObj;
         if (parent == null || (parentTailObj = parent.mTailBlock) == null) {
@@ -451,23 +451,23 @@ public class Locker extends LockOwner {
         return pending;
     }
 
-    final ParentScope scopeExit() {
+    public final ParentScope scopeExit() {
         scopeUnlockAll();
         return popScope();
     }
 
-    final void scopeExitAll() {
+    public final void scopeExitAll() {
         mParentScope = null;
         scopeUnlockAll();
         mTailBlock = null;
     }
 
-    final void discardAllLocks() {
+    public final void discardAllLocks() {
         mParentScope = null;
         mTailBlock = null;
     }
 
-    final void push(Lock lock) {
+    public final void push(Lock lock) {
         Object tailObj = mTailBlock;
         if (tailObj == null) {
             mTailBlock = lock;

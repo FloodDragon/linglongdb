@@ -34,7 +34,7 @@ public final class TransactionContext extends Latch implements Flushable {
     private boolean mRedoWriterLatched;
     private long mRedoWriterPos;
 
-    TransactionContext(int txnStride, int redoBufferSize) {
+    public TransactionContext(int txnStride, int redoBufferSize) {
         if (txnStride <= 0) {
             throw new IllegalArgumentException();
         }
@@ -76,7 +76,7 @@ public final class TransactionContext extends Latch implements Flushable {
         acquireExclusive();
     }
 
-    void releaseRedoLatch() throws IOException {
+    public void releaseRedoLatch() throws IOException {
         try {
             if (mRedoWriterLatched) try {
                 if (mRedoFirstTxnId == 0) {
@@ -101,7 +101,7 @@ public final class TransactionContext extends Latch implements Flushable {
         }
     }
 
-    void fullAcquireRedoLatch(RedoWriter redo) throws IOException {
+    public void fullAcquireRedoLatch(RedoWriter redo) throws IOException {
         acquireExclusive();
         try {
             if (redo != mRedoWriter) {
@@ -142,14 +142,6 @@ public final class TransactionContext extends Latch implements Flushable {
         }
     }
 
-    /**
-     * Auto-commit non-transactional store.
-     *
-     * @param indexId non-zero index id
-     * @param key     non-null key
-     * @param value   value to store; null to delete
-     * @return non-zero position if caller should call txnCommitSync
-     */
     long redoStoreNoLockAutoCommit(RedoWriter redo, long indexId, byte[] key, byte[] value,
                                    DurabilityMode mode)
             throws IOException {
@@ -176,15 +168,8 @@ public final class TransactionContext extends Latch implements Flushable {
         }
     }
 
-    /**
-     * Auto-commit index rename.
-     *
-     * @param indexId non-zero index id
-     * @param newName non-null new index name
-     * @return non-zero position if caller should call txnCommitSync
-     */
-    long redoRenameIndexCommitFinal(RedoWriter redo, long txnId, long indexId,
-                                    byte[] newName, DurabilityMode mode)
+    public long redoRenameIndexCommitFinal(RedoWriter redo, long txnId, long indexId,
+                                           byte[] newName, DurabilityMode mode)
             throws IOException {
         mode = redo.opWriteCheck(mode);
 
@@ -201,12 +186,6 @@ public final class TransactionContext extends Latch implements Flushable {
         }
     }
 
-    /**
-     * Auto-commit index delete.
-     *
-     * @param indexId non-zero index id
-     * @return non-zero position if caller should call txnCommitSync
-     */
     public long redoDeleteIndexCommitFinal(RedoWriter redo, long txnId, long indexId,
                                            DurabilityMode mode)
             throws IOException {
@@ -223,9 +202,6 @@ public final class TransactionContext extends Latch implements Flushable {
         }
     }
 
-    /**
-     * @return non-zero position if caller should call txnCommitSync
-     */
     long redoPrepare(RedoWriter redo, long txnId, DurabilityMode mode) throws IOException {
         mode = redo.opWriteCheck(mode);
 
@@ -252,9 +228,6 @@ public final class TransactionContext extends Latch implements Flushable {
     }
 
     void redoRollback(RedoWriter redo, long txnId) throws IOException {
-        // Because rollback can release locks, it must always be flushed like a commit.
-        // Otherwise, recovery can deadlock or timeout when attempting to acquire the released
-        // locks. _Lock releases must always be logged before acquires.
         DurabilityMode mode = redo.opWriteCheck(DurabilityMode.NO_FLUSH);
 
         acquireRedoLatch();
@@ -268,7 +241,6 @@ public final class TransactionContext extends Latch implements Flushable {
     }
 
     void redoRollbackFinal(RedoWriter redo, long txnId) throws IOException {
-        // See comments in redoRollback method.
         DurabilityMode mode = redo.opWriteCheck(DurabilityMode.NO_FLUSH);
 
         acquireRedoLatch();
@@ -293,9 +265,6 @@ public final class TransactionContext extends Latch implements Flushable {
         }
     }
 
-    /**
-     * @return non-zero position if caller should call txnCommitSync
-     */
     long redoCommitFinal(RedoWriter redo, long txnId, DurabilityMode mode)
             throws IOException {
         mode = redo.opWriteCheck(mode);
@@ -324,9 +293,6 @@ public final class TransactionContext extends Latch implements Flushable {
         }
     }
 
-    /**
-     * @return non-zero position if caller should call txnCommitSync
-     */
     long redoStoreCommitFinal(RedoWriter redo, long txnId, long indexId,
                               byte[] key, byte[] value, DurabilityMode mode)
             throws IOException {
@@ -367,9 +333,6 @@ public final class TransactionContext extends Latch implements Flushable {
         }
     }
 
-    /**
-     * @return non-zero position if caller should call txnCommitSync
-     */
     long redoDeleteCommitFinal(RedoWriter redo, long txnId, long indexId,
                                byte[] key, DurabilityMode mode)
             throws IOException {
@@ -402,9 +365,6 @@ public final class TransactionContext extends Latch implements Flushable {
             redoWriteTxnOp(redo, RedoOps.OP_CURSOR_REGISTER, cursorId);
             redoWriteLongLE(indexId);
             redoWriteTerminator(redo);
-            // Must always flush this out, in case cursor transaction linkage changes, or when
-            // transaction is linked to null. Otherwise, the cursor registration operation
-            // might appear out of order in the log due to context striping.
             redoFlush(false);
         } finally {
             releaseRedoLatch();
@@ -557,8 +517,7 @@ public final class TransactionContext extends Latch implements Flushable {
         }
     }
 
-    // Caller must hold redo latch.
-    void doRedoReset(RedoWriter redo) throws IOException {
+    public void doRedoReset(RedoWriter redo) throws IOException {
         redo.opWriteCheck(null);
         redoWriteOp(redo, RedoOps.OP_RESET);
         redoNonTxnTerminateCommit(redo, DurabilityMode.NO_FLUSH);
@@ -566,9 +525,6 @@ public final class TransactionContext extends Latch implements Flushable {
         redo.mLastTxnId = 0;
     }
 
-    /**
-     * @param op OP_TIMESTAMP, OP_SHUTDOWN, OP_CLOSE, or OP_END_FILE
-     */
     public void redoTimestamp(RedoWriter redo, byte op) throws IOException {
         acquireRedoLatch();
         try {
@@ -578,20 +534,14 @@ public final class TransactionContext extends Latch implements Flushable {
         }
     }
 
-    /**
-     * @param op OP_TIMESTAMP, OP_SHUTDOWN, OP_CLOSE, or OP_END_FILE
-     */
-    // Caller must hold redo latch.
-    void doRedoTimestamp(RedoWriter redo, byte op, DurabilityMode mode) throws IOException {
+    public void doRedoTimestamp(RedoWriter redo, byte op, DurabilityMode mode) throws IOException {
         doRedoOp(redo, op, System.currentTimeMillis(), mode);
     }
 
-    // Caller must hold redo latch.
-    void doRedoNopRandom(RedoWriter redo, DurabilityMode mode) throws IOException {
+    public void doRedoNopRandom(RedoWriter redo, DurabilityMode mode) throws IOException {
         doRedoOp(redo, RedoOps.OP_NOP_RANDOM, ThreadLocalRandom.current().nextLong(), mode);
     }
 
-    // Caller must hold redo latch.
     private void doRedoOp(RedoWriter redo, byte op, long operand, DurabilityMode mode)
             throws IOException {
         redo.opWriteCheck(null);
@@ -599,7 +549,7 @@ public final class TransactionContext extends Latch implements Flushable {
         redoNonTxnTerminateCommit(redo, mode);
     }
 
-    long redoControl(RedoWriter redo, byte[] message) throws IOException {
+    public long redoControl(RedoWriter redo, byte[] message) throws IOException {
         if (message == null) {
             throw new NullPointerException("Message is null");
         }
@@ -617,22 +567,15 @@ public final class TransactionContext extends Latch implements Flushable {
         }
     }
 
-    /**
-     * Terminate and commit a non-transactional operation. Caller must hold redo latch.
-     *
-     * @return non-zero position if sync is required.
-     */
     private long redoNonTxnTerminateCommit(RedoWriter redo, DurabilityMode mode)
             throws IOException {
         mRedoTerminatePos = mRedoPos;
 
         if (!redo.shouldWriteTerminators()) {
-            // Commit the normal way.
             return redoFlushCommit(mode);
         }
 
         if (mRedoFirstTxnId != 0) {
-            // Terminate and commit the normal way.
             redoWriteIntLE(Utils.nzHash(mRedoLastTxnId));
             return redoFlushCommit(mode);
         }
@@ -643,7 +586,6 @@ public final class TransactionContext extends Latch implements Flushable {
         redo = latchWriter();
 
         if (length > buffer.length - 4) {
-            // Flush and make room for the terminator.
             try {
                 mRedoWriterPos = redo.write(false, buffer, 0, length, commitLen);
             } catch (IOException e) {
@@ -655,7 +597,6 @@ public final class TransactionContext extends Latch implements Flushable {
             commitLen = 0;
         }
 
-        // Encode the terminator using the "true" last transaction id.
         Utils.encodeIntLE(buffer, length, Utils.nzHash(redo.mLastTxnId));
         length += 4;
 
@@ -673,18 +614,13 @@ public final class TransactionContext extends Latch implements Flushable {
         return mode == DurabilityMode.SYNC ? mRedoWriterPos : 0;
     }
 
-    // Caller must hold redo latch.
     private void redoWriteTerminator(RedoWriter redo) throws IOException {
         mRedoTerminatePos = mRedoPos;
-        // Note: A terminator following a commit operation doesn't need any special handling
-        // here. The call to redoWriteIntLE always leaves something in the buffer, and so the
-        // call to redoFlushCommit will have something to do.
         if (redo.shouldWriteTerminators()) {
             redoWriteIntLE(Utils.nzHash(mRedoLastTxnId));
         }
     }
 
-    // Caller must hold redo latch.
     private void redoWriteIntLE(int v) throws IOException {
         byte[] buffer = mRedoBuffer;
         int pos = mRedoPos;
@@ -696,7 +632,6 @@ public final class TransactionContext extends Latch implements Flushable {
         mRedoPos = pos + 4;
     }
 
-    // Caller must hold redo latch.
     private void redoWriteLongLE(long v) throws IOException {
         byte[] buffer = mRedoBuffer;
         int pos = mRedoPos;
@@ -708,7 +643,6 @@ public final class TransactionContext extends Latch implements Flushable {
         mRedoPos = pos + 8;
     }
 
-    // Caller must hold redo latch.
     private void redoWriteUnsignedVarInt(int v) throws IOException {
         byte[] buffer = mRedoBuffer;
         int pos = mRedoPos;
@@ -719,7 +653,6 @@ public final class TransactionContext extends Latch implements Flushable {
         mRedoPos = Utils.encodeUnsignedVarInt(buffer, pos, v);
     }
 
-    // Caller must hold redo latch.
     private void redoWriteUnsignedVarLong(long v) throws IOException {
         byte[] buffer = mRedoBuffer;
         int pos = mRedoPos;
@@ -730,18 +663,10 @@ public final class TransactionContext extends Latch implements Flushable {
         mRedoPos = Utils.encodeUnsignedVarLong(buffer, pos, v);
     }
 
-    /**
-     * @param term true if writing the last bytes of an operation
-     */
-    // Caller must hold redo latch.
     private void redoWriteBytes(byte[] bytes, boolean term) throws IOException {
         redoWriteBytes(bytes, 0, bytes.length, term);
     }
 
-    /**
-     * @param term true if writing the last bytes of an operation
-     */
-    // Caller must hold redo latch.
     private void redoWriteBytes(byte[] bytes, int offset, int length, boolean term)
             throws IOException {
         if (length == 0) {
@@ -760,11 +685,9 @@ public final class TransactionContext extends Latch implements Flushable {
                 mRedoPos += length;
             }
         } else {
-            // Fill remainder of buffer and flush it.
             System.arraycopy(bytes, offset, buffer, mRedoPos, avail);
             mRedoPos = buffer.length;
 
-            // Latches writer as a side-effect.
             redoFlush(false);
 
             offset += avail;
@@ -779,9 +702,6 @@ public final class TransactionContext extends Latch implements Flushable {
         }
     }
 
-    /**
-     * @param redo must be latched
-     */
     private static long write(RedoWriter redo, byte[] bytes, int offset, int length, boolean term)
             throws IOException {
         try {
@@ -791,27 +711,16 @@ public final class TransactionContext extends Latch implements Flushable {
         }
     }
 
-    /**
-     * Write a non-transactional operation. Caller must hold redo latch and always flush the
-     * operation. Flushing ensures that transactional operations that follow can encode
-     * transaction id deltas correctly.
-     */
     private void redoWriteOp(RedoWriter redo, byte op) throws IOException {
         mRedoPos = doRedoWriteOp(redo, op, 1); // 1 for op
     }
 
-    /**
-     * Write a non-transactional operation. Caller must hold redo latch and always flush the
-     * operation. Flushing ensures that transactional operations that follow can encode
-     * transaction id deltas correctly.
-     */
     private void redoWriteOp(RedoWriter redo, byte op, long operand) throws IOException {
         int pos = doRedoWriteOp(redo, op, 1 + 8); // 1 for op, 8 for operand
         Utils.encodeLongLE(mRedoBuffer, pos, operand);
         mRedoPos = pos + 8;
     }
 
-    // Caller must hold redo latch.
     private int doRedoWriteOp(RedoWriter redo, byte op, int len) throws IOException {
         if (redo != mRedoWriter) {
             switchRedo(redo);
@@ -829,7 +738,6 @@ public final class TransactionContext extends Latch implements Flushable {
         return pos + 1;
     }
 
-    // Caller must hold redo latch.
     private void redoWriteTxnOp(RedoWriter redo, byte op, long txnId) throws IOException {
         if (redo != mRedoWriter) {
             switchRedo(redo);
@@ -855,7 +763,6 @@ public final class TransactionContext extends Latch implements Flushable {
         mRedoLastTxnId = txnId;
     }
 
-    // Caller must hold redo latch.
     private void redoWriteCursorOp(RedoWriter redo, byte op, long cursorId, long txnId)
             throws IOException {
         if (redo != mRedoWriter) {
@@ -884,9 +791,6 @@ public final class TransactionContext extends Latch implements Flushable {
         mRedoLastTxnId = txnId;
     }
 
-    /**
-     * Flush redo buffer to the current RedoWriter.
-     */
     @Override
     public void flush() throws IOException {
         acquireRedoLatch();
@@ -897,17 +801,14 @@ public final class TransactionContext extends Latch implements Flushable {
         }
     }
 
-    // Caller must hold redo latch.
     void doFlush() throws IOException {
         redoFlush(false);
     }
 
-    // Caller must hold redo latch.
     private void switchRedo(RedoWriter redo) throws IOException {
         try {
             redoFlush(false);
         } catch (UnmodifiableReplicaException e) {
-            // Terminal state, so safe to discard everything.
             mRedoPos = 0;
             mRedoTerminatePos = 0;
             mRedoFirstTxnId = 0;
@@ -921,11 +822,6 @@ public final class TransactionContext extends Latch implements Flushable {
         mRedoWriter = redo;
     }
 
-    /**
-     * Caller must hold redo latch and ensure that mRedoWriter is set.
-     *
-     * @return non-zero position if sync is required.
-     */
     private long redoFlushCommit(DurabilityMode mode) throws IOException {
         if (mode == DurabilityMode.SYNC) {
             redoFlush(true);
@@ -936,11 +832,6 @@ public final class TransactionContext extends Latch implements Flushable {
         }
     }
 
-    /**
-     * Caller must hold redo latch and ensure that mRedoWriter is set.
-     *
-     * @param full true to fully flush through all buffers (used for SYNC/NO_SYNC commit)
-     */
     private void redoFlush(boolean full) throws IOException {
         int length = mRedoPos;
         if (length == 0) {
@@ -955,7 +846,6 @@ public final class TransactionContext extends Latch implements Flushable {
         final long redoWriterLastTxnId = redo.mLastTxnId;
 
         if (mRedoFirstTxnId != 0) {
-            // Encode the first transaction delta and shift the opcode.
             long delta = Utils.convertSignedVarLong(mRedoFirstTxnId - redoWriterLastTxnId);
             int varLen = Utils.calcUnsignedVarLongLength(delta);
             offset = (1 + 9) - varLen;
@@ -963,7 +853,6 @@ public final class TransactionContext extends Latch implements Flushable {
             buffer[--offset] = buffer[0];
             length -= offset;
             commitLen -= offset;
-            // Must always set before write is called, so that it can see the update.
             redo.mLastTxnId = mRedoLastTxnId;
         }
 
@@ -974,7 +863,6 @@ public final class TransactionContext extends Latch implements Flushable {
                 throw Utils.rethrow(e, redo.mCloseCause);
             }
         } catch (Throwable e) {
-            // Rollback.
             redo.mLastTxnId = redoWriterLastTxnId;
             throw e;
         }
@@ -984,7 +872,6 @@ public final class TransactionContext extends Latch implements Flushable {
         mRedoFirstTxnId = 0;
     }
 
-    // Caller must hold redo latch.
     private RedoWriter latchWriter() {
         RedoWriter redo = mRedoWriter;
         if (!mRedoWriterLatched) {
@@ -994,9 +881,6 @@ public final class TransactionContext extends Latch implements Flushable {
         return redo;
     }
 
-    /**
-     * Caller must hold db commit lock.
-     */
     synchronized void register(UndoLog undo) {
         UndoLog top = mTopUndoLog;
         if (top != null) {
@@ -1007,10 +891,6 @@ public final class TransactionContext extends Latch implements Flushable {
         mUndoLogCount++;
     }
 
-    /**
-     * Should only be called after all log entries have been truncated or rolled back. Caller
-     * does not need to hold db commit lock.
-     */
     synchronized void unregister(UndoLog log) {
         UndoLog prev = log.mPrev;
         UndoLog next = log.mNext;
@@ -1027,27 +907,14 @@ public final class TransactionContext extends Latch implements Flushable {
         mUndoLogCount--;
     }
 
-    /**
-     * Returns the current transaction id or the given one, depending on which is higher.
-     */
     public long higherTransactionId(long txnId) {
         return Math.max(mHighTxnId, txnId);
     }
 
-    /**
-     * Caller must synchronize on this context object.
-     */
     public boolean hasUndoLogs() {
         return mTopUndoLog != null;
     }
 
-    /**
-     * Write any undo log references to the master undo log. Caller must hold db commit lock
-     * and synchronize on this context object.
-     *
-     * @param workspace temporary buffer, allocated on demand
-     * @return new or original workspace instance
-     */
     public byte[] writeToMaster(UndoLog master, byte[] workspace) throws IOException {
         for (UndoLog log = mTopUndoLog; log != null; log = log.mPrev) {
             workspace = log.writeToMaster(master, workspace);
@@ -1055,10 +922,6 @@ public final class TransactionContext extends Latch implements Flushable {
         return workspace;
     }
 
-    /**
-     * Deletes any UndoLog instances, as part of database close sequence. Caller must hold
-     * exclusive db commit lock.
-     */
     public synchronized void deleteUndoLogs() {
         for (UndoLog log = mTopUndoLog; log != null; log = log.mPrev) {
             log.delete();

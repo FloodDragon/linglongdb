@@ -403,12 +403,8 @@ final class PageManager {
         return false;
     }
 
-    /**
-     * @return false if verification failed
-     */
     public boolean compactionVerify() throws IOException {
         if (!mCompacting) {
-            // Prevent caller from doing any more work.
             return true;
         }
         long total;
@@ -418,9 +414,6 @@ final class PageManager {
         return mReserveList.verifyPageRange(mCompactionTargetPageCount, total);
     }
 
-    /**
-     * @return false if aborted
-     */
     public boolean compactionEnd(CommitLock commitLock) throws IOException {
         long upperBound = Long.MAX_VALUE;
 

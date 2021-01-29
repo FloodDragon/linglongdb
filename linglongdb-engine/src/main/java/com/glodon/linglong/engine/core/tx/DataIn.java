@@ -25,7 +25,7 @@ public abstract class DataIn extends InputStream {
         }
 
         @Override
-        int doRead(byte[] buf, int off, int len) throws IOException {
+        public int doRead(byte[] buf, int off, int len) throws IOException {
             return mIn.read(buf, off, len);
         }
 
@@ -42,6 +42,10 @@ public abstract class DataIn extends InputStream {
 
     long mPos;
 
+    public long getPos() {
+        return mPos;
+    }
+
     public DataIn(long pos, int bufferSize) {
         if (pos < 0) {
             throw new IllegalArgumentException("Negative position: " + pos);
@@ -50,7 +54,7 @@ public abstract class DataIn extends InputStream {
         mBuffer = new byte[bufferSize];
     }
 
-    abstract int doRead(byte[] buf, int off, int len) throws IOException;
+    public abstract int doRead(byte[] buf, int off, int len) throws IOException;
 
     @Override
     public int read() throws IOException {
