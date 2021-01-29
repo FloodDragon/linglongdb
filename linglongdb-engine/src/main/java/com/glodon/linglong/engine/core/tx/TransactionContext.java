@@ -4,7 +4,7 @@ import com.glodon.linglong.base.common.Utils;
 import com.glodon.linglong.base.concurrent.Latch;
 import com.glodon.linglong.base.exception.UnmodifiableReplicaException;
 import com.glodon.linglong.engine.config.DurabilityMode;
-import com.glodon.linglong.engine.core.Database;
+import com.glodon.linglong.engine.core.frame.Database;
 
 import java.io.Flushable;
 import java.io.IOException;
@@ -116,7 +116,7 @@ public final class TransactionContext extends Latch implements Flushable {
         mRedoWriterLatched = true;
     }
 
-    long redoStoreAutoCommit(RedoWriter redo, long indexId, byte[] key, byte[] value,
+    public long redoStoreAutoCommit(RedoWriter redo, long indexId, byte[] key, byte[] value,
                              DurabilityMode mode)
             throws IOException {
         Utils.keyCheck(key);
@@ -142,8 +142,8 @@ public final class TransactionContext extends Latch implements Flushable {
         }
     }
 
-    long redoStoreNoLockAutoCommit(RedoWriter redo, long indexId, byte[] key, byte[] value,
-                                   DurabilityMode mode)
+    public long redoStoreNoLockAutoCommit(RedoWriter redo, long indexId, byte[] key, byte[] value,
+                                          DurabilityMode mode)
             throws IOException {
         Utils.keyCheck(key);
         mode = redo.opWriteCheck(mode);

@@ -1,6 +1,6 @@
 package com.glodon.linglong.engine.observer;
 
-import com.glodon.linglong.engine.core.Index;
+import com.glodon.linglong.engine.core.frame.Index;
 
 /**
  * @author Stereo

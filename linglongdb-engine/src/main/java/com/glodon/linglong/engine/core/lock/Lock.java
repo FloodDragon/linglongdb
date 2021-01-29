@@ -2,7 +2,7 @@ package com.glodon.linglong.engine.core.lock;
 
 import com.glodon.linglong.base.concurrent.Latch;
 import com.glodon.linglong.base.concurrent.LatchCondition;
-import com.glodon.linglong.engine.core.Database;
+import com.glodon.linglong.engine.core.frame.Database;
 import com.glodon.linglong.engine.core.LocalDatabase;
 import com.glodon.linglong.engine.core.frame.GhostFrame;
 import com.glodon.linglong.engine.core.tx.PendingTxn;

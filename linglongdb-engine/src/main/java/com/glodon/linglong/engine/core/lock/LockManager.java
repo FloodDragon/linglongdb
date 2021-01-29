@@ -6,8 +6,8 @@ import com.glodon.linglong.base.common.Utils;
 import com.glodon.linglong.base.concurrent.Latch;
 import com.glodon.linglong.base.concurrent.LatchCondition;
 import com.glodon.linglong.base.exception.LockFailureException;
-import com.glodon.linglong.engine.core.Database;
-import com.glodon.linglong.engine.core.Index;
+import com.glodon.linglong.engine.core.frame.Database;
+import com.glodon.linglong.engine.core.frame.Index;
 import com.glodon.linglong.engine.core.LocalDatabase;
 import com.glodon.linglong.engine.core.frame.GhostFrame;
 import com.glodon.linglong.engine.core.tx.PendingTxn;
@@ -152,7 +152,7 @@ public final class LockManager {
         }
     }
 
-    final Locker lockSharedLocal(long indexId, byte[] key, int hash) throws LockFailureException {
+    public final Locker lockSharedLocal(long indexId, byte[] key, int hash) throws LockFailureException {
         Locker locker = localLocker();
         LockResult result = getLockHT(hash)
                 .tryLock(TYPE_SHARED, locker, indexId, key, hash, mDefaultTimeoutNanos);
@@ -162,7 +162,7 @@ public final class LockManager {
         throw locker.failed(TYPE_SHARED, result, mDefaultTimeoutNanos);
     }
 
-    final Locker lockExclusiveLocal(long indexId, byte[] key, int hash)
+    public final Locker lockExclusiveLocal(long indexId, byte[] key, int hash)
             throws LockFailureException {
         Locker locker = localLocker();
         LockResult result = getLockHT(hash)

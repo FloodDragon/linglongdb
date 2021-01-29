@@ -98,7 +98,7 @@ public class CursorFrame extends AtomicReference<CursorFrame> {
         return null;
     }
 
-    final Node acquireExclusive() {
+    public final Node acquireExclusive() {
         Node node = mNode;
         while (true) {
             node.acquireExclusive();
@@ -271,7 +271,7 @@ public class CursorFrame extends AtomicReference<CursorFrame> {
         this.set(n);
     }
 
-    final CursorFrame pop() {
+    public final CursorFrame pop() {
         unbind(null);
         CursorFrame parent = mParentFrame;
         mNode = null;

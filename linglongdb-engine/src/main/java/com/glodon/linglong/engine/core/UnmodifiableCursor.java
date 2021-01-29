@@ -1,10 +1,12 @@
 package com.glodon.linglong.engine.core;
 
+import com.glodon.linglong.engine.core.frame.Cursor;
+
 /**
  * @author Stereo
  */
-final class UnmodifiableCursor extends WrappedCursor<Cursor> {
-    UnmodifiableCursor(Cursor source) {
+public final class UnmodifiableCursor extends WrappedCursor<Cursor> {
+    public UnmodifiableCursor(Cursor source) {
         super(source);
     }
 

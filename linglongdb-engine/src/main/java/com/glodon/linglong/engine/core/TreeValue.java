@@ -12,29 +12,18 @@ import java.util.Arrays;
  * @author Stereo
  */
 final public class TreeValue {
-    // Op ordinals are relevant.
     public static final int OP_LENGTH = 0, OP_READ = 1, OP_CLEAR = 2, OP_SET_LENGTH = 3, OP_WRITE = 4;
 
-    // Touches a fragment without extending the value length. Used for file compaction.
     public static final byte[] TOUCH_VALUE = new byte[0];
 
     private TreeValue() {
     }
 
-    /**
-     * Determine if any fragment nodes at the given position are outside the compaction zone.
-     *
-     * @param frame         latched leaf, not split, never released by this method
-     * @param highestNodeId defines the highest node before the compaction zone; anything
-     *                      higher is in the compaction zone
-     * @return -1 if position is too high, 0 if no compaction required, or 1 if any nodes are
-     * in the compaction zone
-     */
     static int compactCheck(final CursorFrame frame, long pos, final long highestNodeId)
             throws IOException {
-        final Node node = frame.mNode;
+        final Node node = frame.getNode();
 
-        int nodePos = frame.mNodePos;
+        int nodePos = frame.getNodePos();
         if (nodePos < 0) {
             // Value doesn't exist.
             return -1;
@@ -42,12 +31,10 @@ final public class TreeValue {
 
         final long page = node.mPage;
         int loc = DirectPageOps.p_ushortGetLE(page, node.searchVecStart() + nodePos);
-        // Skip the key.
         loc += Node.keyLengthAtLoc(page, loc);
 
         int vHeader = DirectPageOps.p_byteGet(page, loc++);
         if (vHeader >= 0) {
-            // Not fragmented.
             return pos >= vHeader ? -1 : 0;
         }
 
@@ -58,16 +45,12 @@ final public class TreeValue {
             len = 1 + (((vHeader & 0x0f) << 16)
                     | (DirectPageOps.p_ubyteGet(page, loc++) << 8) | DirectPageOps.p_ubyteGet(page, loc++));
         } else {
-            // ghost
             return -1;
         }
 
         if ((vHeader & Node.ENTRY_FRAGMENTED) == 0) {
-            // Not fragmented.
             return pos >= len ? -1 : 0;
         }
-
-        // Read the fragment header, as described by the LocalDatabase.fragment method.
 
         final int fHeader = DirectPageOps.p_byteGet(page, loc++);
         final long fLen = LocalDatabase.decodeFullFragmentedValueLength(fHeader, page, loc);
@@ -79,10 +62,8 @@ final public class TreeValue {
         loc = skipFragmentedLengthField(loc, fHeader);
 
         if ((fHeader & 0x02) != 0) {
-            // Inline content.
             final int fInlineLen = DirectPageOps.p_ushortGetLE(page, loc);
             if (pos < fInlineLen) {
-                // Positioned within inline content.
                 return 0;
             }
             pos -= fInlineLen;
@@ -92,17 +73,13 @@ final public class TreeValue {
         LocalDatabase db = node.getDatabase();
 
         if ((fHeader & 0x01) == 0) {
-            // Direct pointers.
             loc += (((int) pos) / pageSize(db, page)) * 6;
             final long fNodeId = DirectPageOps.p_uint48GetLE(page, loc);
             return fNodeId > highestNodeId ? 1 : 0;
         }
 
-        // Indirect pointers.
-
         final long inodeId = DirectPageOps.p_uint48GetLE(page, loc);
         if (inodeId == 0) {
-            // Sparse value.
             return 0;
         }
 

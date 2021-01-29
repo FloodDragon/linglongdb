@@ -1,16 +1,21 @@
 package com.glodon.linglong.engine.core;
 
-import com.glodon.linglong.engine.Ordering;
-import com.glodon.linglong.engine.Transformer;
+import com.glodon.linglong.base.common.Ordering;
+import com.glodon.linglong.base.common.Utils;
+import com.glodon.linglong.base.exception.LockFailureException;
+import com.glodon.linglong.base.exception.ViewConstraintException;
 import com.glodon.linglong.engine.config.DurabilityMode;
+import com.glodon.linglong.engine.core.frame.Cursor;
+import com.glodon.linglong.engine.core.frame.Transformer;
+import com.glodon.linglong.engine.core.lock.DeadlockException;
+import com.glodon.linglong.engine.core.lock.LockResult;
 import com.glodon.linglong.engine.core.tx.Transaction;
+import com.glodon.linglong.engine.core.view.ViewUtils;
 
 import java.io.IOException;
 import java.util.Comparator;
 
 /**
- * 
- *
  * @author Stereo
  */
 final class TransformedView implements View {
@@ -86,10 +91,8 @@ final class TransformedView implements View {
         try {
             byte[] value = mSource.load(txn, key);
             if (value != null
-                && (value = mTransformer.transformValue(value, key, tkey)) == null
-                && result == LockResult.ACQUIRED)
-            {
-                // Release the lock if value exists but was disallowed by the transformer.
+                    && (value = mTransformer.transformValue(value, key, tkey)) == null
+                    && result == LockResult.ACQUIRED) {
                 txn.unlock();
             }
             return value;
@@ -131,10 +134,8 @@ final class TransformedView implements View {
         try {
             byte[] value = mSource.load(txn, key);
             if (value != null
-                && (value = mTransformer.transformValue(value, key, tkey)) == null
-                && result == LockResult.ACQUIRED)
-            {
-                // Release the lock if value exists but was disallowed by the transformer.
+                    && (value = mTransformer.transformValue(value, key, tkey)) == null
+                    && result == LockResult.ACQUIRED) {
                 txn.unlock();
             }
             return value != null;
@@ -145,8 +146,7 @@ final class TransformedView implements View {
 
     @Override
     public void store(final Transaction txn, final byte[] tkey, final byte[] tvalue)
-        throws IOException
-    {
+            throws IOException {
         final byte[] key = inverseTransformKey(tkey);
 
         if (key == null) {
@@ -161,8 +161,7 @@ final class TransformedView implements View {
 
     @Override
     public byte[] exchange(final Transaction txn, final byte[] tkey, final byte[] tvalue)
-        throws IOException
-    {
+            throws IOException {
         final byte[] key = inverseTransformKey(tkey);
 
         if (key == null) {
@@ -173,14 +172,13 @@ final class TransformedView implements View {
         }
 
         return mTransformer.transformValue
-            (mSource.exchange(txn, key, mTransformer.inverseTransformValue(tvalue, key, tkey)),
-             key, tkey);
+                (mSource.exchange(txn, key, mTransformer.inverseTransformValue(tvalue, key, tkey)),
+                        key, tkey);
     }
 
     @Override
     public boolean replace(final Transaction txn, final byte[] tkey, final byte[] tvalue)
-        throws IOException
-    {
+            throws IOException {
         final byte[] key = inverseTransformKey(tkey);
 
         if (key == null) {
@@ -200,8 +198,7 @@ final class TransformedView implements View {
 
     @Override
     public boolean update(final Transaction txn, final byte[] tkey, final byte[] tvalue)
-        throws IOException
-    {
+            throws IOException {
         final byte[] key = inverseTransformKey(tkey);
 
         if (key == null) {
@@ -219,8 +216,7 @@ final class TransformedView implements View {
     @Override
     public boolean update(final Transaction txn, final byte[] tkey,
                           final byte[] oldTValue, final byte[] newTValue)
-        throws IOException
-    {
+            throws IOException {
         final byte[] key = inverseTransformKey(tkey);
 
         if (key == null) {
@@ -247,8 +243,7 @@ final class TransformedView implements View {
 
     @Override
     public final LockResult tryLockShared(Transaction txn, byte[] tkey, long nanosTimeout)
-        throws DeadlockException, ViewConstraintException
-    {
+            throws DeadlockException, ViewConstraintException {
         byte[] key = inverseTransformKey(tkey);
         if (key != null) {
             return mSource.tryLockShared(txn, key, nanosTimeout);
@@ -258,8 +253,7 @@ final class TransformedView implements View {
 
     @Override
     public final LockResult lockShared(Transaction txn, byte[] tkey)
-        throws LockFailureException, ViewConstraintException
-    {
+            throws LockFailureException, ViewConstraintException {
         byte[] key = inverseTransformKey(tkey);
         if (key != null) {
             return mSource.lockShared(txn, key);
@@ -269,8 +263,7 @@ final class TransformedView implements View {
 
     @Override
     public final LockResult tryLockUpgradable(Transaction txn, byte[] tkey, long nanosTimeout)
-        throws DeadlockException, ViewConstraintException
-    {
+            throws DeadlockException, ViewConstraintException {
         byte[] key = inverseTransformKey(tkey);
         if (key != null) {
             return mSource.tryLockUpgradable(txn, key, nanosTimeout);
@@ -280,8 +273,7 @@ final class TransformedView implements View {
 
     @Override
     public final LockResult lockUpgradable(Transaction txn, byte[] tkey)
-        throws LockFailureException, ViewConstraintException
-    {
+            throws LockFailureException, ViewConstraintException {
         byte[] key = inverseTransformKey(tkey);
         if (key != null) {
             return mSource.lockUpgradable(txn, key);
@@ -291,8 +283,7 @@ final class TransformedView implements View {
 
     @Override
     public final LockResult tryLockExclusive(Transaction txn, byte[] tkey, long nanosTimeout)
-        throws DeadlockException, ViewConstraintException
-    {
+            throws DeadlockException, ViewConstraintException {
         byte[] key = inverseTransformKey(tkey);
         if (key != null) {
             return mSource.tryLockExclusive(txn, key, nanosTimeout);
@@ -302,8 +293,7 @@ final class TransformedView implements View {
 
     @Override
     public final LockResult lockExclusive(Transaction txn, byte[] tkey)
-        throws LockFailureException, ViewConstraintException
-    {
+            throws LockFailureException, ViewConstraintException {
         byte[] key = inverseTransformKey(tkey);
         if (key != null) {
             return mSource.lockExclusive(txn, key);
@@ -313,8 +303,7 @@ final class TransformedView implements View {
 
     @Override
     public final LockResult lockCheck(Transaction txn, byte[] tkey)
-        throws ViewConstraintException
-    {
+            throws ViewConstraintException {
         byte[] key = inverseTransformKey(tkey);
         if (key != null) {
             return mSource.lockCheck(txn, key);
@@ -419,7 +408,6 @@ final class TransformedView implements View {
 
     @Override
     public View viewTransformed(Transformer transformer) {
-        // Note: Could chain the transformers together, but it can be tricky to get right.
         return apply(this, transformer);
     }
 
@@ -450,12 +438,12 @@ final class TransformedView implements View {
 
     private View nonView() {
         return new TransformedView
-            (new BoundedView(mSource, Utils.EMPTY_BYTES, Utils.EMPTY_BYTES,
-                             BoundedView.START_EXCLUSIVE | BoundedView.END_EXCLUSIVE),
-             mTransformer);
+                (new BoundedView(mSource, Utils.EMPTY_BYTES, Utils.EMPTY_BYTES,
+                        BoundedView.START_EXCLUSIVE | BoundedView.END_EXCLUSIVE),
+                        mTransformer);
     }
 
-    static ViewConstraintException fail() {
+    public static ViewConstraintException fail() {
         return new ViewConstraintException("Unsupported key");
     }
 }

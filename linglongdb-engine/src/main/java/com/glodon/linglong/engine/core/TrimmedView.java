@@ -1,14 +1,23 @@
 package com.glodon.linglong.engine.core;
 
+import com.glodon.linglong.base.common.Ordering;
+import com.glodon.linglong.base.common.Utils;
+import com.glodon.linglong.base.exception.LockFailureException;
+import com.glodon.linglong.base.exception.ViewConstraintException;
+import com.glodon.linglong.engine.config.DurabilityMode;
+import com.glodon.linglong.engine.core.frame.Cursor;
+import com.glodon.linglong.engine.core.frame.Transformer;
+import com.glodon.linglong.engine.core.lock.DeadlockException;
+import com.glodon.linglong.engine.core.lock.LockResult;
+import com.glodon.linglong.engine.core.tx.Transaction;
+
 import java.io.IOException;
 import java.util.Comparator;
 
 /**
- * 
- *
  * @author Stereo
  */
-final class TrimmedView implements View {
+public final class TrimmedView implements View {
     private final View mSource;
     private final byte[] mPrefix;
     final int mTrim;
@@ -81,8 +90,7 @@ final class TrimmedView implements View {
 
     @Override
     public boolean update(Transaction txn, byte[] key, byte[] oldValue, byte[] newValue)
-        throws IOException
-    {
+            throws IOException {
         return mSource.update(txn, applyPrefix(key), oldValue, newValue);
     }
 
@@ -103,43 +111,37 @@ final class TrimmedView implements View {
 
     @Override
     public LockResult tryLockShared(Transaction txn, byte[] key, long nanosTimeout)
-        throws DeadlockException, ViewConstraintException
-    {
+            throws DeadlockException, ViewConstraintException {
         return mSource.tryLockShared(txn, applyPrefix(key), nanosTimeout);
     }
 
     @Override
     public final LockResult lockShared(Transaction txn, byte[] key)
-        throws LockFailureException, ViewConstraintException
-    {
+            throws LockFailureException, ViewConstraintException {
         return mSource.lockShared(txn, applyPrefix(key));
     }
 
     @Override
     public LockResult tryLockUpgradable(Transaction txn, byte[] key, long nanosTimeout)
-        throws DeadlockException, ViewConstraintException
-    {
+            throws DeadlockException, ViewConstraintException {
         return mSource.tryLockUpgradable(txn, applyPrefix(key), nanosTimeout);
     }
 
     @Override
     public final LockResult lockUpgradable(Transaction txn, byte[] key)
-        throws LockFailureException, ViewConstraintException
-    {
+            throws LockFailureException, ViewConstraintException {
         return mSource.lockUpgradable(txn, applyPrefix(key));
     }
 
     @Override
     public LockResult tryLockExclusive(Transaction txn, byte[] key, long nanosTimeout)
-        throws DeadlockException, ViewConstraintException
-    {
+            throws DeadlockException, ViewConstraintException {
         return mSource.tryLockExclusive(txn, applyPrefix(key), nanosTimeout);
     }
 
     @Override
     public final LockResult lockExclusive(Transaction txn, byte[] key)
-        throws LockFailureException, ViewConstraintException
-    {
+            throws LockFailureException, ViewConstraintException {
         return mSource.lockExclusive(txn, applyPrefix(key));
     }
 

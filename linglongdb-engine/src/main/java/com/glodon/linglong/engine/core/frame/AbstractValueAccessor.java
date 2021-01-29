@@ -1,4 +1,4 @@
-package com.glodon.linglong.engine.core;
+package com.glodon.linglong.engine.core.frame;
 
 import com.glodon.linglong.base.exception.NoSuchValueException;
 
@@ -9,7 +9,7 @@ import java.io.OutputStream;
 /**
  * @author Stereo
  */
-abstract class AbstractValueAccessor implements ValueAccessor {
+public abstract class AbstractValueAccessor implements ValueAccessor {
     @Override
     public final int valueRead(long pos, byte[] buf, int off, int len) throws IOException {
         if (pos < 0) {

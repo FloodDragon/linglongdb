@@ -1,6 +1,6 @@
 package com.glodon.linglong.engine.core.lock;
 
-import com.glodon.linglong.engine.core.DatabaseAccess;
+import com.glodon.linglong.engine.core.frame.DatabaseAccess;
 
 import java.util.concurrent.ThreadLocalRandom;
 

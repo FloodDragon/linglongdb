@@ -1,26 +1,30 @@
 package com.glodon.linglong.engine.core;
 
-import com.glodon.linglong.engine.Ordering;
-import com.glodon.linglong.engine.Transformer;
+import com.glodon.linglong.base.common.Ordering;
+import com.glodon.linglong.base.common.Utils;
+import com.glodon.linglong.base.exception.LockFailureException;
+import com.glodon.linglong.engine.core.frame.AbstractValueAccessor;
+import com.glodon.linglong.engine.core.frame.Cursor;
+import com.glodon.linglong.engine.core.frame.Transformer;
+import com.glodon.linglong.engine.core.lock.LockResult;
 import com.glodon.linglong.engine.core.tx.Transaction;
+import com.glodon.linglong.engine.core.view.ViewUtils;
 
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * 
- *
  * @author Stereo
  */
-final class TransformedCursor extends AbstractValueAccessor implements Cursor {
+public final class TransformedCursor extends AbstractValueAccessor implements Cursor {
     private final Cursor mSource;
     private final Transformer mTransformer;
 
     private byte[] mKey;
     private byte[] mValue;
 
-    TransformedCursor(Cursor source, Transformer transformer) {
+    public TransformedCursor(Cursor source, Transformer transformer) {
         mSource = source;
         mTransformer = transformer;
     }
@@ -570,13 +574,6 @@ final class TransformedCursor extends AbstractValueAccessor implements Cursor {
         return e;
     }
 
-    /**
-     * Method returns null if entry was filtered out and cursor must be moved. As a
-     * side-effect, the mKey and mValue fields are set to null when filtered out.
-     *
-     * @param result must not be null
-     * @return null if cursor must be moved
-     */
     private LockResult transformCurrent(LockResult result) throws IOException {
         final Cursor c = mSource;
 
@@ -593,7 +590,6 @@ final class TransformedCursor extends AbstractValueAccessor implements Cursor {
         if (c.value() == null) {
             mValue = null;
             if (tkey != null) {
-                // Retain the position and lock when value doesn't exist.
                 return result;
             }
         } else {
@@ -606,25 +602,16 @@ final class TransformedCursor extends AbstractValueAccessor implements Cursor {
             }
             mValue = null;
         }
-
-        // This point is reached when the entry was filtered out and the cursor must move.
-
         if (result == LockResult.ACQUIRED) {
-            // Release the lock when filtered out, but maintain the cursor position.
             c.link().unlock();
         }
-
         return null;
     }
 
-    /**
-     * @param tkey mKey must have been set to this non-null key already
-     */
     private LockResult transformCurrent(LockResult result, final byte[] tkey) throws IOException {
         final Cursor c = mSource;
 
         if (c.value() == null) {
-            // Retain the position and lock when value doesn't exist.
             mValue = null;
             return result;
         }
@@ -633,7 +620,6 @@ final class TransformedCursor extends AbstractValueAccessor implements Cursor {
         mValue = tvalue;
 
         if (tvalue == null && result == LockResult.ACQUIRED) {
-            // Release the lock when filtered out, but maintain the cursor position.
             c.link().unlock();
             result = LockResult.UNOWNED;
         }
@@ -641,7 +627,6 @@ final class TransformedCursor extends AbstractValueAccessor implements Cursor {
         return result;
     }
 
-    // Used by tests.
     Cursor source() {
         return mSource;
     }

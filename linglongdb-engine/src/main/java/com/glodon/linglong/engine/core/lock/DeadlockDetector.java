@@ -1,6 +1,6 @@
 package com.glodon.linglong.engine.core.lock;
 
-import com.glodon.linglong.engine.core.Index;
+import com.glodon.linglong.engine.core.frame.Index;
 
 import java.util.LinkedHashSet;
 import java.util.Set;

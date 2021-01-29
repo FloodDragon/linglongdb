@@ -1,4 +1,4 @@
-package com.glodon.linglong.engine;
+package com.glodon.linglong.base.common;
 
 /**
  * @author Stereo

@@ -1,6 +1,6 @@
 package com.glodon.linglong.engine.extend;
 
-import com.glodon.linglong.engine.core.Database;
+import com.glodon.linglong.engine.core.frame.Database;
 import com.glodon.linglong.engine.core.tx.Transaction;
 
 import java.io.IOException;

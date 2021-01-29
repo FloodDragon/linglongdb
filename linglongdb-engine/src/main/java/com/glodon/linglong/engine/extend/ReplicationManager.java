@@ -2,8 +2,8 @@
 package com.glodon.linglong.engine.extend;
 
 import com.glodon.linglong.base.exception.ConfirmationFailureException;
-import com.glodon.linglong.engine.core.Database;
-import com.glodon.linglong.engine.core.Index;
+import com.glodon.linglong.engine.core.frame.Database;
+import com.glodon.linglong.engine.core.frame.Index;
 import com.glodon.linglong.engine.event.EventListener;
 
 import java.io.Closeable;

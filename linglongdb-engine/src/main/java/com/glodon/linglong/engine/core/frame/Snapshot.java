@@ -1,4 +1,4 @@
-package com.glodon.linglong.engine.core;
+package com.glodon.linglong.engine.core.frame;
 
 import java.io.Closeable;
 import java.io.IOException;

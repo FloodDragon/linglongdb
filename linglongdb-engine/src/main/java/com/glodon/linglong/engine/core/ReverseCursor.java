@@ -11,20 +11,13 @@ import java.io.OutputStream;
 import java.util.Comparator;
 
 /**
- *
  * @author Stereo
  */
-public final class TrimmedCursor implements Cursor {
-    private final TrimmedView mView;
+public final class ReverseCursor implements Cursor {
     private final Cursor mSource;
-    private final int mTrim;
 
-    private byte[] mKey;
-
-    public TrimmedCursor(TrimmedView view, Cursor source) {
-        mView = view;
+    public ReverseCursor(Cursor source) {
         mSource = source;
-        mTrim = view.mTrim;
     }
 
     @Override
@@ -74,12 +67,12 @@ public final class TrimmedCursor implements Cursor {
 
     @Override
     public Ordering getOrdering() {
-        return mSource.getOrdering();
+        return mSource.getOrdering().reverse();
     }
-    
+
     @Override
     public Comparator<byte[]> getComparator() {
-        return mSource.getComparator();
+        return mSource.getComparator().reversed();
     }
 
     @Override
@@ -94,18 +87,7 @@ public final class TrimmedCursor implements Cursor {
 
     @Override
     public byte[] key() {
-        byte[] key = mKey;
-        if (key == null) {
-            byte[] full = mSource.key();
-            if (full != null) {
-                int trim = mTrim;
-                int len = full.length - trim;
-                key = new byte[len];
-                System.arraycopy(full, trim, key, 0, len);
-                mKey = key;
-            }
-        }
-        return key;
+        return mSource.key();
     }
 
     @Override
@@ -125,12 +107,12 @@ public final class TrimmedCursor implements Cursor {
 
     @Override
     public int compareKeyTo(byte[] rkey) {
-        return mSource.compareKeyTo(mView.applyPrefix(rkey));
+        return -mSource.compareKeyTo(rkey);
     }
 
     @Override
     public int compareKeyTo(byte[] rkey, int offset, int length) {
-        return mSource.compareKeyTo(mView.applyPrefix(rkey, offset, length));
+        return -mSource.compareKeyTo(rkey, offset, length);
     }
 
     @Override
@@ -145,134 +127,123 @@ public final class TrimmedCursor implements Cursor {
 
     @Override
     public LockResult first() throws IOException {
-        mKey = null;
-        return mSource.first();
-    }
-
-    @Override
-    public LockResult last() throws IOException {
-        mKey = null;
         return mSource.last();
     }
 
     @Override
+    public LockResult last() throws IOException {
+        return mSource.first();
+    }
+
+    @Override
     public LockResult skip(long amount) throws IOException {
-        mKey = null;
-        return mSource.skip(amount);
+        if (amount == Long.MIN_VALUE) {
+            LockResult result = mSource.skip(Long.MAX_VALUE);
+            if (mSource.key() == null) {
+                return result;
+            }
+            return next();
+        } else {
+            return mSource.skip(-amount);
+        }
     }
 
     @Override
     public LockResult skip(long amount, byte[] limitKey, boolean inclusive) throws IOException {
-        mKey = null;
-        return mSource.skip(amount, limitKey, inclusive);
+        if (amount == Long.MIN_VALUE) {
+            LockResult result = mSource.skip(Long.MAX_VALUE, limitKey, inclusive);
+            if (mSource.key() == null) {
+                return result;
+            }
+            return next();
+        } else {
+            return mSource.skip(-amount, limitKey, inclusive);
+        }
     }
 
     @Override
     public LockResult next() throws IOException {
-        mKey = null;
-        return mSource.next();
-    }
-
-    @Override
-    public LockResult nextLe(byte[] limitKey) throws IOException {
-        mKey = null;
-        return mSource.nextLe(mView.applyPrefix(limitKey));
-    }
-
-    @Override
-    public LockResult nextLt(byte[] limitKey) throws IOException {
-        mKey = null;
-        return mSource.nextLt(mView.applyPrefix(limitKey));
-    }
-
-    @Override
-    public LockResult previous() throws IOException {
-        mKey = null;
         return mSource.previous();
     }
 
     @Override
+    public LockResult nextLe(byte[] limitKey) throws IOException {
+        return mSource.previousGe(limitKey);
+    }
+
+    @Override
+    public LockResult nextLt(byte[] limitKey) throws IOException {
+        return mSource.previousGt(limitKey);
+    }
+
+    @Override
+    public LockResult previous() throws IOException {
+        return mSource.next();
+    }
+
+    @Override
     public LockResult previousGe(byte[] limitKey) throws IOException {
-        mKey = null;
-        return mSource.previousGe(mView.applyPrefix(limitKey));
+        return mSource.nextLe(limitKey);
     }
 
     @Override
     public LockResult previousGt(byte[] limitKey) throws IOException {
-        mKey = null;
-        return mSource.previousGt(mView.applyPrefix(limitKey));
+        return mSource.nextLt(limitKey);
     }
 
     @Override
     public LockResult find(byte[] key) throws IOException {
-        mKey = null;
-        return mSource.find(mView.applyPrefix(key));
+        return mSource.find(key);
     }
 
     @Override
     public LockResult findGe(byte[] key) throws IOException {
-        mKey = null;
-        return mSource.findGe(mView.applyPrefix(key));
+        return mSource.findLe(key);
     }
 
     @Override
     public LockResult findGt(byte[] key) throws IOException {
-        mKey = null;
-        return mSource.findGt(mView.applyPrefix(key));
+        return mSource.findLt(key);
     }
 
     @Override
     public LockResult findLe(byte[] key) throws IOException {
-        mKey = null;
-        return mSource.findLe(mView.applyPrefix(key));
+        return mSource.findGe(key);
     }
 
     @Override
     public LockResult findLt(byte[] key) throws IOException {
-        mKey = null;
-        return mSource.findLt(mView.applyPrefix(key));
+        return mSource.findGt(key);
     }
 
     @Override
     public LockResult findNearby(byte[] key) throws IOException {
-        mKey = null;
-        return mSource.findNearby(mView.applyPrefix(key));
+        return mSource.findNearby(key);
     }
 
     @Override
     public LockResult findNearbyGe(byte[] key) throws IOException {
-        mKey = null;
-        return mSource.findNearbyGe(mView.applyPrefix(key));
+        return mSource.findNearbyGe(key);
     }
 
     @Override
     public LockResult findNearbyGt(byte[] key) throws IOException {
-        mKey = null;
-        return mSource.findNearbyGt(mView.applyPrefix(key));
+        return mSource.findNearbyGt(key);
     }
 
     @Override
     public LockResult findNearbyLe(byte[] key) throws IOException {
-        mKey = null;
-        return mSource.findNearbyLe(mView.applyPrefix(key));
+        return mSource.findNearbyLe(key);
     }
 
     @Override
     public LockResult findNearbyLt(byte[] key) throws IOException {
-        mKey = null;
-        return mSource.findNearbyLt(mView.applyPrefix(key));
+        return mSource.findNearbyLt(key);
     }
 
     @Override
     public LockResult random(byte[] lowKey, byte[] highKey) throws IOException {
-        mKey = null;
-        if (lowKey != null) {
-            lowKey = mView.applyPrefix(lowKey);
-        }
-        if (highKey != null) {
-            highKey = mView.applyPrefix(highKey);
-        }
-        return mSource.random(lowKey, highKey);
+        return mSource.random(ReverseView.appendZero(highKey), ReverseView.appendZero((lowKey)));
     }
 
     @Override
@@ -297,19 +268,16 @@ public final class TrimmedCursor implements Cursor {
 
     @Override
     public Cursor copy() {
-        TrimmedCursor c = new TrimmedCursor(mView, mSource.copy());
-        c.mKey = mKey;
-        return c;
+        return new ReverseCursor(mSource.copy());
     }
 
     @Override
     public void reset() {
-        mKey = null;
         mSource.reset();
     }
 
     @Override
     public void close() {
-        reset();
+        mSource.close();
     }
 }

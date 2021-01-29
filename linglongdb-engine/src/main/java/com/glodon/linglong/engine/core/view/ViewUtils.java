@@ -1,10 +1,13 @@
-package com.glodon.linglong.engine.core;
+package com.glodon.linglong.engine.core.view;
 
 import com.glodon.linglong.base.common.Utils;
 import com.glodon.linglong.base.exception.IllegalUpgradeException;
 import com.glodon.linglong.base.exception.LockFailureException;
 import com.glodon.linglong.base.exception.UnpositionedCursorException;
 import com.glodon.linglong.base.exception.ViewConstraintException;
+import com.glodon.linglong.engine.core.frame.Cursor;
+import com.glodon.linglong.engine.core.frame.Index;
+import com.glodon.linglong.engine.core.View;
 import com.glodon.linglong.engine.core.tx.Transaction;
 import com.glodon.linglong.engine.core.lock.DeadlockException;
 import com.glodon.linglong.engine.core.lock.LockInterruptedException;
@@ -16,14 +19,14 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author Stereo
  */
-class ViewUtils {
-    static void positionCheck(Object obj) {
+public class ViewUtils {
+    public static void positionCheck(Object obj) {
         if (obj == null) {
             throw new UnpositionedCursorException("Cursor position is undefined");
         }
     }
 
-    static long count(View view, boolean autoload, byte[] lowKey, byte[] highKey)
+    public static long count(View view, boolean autoload, byte[] lowKey, byte[] highKey)
             throws IOException {
         long count = 0;
 
@@ -53,7 +56,7 @@ class ViewUtils {
         return count;
     }
 
-    static byte[] appendZero(byte[] key) {
+    public static byte[] appendZero(byte[] key) {
         byte[] newKey = new byte[key.length + 1];
         System.arraycopy(key, 0, newKey, 0, key.length);
         return newKey;
@@ -178,7 +181,7 @@ class ViewUtils {
         }
     }
 
-    static LockResult nextCmp(Cursor c, byte[] limitKey, int cmp) throws IOException {
+    public static LockResult nextCmp(Cursor c, byte[] limitKey, int cmp) throws IOException {
         Utils.keyCheck(limitKey);
 
         while (true) {
@@ -206,7 +209,7 @@ class ViewUtils {
         }
     }
 
-    static LockResult previousCmp(Cursor c, byte[] limitKey, int cmp) throws IOException {
+    public static LockResult previousCmp(Cursor c, byte[] limitKey, int cmp) throws IOException {
         Utils.keyCheck(limitKey);
 
         while (true) {
@@ -234,7 +237,7 @@ class ViewUtils {
         }
     }
 
-    static void findNoLock(Cursor c, byte[] key) throws IOException {
+    public static void findNoLock(Cursor c, byte[] key) throws IOException {
         final boolean auto = c.autoload(false);
         final Transaction txn = c.link(Transaction.BOGUS);
         try {
@@ -245,7 +248,7 @@ class ViewUtils {
         }
     }
 
-    static void findNearbyNoLock(Cursor c, byte[] key) throws IOException {
+    public static void findNearbyNoLock(Cursor c, byte[] key) throws IOException {
         final boolean auto = c.autoload(false);
         final Transaction txn = c.link(Transaction.BOGUS);
         try {
@@ -256,7 +259,7 @@ class ViewUtils {
         }
     }
 
-    static Transaction enterScope(View view, Transaction txn) throws IOException {
+    public static Transaction enterScope(View view, Transaction txn) throws IOException {
         if (txn == null) {
             txn = view.newTransaction(null);
         } else if (txn != Transaction.BOGUS) {
@@ -265,7 +268,7 @@ class ViewUtils {
         return txn;
     }
 
-    static void commit(Cursor c, byte[] value) throws IOException {
+    public static void commit(Cursor c, byte[] value) throws IOException {
         try {
             c.store(value);
         } catch (Throwable e) {
@@ -282,17 +285,17 @@ class ViewUtils {
         }
     }
 
-    static byte[] copyValue(byte[] value) {
+    public static byte[] copyValue(byte[] value) {
         return value == Cursor.NOT_LOADED ? value : Utils.cloneArray(value);
     }
 
     @FunctionalInterface
-    interface LockAction {
+    public interface LockAction {
         LockResult lock(Transaction txn, byte[] key)
                 throws LockFailureException, ViewConstraintException;
     }
 
-    static LockResult tryLock(Transaction txn, byte[] key, long nanosTimeout, LockAction action)
+    public static LockResult tryLock(Transaction txn, byte[] key, long nanosTimeout, LockAction action)
             throws DeadlockException, ViewConstraintException {
         final long originalTimeout = txn.lockTimeout(TimeUnit.NANOSECONDS);
         try {
@@ -311,7 +314,7 @@ class ViewUtils {
         }
     }
 
-    static RuntimeException lockCleanup(Throwable e, Transaction txn, LockResult result) {
+    public static RuntimeException lockCleanup(Throwable e, Transaction txn, LockResult result) {
         if (result.isAcquired()) {
             try {
                 txn.unlock();
@@ -322,7 +325,7 @@ class ViewUtils {
         throw Utils.rethrow(e);
     }
 
-    static RuntimeException fail(AutoCloseable c, Throwable e) {
+    public static RuntimeException fail(AutoCloseable c, Throwable e) {
         if (c != null) {
             try {
                 c.close();
@@ -333,7 +336,7 @@ class ViewUtils {
         throw Utils.rethrow(e);
     }
 
-    static final String toString(Index ix) {
+    public static final String toString(Index ix) {
         StringBuilder b = new StringBuilder();
         Utils.appendMiniString(b, ix);
         b.append(" {");

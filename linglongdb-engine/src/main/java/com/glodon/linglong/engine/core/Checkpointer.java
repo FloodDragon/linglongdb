@@ -6,6 +6,7 @@ import com.glodon.linglong.base.common.Utils;
 import com.glodon.linglong.base.concurrent.Latch;
 import com.glodon.linglong.base.exception.DatabaseException;
 import com.glodon.linglong.engine.config.DatabaseConfig;
+import com.glodon.linglong.engine.core.frame.AbstractDatabase;
 import com.glodon.linglong.engine.event.EventListener;
 import com.glodon.linglong.engine.event.EventType;
 

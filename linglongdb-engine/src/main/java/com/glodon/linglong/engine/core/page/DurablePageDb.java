@@ -9,7 +9,7 @@ import com.glodon.linglong.base.exception.IncompleteRestoreException;
 import com.glodon.linglong.base.io.*;
 import com.glodon.linglong.engine.core.LocalDatabase;
 import com.glodon.linglong.engine.core.Node;
-import com.glodon.linglong.engine.core.Snapshot;
+import com.glodon.linglong.engine.core.frame.Snapshot;
 import com.glodon.linglong.engine.core.lock.CommitLock;
 import com.glodon.linglong.engine.event.EventListener;
 import com.glodon.linglong.engine.event.EventType;

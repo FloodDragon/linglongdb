@@ -2,8 +2,8 @@ package com.glodon.linglong.engine.core.tx;
 
 import com.glodon.linglong.base.common.LHashTable;
 import com.glodon.linglong.base.exception.DatabaseException;
-import com.glodon.linglong.engine.core.Cursor;
-import com.glodon.linglong.engine.core.Index;
+import com.glodon.linglong.engine.core.frame.Cursor;
+import com.glodon.linglong.engine.core.frame.Index;
 import com.glodon.linglong.engine.core.LocalDatabase;
 import com.glodon.linglong.engine.core.TreeCursor;
 import com.glodon.linglong.engine.core.lock.LockMode;
