@@ -15,6 +15,7 @@
         <module>linglongdb-client</module>
         <module>linglongdb-server</module>
         <module>linglongdb-assembly</module>
+        <module>linglongdb-jdbc</module>
     </modules>
 
     <properties>
