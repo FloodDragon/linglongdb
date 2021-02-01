@@ -2,8 +2,9 @@ package com.glodon.linglong.engine.core;
 
 import com.glodon.linglong.base.common.Utils;
 import com.glodon.linglong.engine.core.frame.Cursor;
+import com.glodon.linglong.engine.core.frame.View;
 import com.glodon.linglong.engine.core.tx.Transaction;
-import com.glodon.linglong.engine.core.view.ViewUtils;
+import com.glodon.linglong.engine.core.frame.ViewUtils;
 
 import java.io.IOException;
 
@@ -31,7 +32,7 @@ public final class BoundedView extends SubView {
         return new BoundedView(view, null, key, END_EXCLUSIVE);
     }
 
-    static View viewPrefix(View view, byte[] prefix, int trim) {
+    public static View viewPrefix(View view, byte[] prefix, int trim) {
         prefixCheck(prefix, trim);
 
         byte[] end = prefix.clone();

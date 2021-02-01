@@ -2,7 +2,7 @@ package com.glodon.linglong.engine.core.updater;
 
 import com.glodon.linglong.base.common.EntryFunction;
 import com.glodon.linglong.engine.core.frame.Scanner;
-import com.glodon.linglong.engine.core.view.ViewUtils;
+import com.glodon.linglong.engine.core.frame.ViewUtils;
 
 import java.io.Flushable;
 import java.io.IOException;

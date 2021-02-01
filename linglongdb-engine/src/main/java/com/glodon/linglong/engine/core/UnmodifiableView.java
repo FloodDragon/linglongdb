@@ -5,14 +5,10 @@ import com.glodon.linglong.base.exception.UnmodifiableViewException;
 import com.glodon.linglong.base.exception.ViewConstraintException;
 import com.glodon.linglong.base.common.Ordering;
 import com.glodon.linglong.engine.config.DurabilityMode;
-import com.glodon.linglong.engine.core.frame.Cursor;
-import com.glodon.linglong.engine.core.frame.Filter;
-import com.glodon.linglong.engine.core.frame.Index;
-import com.glodon.linglong.engine.core.frame.Transformer;
+import com.glodon.linglong.engine.core.frame.*;
 import com.glodon.linglong.engine.core.lock.DeadlockException;
 import com.glodon.linglong.engine.core.lock.LockResult;
 import com.glodon.linglong.engine.core.tx.Transaction;
-import com.glodon.linglong.engine.core.view.ViewUtils;
 import com.glodon.linglong.engine.observer.VerificationObserver;
 
 import java.io.IOException;
@@ -22,7 +18,7 @@ import java.util.Comparator;
  * @author Stereo
  */
 public final class UnmodifiableView implements Index {
-    static View apply(View view) {
+    public static View apply(View view) {
         return view.isUnmodifiable() ? view : new UnmodifiableView(view);
     }
 

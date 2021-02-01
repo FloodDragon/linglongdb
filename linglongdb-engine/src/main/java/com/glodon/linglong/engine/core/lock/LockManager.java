@@ -83,7 +83,7 @@ public final class LockManager {
         return getLockHT(hash).isAvailable(locker, indexId, key, hash);
     }
 
-    final LockResult check(LockOwner locker, long indexId, byte[] key, int hash) {
+    public final LockResult check(LockOwner locker, long indexId, byte[] key, int hash) {
         LockHT ht = getLockHT(hash);
         ht.acquireShared();
         try {

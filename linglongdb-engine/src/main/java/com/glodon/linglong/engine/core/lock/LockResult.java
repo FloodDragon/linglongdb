@@ -49,7 +49,7 @@ public enum LockResult {
         return mType == 2;
     }
 
-    LockResult commonOwned(LockResult other) {
+    public LockResult commonOwned(LockResult other) {
         if (this == UNOWNED) {
             return this;
         } else if (this == OWNED_SHARED) {

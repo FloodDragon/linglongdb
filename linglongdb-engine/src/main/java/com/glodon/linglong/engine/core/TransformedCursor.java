@@ -8,7 +8,7 @@ import com.glodon.linglong.engine.core.frame.Cursor;
 import com.glodon.linglong.engine.core.frame.Transformer;
 import com.glodon.linglong.engine.core.lock.LockResult;
 import com.glodon.linglong.engine.core.tx.Transaction;
-import com.glodon.linglong.engine.core.view.ViewUtils;
+import com.glodon.linglong.engine.core.frame.ViewUtils;
 
 import java.io.IOException;
 import java.util.Comparator;
@@ -534,27 +534,27 @@ public final class TransformedCursor extends AbstractValueAccessor implements Cu
     }
 
     @Override
-    int doValueRead(long pos, byte[] buf, int off, int len) throws IOException {
+    public int doValueRead(long pos, byte[] buf, int off, int len) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    void doValueWrite(long pos, byte[] buf, int off, int len) throws IOException {
+    public void doValueWrite(long pos, byte[] buf, int off, int len) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    void doValueClear(long pos, long length) throws IOException {
+    public void doValueClear(long pos, long length) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    int valueStreamBufferSize(int bufferSize) {
+    public int valueStreamBufferSize(int bufferSize) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    void valueCheckOpen() {
+    public void valueCheckOpen() {
         throw new UnsupportedOperationException();
     }
 
@@ -627,7 +627,7 @@ public final class TransformedCursor extends AbstractValueAccessor implements Cu
         return result;
     }
 
-    Cursor source() {
+    public Cursor source() {
         return mSource;
     }
 }

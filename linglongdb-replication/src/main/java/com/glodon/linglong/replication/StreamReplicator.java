@@ -22,7 +22,7 @@ public interface StreamReplicator extends DirectReplicator {
             throw new IllegalArgumentException("No configuration");
         }
 
-        File base = config.mBaseFile;
+        File base = config.getBaseFile();
         if (base == null) {
             throw new IllegalArgumentException("No base file configured");
         }
@@ -31,18 +31,18 @@ public interface StreamReplicator extends DirectReplicator {
             throw new IllegalArgumentException("Base file is a directory: " + base);
         }
 
-        long groupToken = config.mGroupToken;
+        long groupToken = config.getGroupToken();
         if (groupToken == 0) {
             throw new IllegalArgumentException("No group token configured");
         }
 
-        SocketAddress localAddress = config.mLocalAddress;
+        SocketAddress localAddress = config.getLocalAddress();
         if (localAddress == null) {
             throw new IllegalArgumentException("No local address configured");
         }
 
-        SocketAddress listenAddress = config.mListenAddress;
-        ServerSocket localSocket = config.mLocalSocket;
+        SocketAddress listenAddress = config.getListenAddress();
+        ServerSocket localSocket = config.getLocalSocket();
 
         if (listenAddress == null) {
             listenAddress = localAddress;
@@ -56,20 +56,20 @@ public interface StreamReplicator extends DirectReplicator {
             localSocket = ChannelManager.newServerSocket(listenAddress);
         }
 
-        Set<SocketAddress> seeds = config.mSeeds;
+        Set<SocketAddress> seeds = config.getSeeds();
 
         if (seeds == null) {
             seeds = Collections.emptySet();
         }
 
-        if (config.mMkdirs) {
+        if (config.isMkdirs()) {
             base.getParentFile().mkdirs();
         }
 
-        return Controller.open(config.mEventListener,
+        return Controller.open(config.getEventListener(),
                 new FileStateLog(base), groupToken,
                 new File(base.getPath() + ".group"),
-                localAddress, listenAddress, config.mLocalRole,
+                localAddress, listenAddress, config.getLocalRole(),
                 seeds, localSocket);
     }
 

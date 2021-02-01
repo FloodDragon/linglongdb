@@ -12,6 +12,11 @@ import java.lang.ref.WeakReference;
  */
 public class Locker extends LockOwner {
     protected final LockManager mManager;
+
+    public LockManager getManager() {
+        return mManager;
+    }
+
     protected ParentScope mParentScope;
     protected Object mTailBlock;
 
@@ -63,7 +68,7 @@ public class Locker extends LockOwner {
         return count;
     }
 
-    final LockResult tryLock(int lockType, long indexId, byte[] key, int hash, long nanosTimeout)
+    public final LockResult tryLock(int lockType, long indexId, byte[] key, int hash, long nanosTimeout)
             throws DeadlockException {
         LockResult result = manager().getLockHT(hash)
                 .tryLock(lockType, this, indexId, key, hash, nanosTimeout);

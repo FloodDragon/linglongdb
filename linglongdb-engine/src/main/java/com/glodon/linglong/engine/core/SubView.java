@@ -4,6 +4,7 @@ import com.glodon.linglong.base.exception.LockFailureException;
 import com.glodon.linglong.base.exception.ViewConstraintException;
 import com.glodon.linglong.base.common.Ordering;
 import com.glodon.linglong.engine.config.DurabilityMode;
+import com.glodon.linglong.engine.core.frame.View;
 import com.glodon.linglong.engine.core.lock.DeadlockException;
 import com.glodon.linglong.engine.core.lock.LockResult;
 import com.glodon.linglong.engine.core.tx.Transaction;

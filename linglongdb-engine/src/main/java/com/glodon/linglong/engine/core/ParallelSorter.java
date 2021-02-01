@@ -19,7 +19,8 @@ import java.util.concurrent.atomic.LongAdder;
  * @author Stereo
  */
 public final class ParallelSorter implements Sorter, Node.Supplier {
-    private static final int MIN_SORTTreeS = 8;
+    private static
+    final int MIN_SORTTreeS = 8;
     private static final int MAX_SORTTreeS = 64;
 
     private static final int LEVEL_MIN_SIZE = 8;

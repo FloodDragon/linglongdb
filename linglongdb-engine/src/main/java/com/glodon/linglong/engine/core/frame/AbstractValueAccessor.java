@@ -64,15 +64,15 @@ public abstract class AbstractValueAccessor implements ValueAccessor {
         return new Out(pos, new byte[valueStreamBufferSize(bufferSize)]);
     }
 
-    abstract int doValueRead(long pos, byte[] buf, int off, int len) throws IOException;
+    public abstract int doValueRead(long pos, byte[] buf, int off, int len) throws IOException;
 
-    abstract void doValueWrite(long pos, byte[] buf, int off, int len) throws IOException;
+    public abstract void doValueWrite(long pos, byte[] buf, int off, int len) throws IOException;
 
-    abstract void doValueClear(long pos, long length) throws IOException;
+    public abstract void doValueClear(long pos, long length) throws IOException;
 
-    abstract int valueStreamBufferSize(int bufferSize);
+    public abstract int valueStreamBufferSize(int bufferSize);
 
-    abstract void valueCheckOpen();
+    public abstract void valueCheckOpen();
 
     static void boundsCheck(byte[] buf, int off, int len) {
         if ((off | len | (off + len) | (buf.length - (off + len))) < 0) {

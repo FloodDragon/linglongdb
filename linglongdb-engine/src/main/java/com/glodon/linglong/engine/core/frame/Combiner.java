@@ -1,6 +1,5 @@
 package com.glodon.linglong.engine.core.frame;
 
-import com.glodon.linglong.engine.core.View;
 import com.glodon.linglong.engine.core.tx.Transaction;
 
 import java.io.IOException;

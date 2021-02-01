@@ -1,6 +1,6 @@
 package com.glodon.linglong.engine.event;
 
-import com.glodon.linglong.engine.util.Utils;
+import com.glodon.linglong.base.common.Utils;
 
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;

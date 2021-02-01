@@ -20,14 +20,58 @@ public class ReplicatorConfig implements Cloneable, Serializable {
     private static final long serialVersionUID = 1L;
 
     File mBaseFile;
+
+    public File getBaseFile() {
+        return mBaseFile;
+    }
+
     boolean mMkdirs;
+
+    public boolean isMkdirs() {
+        return mMkdirs;
+    }
+
     long mGroupToken;
+
+    public long getGroupToken() {
+        return mGroupToken;
+    }
+
     SocketAddress mLocalAddress;
+
+    public SocketAddress getLocalAddress() {
+        return mLocalAddress;
+    }
+
     SocketAddress mListenAddress;
+
+    public SocketAddress getListenAddress() {
+        return mListenAddress;
+    }
+
     ServerSocket mLocalSocket;
+
+    public ServerSocket getLocalSocket() {
+        return mLocalSocket;
+    }
+
     Role mLocalRole;
+
+    public Role getLocalRole() {
+        return mLocalRole;
+    }
+
     Set<SocketAddress> mSeeds;
+
+    public Set<SocketAddress> getSeeds() {
+        return mSeeds;
+    }
+
     transient BiConsumer<Level, String> mEventListener;
+
+    public BiConsumer<Level, String> getEventListener() {
+        return mEventListener;
+    }
 
     public ReplicatorConfig() {
         createFilePath(true);

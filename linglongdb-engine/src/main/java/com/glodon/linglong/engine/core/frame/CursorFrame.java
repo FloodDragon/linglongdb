@@ -85,7 +85,7 @@ public class CursorFrame extends AtomicReference<CursorFrame> {
         }
     }
 
-    final Node tryAcquireShared() {
+    public final Node tryAcquireShared() {
         Node node = mNode;
         while (node.tryAcquireShared()) {
             Node actualNode = mNode;
@@ -173,7 +173,7 @@ public class CursorFrame extends AtomicReference<CursorFrame> {
         }
     }
 
-    final void bindOrReposition(Node node, int nodePos) {
+    public final void bindOrReposition(Node node, int nodePos) {
         if (mNode == null) {
             bind(node, nodePos);
         } else if (mNode == node) {
@@ -286,13 +286,13 @@ public class CursorFrame extends AtomicReference<CursorFrame> {
         } while (frame != null);
     }
 
-    final void popChilden(CursorFrame child) {
+    public final void popChilden(CursorFrame child) {
         do {
             child = child.pop();
         } while (child != this);
     }
 
-    final void copyInto(CursorFrame dest) {
+    public final void copyInto(CursorFrame dest) {
         Node node = acquireShared();
         CursorFrame parent = mParentFrame;
 

@@ -7,10 +7,11 @@ import com.glodon.linglong.base.exception.ViewConstraintException;
 import com.glodon.linglong.engine.config.DurabilityMode;
 import com.glodon.linglong.engine.core.frame.Cursor;
 import com.glodon.linglong.engine.core.frame.Transformer;
+import com.glodon.linglong.engine.core.frame.View;
 import com.glodon.linglong.engine.core.lock.DeadlockException;
 import com.glodon.linglong.engine.core.lock.LockResult;
 import com.glodon.linglong.engine.core.tx.Transaction;
-import com.glodon.linglong.engine.core.view.ViewUtils;
+import com.glodon.linglong.engine.core.frame.ViewUtils;
 
 import java.io.IOException;
 import java.util.Comparator;
@@ -18,8 +19,8 @@ import java.util.Comparator;
 /**
  * @author Stereo
  */
-final class TransformedView implements View {
-    static View apply(View source, Transformer transformer) {
+public final class TransformedView implements View {
+    public static View apply(View source, Transformer transformer) {
         if (transformer == null) {
             throw new NullPointerException("Transformer is null");
         }

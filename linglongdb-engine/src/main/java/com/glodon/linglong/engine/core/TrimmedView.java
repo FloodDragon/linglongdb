@@ -7,6 +7,7 @@ import com.glodon.linglong.base.exception.ViewConstraintException;
 import com.glodon.linglong.engine.config.DurabilityMode;
 import com.glodon.linglong.engine.core.frame.Cursor;
 import com.glodon.linglong.engine.core.frame.Transformer;
+import com.glodon.linglong.engine.core.frame.View;
 import com.glodon.linglong.engine.core.lock.DeadlockException;
 import com.glodon.linglong.engine.core.lock.LockResult;
 import com.glodon.linglong.engine.core.tx.Transaction;

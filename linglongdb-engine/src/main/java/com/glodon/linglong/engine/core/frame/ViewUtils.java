@@ -1,13 +1,10 @@
-package com.glodon.linglong.engine.core.view;
+package com.glodon.linglong.engine.core.frame;
 
 import com.glodon.linglong.base.common.Utils;
 import com.glodon.linglong.base.exception.IllegalUpgradeException;
 import com.glodon.linglong.base.exception.LockFailureException;
 import com.glodon.linglong.base.exception.UnpositionedCursorException;
 import com.glodon.linglong.base.exception.ViewConstraintException;
-import com.glodon.linglong.engine.core.frame.Cursor;
-import com.glodon.linglong.engine.core.frame.Index;
-import com.glodon.linglong.engine.core.View;
 import com.glodon.linglong.engine.core.tx.Transaction;
 import com.glodon.linglong.engine.core.lock.DeadlockException;
 import com.glodon.linglong.engine.core.lock.LockInterruptedException;

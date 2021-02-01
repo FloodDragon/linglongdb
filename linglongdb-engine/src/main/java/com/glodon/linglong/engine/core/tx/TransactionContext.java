@@ -57,7 +57,7 @@ public final class TransactionContext extends Latch implements Flushable {
         }
     }
 
-    long nextTransactionId() {
+    public long nextTransactionId() {
         long txnId = cHighTxnIdUpdater.addAndGet(this, mTxnStride);
 
         if (txnId <= 0) {
@@ -72,7 +72,7 @@ public final class TransactionContext extends Latch implements Flushable {
         return txnId;
     }
 
-    void acquireRedoLatch() {
+    public void acquireRedoLatch() {
         acquireExclusive();
     }
 
@@ -117,7 +117,7 @@ public final class TransactionContext extends Latch implements Flushable {
     }
 
     public long redoStoreAutoCommit(RedoWriter redo, long indexId, byte[] key, byte[] value,
-                             DurabilityMode mode)
+                                    DurabilityMode mode)
             throws IOException {
         Utils.keyCheck(key);
         mode = redo.opWriteCheck(mode);
@@ -357,7 +357,7 @@ public final class TransactionContext extends Latch implements Flushable {
         redoWriteTerminator(redo);
     }
 
-    void redoCursorRegister(RedoWriter redo, long cursorId, long indexId) throws IOException {
+    public void redoCursorRegister(RedoWriter redo, long cursorId, long indexId) throws IOException {
         redo.opWriteCheck(null);
 
         acquireRedoLatch();
@@ -371,7 +371,7 @@ public final class TransactionContext extends Latch implements Flushable {
         }
     }
 
-    void redoCursorUnregister(RedoWriter redo, long cursorId) throws IOException {
+    public void redoCursorUnregister(RedoWriter redo, long cursorId) throws IOException {
         redo.opWriteCheck(null);
 
         acquireRedoLatch();

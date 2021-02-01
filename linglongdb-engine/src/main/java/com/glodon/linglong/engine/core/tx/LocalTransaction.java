@@ -318,7 +318,7 @@ public final class LocalTransaction extends Locker implements Transaction {
         mRedo.txnCommitPending(pending);
     }
 
-    final void storeCommit(boolean requireUndo, TreeCursor cursor, byte[] value)
+    public final void storeCommit(boolean requireUndo, TreeCursor cursor, byte[] value)
             throws IOException {
         if (mRedo == null) {
             cursor.storeNoRedo(this, value);
@@ -873,7 +873,7 @@ public final class LocalTransaction extends Locker implements Transaction {
         return finish;
     }
 
-    final void redoStore(long indexId, byte[] key, byte[] value) throws IOException {
+    public final void redoStore(long indexId, byte[] key, byte[] value) throws IOException {
         check();
 
         if (mRedo == null) {
@@ -914,7 +914,7 @@ public final class LocalTransaction extends Locker implements Transaction {
         }
     }
 
-    final void redoCursorStore(long cursorId, byte[] key, byte[] value) throws IOException {
+    public final void redoCursorStore(long cursorId, byte[] key, byte[] value) throws IOException {
         check();
 
         if (mRedo == null) {
@@ -984,7 +984,7 @@ public final class LocalTransaction extends Locker implements Transaction {
         return txnId;
     }
 
-    final boolean tryRedoCursorRegister(TreeCursor cursor) throws IOException {
+    public final boolean tryRedoCursorRegister(TreeCursor cursor) throws IOException {
         if (mRedo == null || (mTxnId <= 0 && mRedo.adjustTransactionId(1) <= 0)) {
             return false;
         } else {
@@ -1004,8 +1004,8 @@ public final class LocalTransaction extends Locker implements Transaction {
         return cursorId;
     }
 
-    final void redoCursorValueModify(TreeCursor cursor, int op,
-                                     long pos, byte[] buf, int off, long len)
+    public final void redoCursorValueModify(TreeCursor cursor, int op,
+                                            long pos, byte[] buf, int off, long len)
             throws IOException {
         check();
 
@@ -1069,7 +1069,7 @@ public final class LocalTransaction extends Locker implements Transaction {
         }
     }
 
-    final void pushUninsert(long indexId, byte[] key) throws IOException {
+    public final void pushUninsert(long indexId, byte[] key) throws IOException {
         check();
         try {
             undoLog().pushUninsert(indexId, key);
@@ -1088,7 +1088,7 @@ public final class LocalTransaction extends Locker implements Transaction {
         }
     }
 
-    final void pushUncreate(long indexId, byte[] key) throws IOException {
+    public final void pushUncreate(long indexId, byte[] key) throws IOException {
         check();
         try {
             undoLog().pushUncreate(indexId, key);
@@ -1097,7 +1097,7 @@ public final class LocalTransaction extends Locker implements Transaction {
         }
     }
 
-    final void pushUnextend(long indexId, byte[] key, long length) throws IOException {
+    public final void pushUnextend(long indexId, byte[] key, long length) throws IOException {
         check();
         try {
             undoLog().pushUnextend(mSavepoint, indexId, key, length);
@@ -1106,7 +1106,7 @@ public final class LocalTransaction extends Locker implements Transaction {
         }
     }
 
-    final void pushUnalloc(long indexId, byte[] key, long pos, long length) throws IOException {
+    public final void pushUnalloc(long indexId, byte[] key, long pos, long length) throws IOException {
         check();
         try {
             undoLog().pushUnalloc(indexId, key, pos, length);
@@ -1115,7 +1115,7 @@ public final class LocalTransaction extends Locker implements Transaction {
         }
     }
 
-    final void pushUnwrite(long indexId, byte[] key, long pos, long b, int off, int len)
+    public final void pushUnwrite(long indexId, byte[] key, long pos, long b, int off, int len)
             throws IOException {
         check();
         try {

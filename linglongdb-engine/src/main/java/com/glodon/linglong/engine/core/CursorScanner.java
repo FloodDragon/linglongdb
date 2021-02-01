@@ -3,7 +3,7 @@ package com.glodon.linglong.engine.core;
 import com.glodon.linglong.base.exception.UnpositionedCursorException;
 import com.glodon.linglong.engine.core.frame.Cursor;
 import com.glodon.linglong.engine.core.frame.Scanner;
-import com.glodon.linglong.engine.core.view.ViewUtils;
+import com.glodon.linglong.engine.core.frame.ViewUtils;
 
 import java.io.IOException;
 import java.util.Comparator;

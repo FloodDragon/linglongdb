@@ -5,7 +5,7 @@ import com.glodon.linglong.engine.core.frame.Cursor;
 import com.glodon.linglong.engine.core.CursorScanner;
 import com.glodon.linglong.engine.core.lock.LockResult;
 import com.glodon.linglong.engine.core.tx.Transaction;
-import com.glodon.linglong.engine.core.view.ViewUtils;
+import com.glodon.linglong.engine.core.frame.ViewUtils;
 
 import java.io.IOException;
 

@@ -4,7 +4,7 @@ import com.glodon.linglong.base.common.Ordering;
 import com.glodon.linglong.engine.core.frame.Cursor;
 import com.glodon.linglong.engine.core.lock.LockResult;
 import com.glodon.linglong.engine.core.tx.Transaction;
-import com.glodon.linglong.engine.core.view.ViewUtils;
+import com.glodon.linglong.engine.core.frame.ViewUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,13 +18,13 @@ import static com.glodon.linglong.engine.core.SubView.fail;
 /**
  * @author Stereo
  */
-final class BoundedCursor implements Cursor {
+public final class BoundedCursor implements Cursor {
     final BoundedView mView;
     final Cursor mSource;
 
     private boolean mOutOfBounds;
 
-    BoundedCursor(BoundedView view, Cursor source) {
+    public BoundedCursor(BoundedView view, Cursor source) {
         mView = view;
         mSource = source;
     }

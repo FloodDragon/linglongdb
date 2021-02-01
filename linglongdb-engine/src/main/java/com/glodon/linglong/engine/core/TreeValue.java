@@ -1,8 +1,11 @@
 package com.glodon.linglong.engine.core;
 
+import com.glodon.linglong.base.common.Utils;
+import com.glodon.linglong.base.exception.LargeValueException;
 import com.glodon.linglong.engine.core.frame.CursorFrame;
 import com.glodon.linglong.engine.core.page.DirectPageOps;
 import com.glodon.linglong.engine.core.tx.LocalTransaction;
+import com.glodon.linglong.engine.core.tx.UndoLog;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -25,7 +28,6 @@ final public class TreeValue {
 
         int nodePos = frame.getNodePos();
         if (nodePos < 0) {
-            // Value doesn't exist.
             return -1;
         }
 
@@ -102,32 +104,19 @@ final public class TreeValue {
         }
     }
 
-    /**
-     * Caller must hold shared commit lock when using OP_SET_LENGTH or OP_WRITE.
-     *
-     * @param txn   optional transaction for undo operations
-     * @param frame latched shared for read op, exclusive for write op; released only if an
-     *              exception is thrown
-     * @param b     ignored by OP_LENGTH; OP_SET_LENGTH must pass EMPTY_BYTES
-     * @return applicable only to OP_LENGTH and OP_READ
-     */
     @SuppressWarnings("fallthrough")
     static long action(LocalTransaction txn, TreeCursor cursor, CursorFrame frame,
                        int op, long pos, byte[] b, int bOff, long bLen)
             throws IOException {
         while (true) {
-            Node node = frame.mNode;
+            Node node = frame.getNode();
 
-            int nodePos = frame.mNodePos;
+            int nodePos = frame.getNodePos();
             if (nodePos < 0) {
-                // Value doesn't exist.
 
                 if (op <= OP_CLEAR) {
-                    // Handle OP_LENGTH, OP_READ, and OP_CLEAR.
                     return -1;
                 }
-
-                // Handle OP_SET_LENGTH and OP_WRITE.
 
                 if (b == TOUCH_VALUE) {
                     return 0;
@@ -135,23 +124,18 @@ final public class TreeValue {
 
                 if (txn != null) {
                     txn.pushUncreate(cursor.mTree.mId, cursor.mKey);
-                    // No more undo operations to push.
                     txn = null;
                 }
 
-                // Method releases latch if an exception is thrown.
                 node = cursor.insertBlank(frame, node, pos + bLen);
 
                 if (bLen <= 0) {
                     return 0;
                 }
 
-                // Fallthrough and complete the write operation. Need to re-assign nodePos,
-                // because the insert operation changed it.
-                nodePos = frame.mNodePos;
+                nodePos = frame.getNodePos();
 
                 if (nodePos < 0) {
-                    // Concurrently deleted.
                     return 0;
                 }
             }
@@ -161,7 +145,6 @@ final public class TreeValue {
 
             final int kHeaderLoc = loc;
 
-            // Skip the key.
             loc += Node.keyLengthAtLoc(page, loc);
 
             final int vHeaderLoc = loc; // location of raw value header
@@ -181,9 +164,7 @@ final public class TreeValue {
                         vLen = 1 + (((vHeader & 0x0f) << 16)
                                 | (DirectPageOps.p_ubyteGet(page, loc++) << 8) | DirectPageOps.p_ubyteGet(page, loc++));
                     } else {
-                        // ghost
                         if (op <= OP_CLEAR) {
-                            // Handle OP_LENGTH, OP_READ, and OP_CLEAR.
                             return -1;
                         }
 
@@ -191,19 +172,15 @@ final public class TreeValue {
                             return 0;
                         }
 
-                        // Replace the ghost with an empty value.
                         DirectPageOps.p_bytePut(page, vHeaderLoc, 0);
                         vLen = 0;
                         break decodeLen;
                     }
 
                     if ((vHeader & Node.ENTRY_FRAGMENTED) != 0) {
-                        // Value is fragmented.
                         break nonFrag;
                     }
                 }
-
-                // Operate against a non-fragmented value.
 
                 switch (op) {
                     case OP_LENGTH:
@@ -275,7 +252,6 @@ final public class TreeValue {
                             return 0;
                         }
 
-                        // Break out for length increase, by appending an empty value.
                         break;
 
                     case OP_WRITE:
@@ -286,7 +262,6 @@ final public class TreeValue {
                         if (pos < vLen) {
                             final long end = pos + bLen;
                             if (end <= vLen) {
-                                // Writing within existing value region.
                                 int iLoc = (int) (loc + pos);
                                 int iLen = (int) bLen;
                                 if (txn != null) {
@@ -296,12 +271,10 @@ final public class TreeValue {
                                 DirectPageOps.p_copyFromArray(b, bOff, page, iLoc, iLen);
                                 return 0;
                             } else if (pos == 0 && bOff == 0 && bLen == b.length) {
-                                // Writing over the entire value and extending.
                                 try {
-                                    _Tree tree = cursor.mTree;
+                                    Tree tree = cursor.mTree;
                                     if (txn != null) {
-                                        // Copy whole entry into undo log.
-                                        txn.pushUndoStore(tree.mId, _UndoLog.OP_UNUPDATE,
+                                        txn.pushUndoStore(tree.mId, UndoLog.OP_UNUPDATE,
                                                 page, kHeaderLoc, loc + vLen - kHeaderLoc);
                                     }
                                     node.updateLeafValue(frame, tree, nodePos, 0, b);
@@ -310,12 +283,10 @@ final public class TreeValue {
                                     throw e;
                                 }
                                 if (node.mSplit != null) {
-                                    // Releases latch if an exception is thrown.
                                     node = cursor.mTree.finishSplit(frame, node);
                                 }
                                 return 0;
                             } else {
-                                // Write the overlapping region, and then append the rest.
                                 int iLoc = (int) (loc + pos);
                                 int iLen = (int) (vLen - pos);
                                 if (txn != null) {
@@ -329,17 +300,11 @@ final public class TreeValue {
                             }
                         }
 
-                        // Break out for append.
                         break;
                 }
 
-                // This point is reached for appending to a non-fragmented value. There's all
-                // kinds of optimizations that can be performed here, but keep things
-                // simple. Delete the old value, insert a blank value, and then update it.
-
                 if (txn != null) {
                     txn.pushUnextend(cursor.mTree.mId, cursor.mKey, vLen);
-                    // No more undo operations to push.
                     txn = null;
                 }
 
@@ -347,10 +312,8 @@ final public class TreeValue {
                 DirectPageOps.p_copyToArray(page, loc, oldValue, 0, oldValue.length);
 
                 node.deleteLeafEntry(nodePos);
-                // Fix all bound cursors, including the current one.
                 node.postDelete(nodePos, cursor.mKey);
 
-                // Method releases latch if an exception is thrown.
                 cursor.insertBlank(frame, node, pos + bLen);
 
                 op = OP_WRITE;
@@ -366,9 +329,6 @@ final public class TreeValue {
 
                 continue;
             }
-
-            // Operate against a fragmented value. First read the fragment header, as described
-            // by the LocalDatabase.fragment method.
 
             int fHeaderLoc; // location of fragmented value header
             int fHeader;    // header byte of fragmented value
@@ -413,12 +373,10 @@ final public class TreeValue {
                         final int total = (int) bLen;
 
                         if ((fHeader & 0x02) != 0) {
-                            // Inline content.
                             final int fInlineLen = DirectPageOps.p_ushortGetLE(page, loc);
                             loc += 2;
                             final int amt = (int) (fInlineLen - pos);
                             if (amt <= 0) {
-                                // Not reading any inline content.
                                 pos -= fInlineLen;
                             } else if (bLen <= amt) {
                                 DirectPageOps.p_copyToArray(page, (int) (loc + pos), b, bOff, (int) bLen);
@@ -435,7 +393,6 @@ final public class TreeValue {
                         final LocalDatabase db = node.getDatabase();
 
                         if ((fHeader & 0x01) == 0) {
-                            // Direct pointers.
                             final int ipos = (int) pos;
                             final int pageSize = pageSize(db, page);
                             loc += (ipos / pageSize) * 6;
@@ -444,7 +401,6 @@ final public class TreeValue {
                                 final int amt = Math.min((int) bLen, pageSize - fNodeOff);
                                 final long fNodeId = DirectPageOps.p_uint48GetLE(page, loc);
                                 if (fNodeId == 0) {
-                                    // Reading a sparse value.
                                     Arrays.fill(b, bOff, bOff + amt, (byte) 0);
                                 } else {
                                     final Node fNode = db.nodeMapLoadFragment(fNodeId);
@@ -461,11 +417,8 @@ final public class TreeValue {
                             }
                         }
 
-                        // Indirect pointers.
-
                         final long inodeId = DirectPageOps.p_uint48GetLE(page, loc);
                         if (inodeId == 0) {
-                            // Reading a sparse value.
                             Arrays.fill(b, bOff, bOff + (int) bLen, (byte) 0);
                         } else {
                             final int levels = db.calculateInodeLevels(fLen);
@@ -490,20 +443,16 @@ final public class TreeValue {
                             }
                         } else {
                             if (pos >= fLen) {
-                                // Fallthrough to the next case (OP_WRITE) to extend the length.
                                 break clearOrTruncate;
                             }
                             bLen = fLen - pos;
                         }
-
-                        // Clear range of fragmented value, and then truncate if OP_SET_LENGTH.
 
                         final long finalLength = pos;
                         int fInlineLoc = loc;
                         int fInlineLen = 0;
 
                         if ((fHeader & 0x02) != 0) {
-                            // Inline content.
                             fInlineLen = DirectPageOps.p_ushortGetLE(page, loc);
                             fInlineLoc += 2;
                             loc += 2;
@@ -512,7 +461,6 @@ final public class TreeValue {
                             if (amt > 0) {
                                 int iLoc = (int) (loc + pos);
                                 if (bLen <= amt) {
-                                    // Only clearing inline content.
                                     int iLen = (int) bLen;
                                     if (txn != null) {
                                         txn.pushUnwrite(cursor.mTree.mId, cursor.mKey,
@@ -520,8 +468,6 @@ final public class TreeValue {
                                     }
                                     DirectPageOps.p_clear(page, iLoc, iLoc + iLen);
                                     if (op == OP_SET_LENGTH) {
-                                        // Fragmented value encoding isn't used for pure inline
-                                        // content, and so this case isn't expected.
                                         fHeaderLoc = truncateFragmented
                                                 (node, page, vHeaderLoc, vLen, iLen);
                                         updateLengthField(page, fHeaderLoc, finalLength);
@@ -538,15 +484,12 @@ final public class TreeValue {
                             }
 
                             fLen -= fInlineLen;
-                            // Move location to first page pointer.
                             loc += fInlineLen;
                         }
 
                         final boolean toEnd = (pos - fInlineLen + bLen) >= fLen;
 
                         if ((fHeader & 0x01) != 0) try {
-                            // Indirect pointers.
-
                             long inodeId = DirectPageOps.p_uint48GetLE(page, loc);
 
                             if (inodeId == 0) {
@@ -590,7 +533,6 @@ final public class TreeValue {
                                             childNode = db.nodeMapLoadFragmentExclusive(childNodeId, true);
                                         } catch (Throwable e) {
                                             inode.releaseExclusive();
-                                            // Panic.
                                             db.close(e);
                                             throw e;
                                         }
@@ -605,14 +547,12 @@ final public class TreeValue {
 
                                     if (newLevels <= 0) {
                                         if (pos == 0) {
-                                            // Convert to an empty value.
                                             DirectPageOps.p_bytePut(page, vHeaderLoc, 0);
                                             int garbageAccum = fHeaderLoc - vHeaderLoc + vLen - 1;
                                             node.garbage(node.garbage() + garbageAccum);
                                             db.deleteNode(inode);
                                             break clearNodes;
                                         }
-                                        // Convert to direct pointer format.
                                         DirectPageOps.p_bytePut(page, fHeaderLoc, fHeader & ~0x01);
                                     }
                                 } finally {
@@ -626,8 +566,6 @@ final public class TreeValue {
                             node.releaseExclusive();
                             throw e;
                         }
-
-                        // Direct pointers.
 
                         final LocalDatabase db = node.getDatabase();
                         final int ipos = (int) (pos - fInlineLen);
@@ -643,7 +581,6 @@ final public class TreeValue {
 
                             if (fNodeId != 0) {
                                 if (amt >= pageSize || toEnd && fNodeOff <= 0) {
-                                    // Full clear of inode.
                                     if (txn == null) {
                                         db.deleteFragment(fNodeId);
                                     } else {
@@ -658,7 +595,6 @@ final public class TreeValue {
                                     }
                                     DirectPageOps.p_int48PutLE(page, loc, 0);
                                 } else {
-                                    // Partial clear of inode.
                                     Node fNode = db.nodeMapLoadFragmentExclusive(fNodeId, true);
                                     try {
                                         if (db.markFragmentDirty(fNode)) {
@@ -684,7 +620,6 @@ final public class TreeValue {
                                 if (op == OP_SET_LENGTH) {
                                     int shrinkage = loc - firstDeletedLoc;
                                     if (ipos <= 0) {
-                                        // All pointers are gone, so convert to a normal value.
                                         int len = (int) finalLength;
                                         shrinkage = shrinkage - ipos + fInlineLen - len;
                                         fragmentedToNormal
@@ -710,7 +645,6 @@ final public class TreeValue {
                 case OP_WRITE:
                     int fInlineLen = 0;
                     if ((fHeader & 0x02) != 0) {
-                        // Inline content.
                         fInlineLen = DirectPageOps.p_ushortGetLE(page, loc);
                         loc += 2;
                         final long amt = fInlineLen - pos;
@@ -726,8 +660,6 @@ final public class TreeValue {
                                 DirectPageOps.p_copyFromArray(b, bOff, page, iLoc, iLen);
                                 return 0;
                             }
-                            // Write just the inline region, and then never touch it again if
-                            // continued to the outermost loop.
                             int iLen = (int) amt;
                             if (txn != null) {
                                 txn.pushUnwrite(cursor.mTree.mId, cursor.mKey, pos, page, iLoc, iLen);
@@ -737,7 +669,6 @@ final public class TreeValue {
                             bOff += amt;
                             pos = fInlineLen;
                         }
-                        // Move location to first page pointer.
                         loc += fInlineLen;
                     }
 
@@ -746,8 +677,6 @@ final public class TreeValue {
                     final int pageSize;
 
                     if (endPos <= fLen) {
-                        // Value doesn't need to be extended.
-
                         if (bLen == 0 && b != TOUCH_VALUE) {
                             return 0;
                         }
@@ -772,11 +701,8 @@ final public class TreeValue {
                         pageSize = pageSize(db, page);
                     } else {
                         if (b == TOUCH_VALUE) {
-                            // Don't extend the value.
                             return 0;
                         }
-
-                        // Extend the value.
 
                         int fieldGrowth = lengthFieldGrowth(fHeader, endPos);
 
@@ -789,27 +715,20 @@ final public class TreeValue {
                         db = node.getDatabase();
 
                         if ((fHeader & 0x01) != 0) try {
-                            // Extend the value with indirect pointers.
-
                             if (txn != null) {
                                 txn.pushUnextend(cursor.mTree.mId, cursor.mKey, fLen);
                                 if (pos >= fLen) {
-                                    // Write is fully contained in the extended region, so no more
-                                    // undo is required.
                                     txn = null;
                                 }
                             }
 
                             Node inode = prepareMultilevelWrite(db, page, loc);
 
-                            // Levels required before extending...
                             int levels = db.calculateInodeLevels(fLen - fInlineLen);
 
-                            // Compare to new full indirect length.
                             long newLen = endPos - fInlineLen;
 
                             if (db.levelCap(levels) < newLen) {
-                                // Need to add more inode levels.
                                 int newLevels = db.calculateInodeLevels(newLen);
                                 if (newLevels <= levels) {
                                     throw new AssertionError();
@@ -839,7 +758,6 @@ final public class TreeValue {
                                     long upage = upper.mPage;
                                     DirectPageOps.p_int48PutLE(upage, 0, inode.mId);
                                     inode.releaseExclusive();
-                                    // Zero-fill the rest.
                                     DirectPageOps.p_clear(upage, 6, pageSize);
                                     inode = upper;
                                 }
@@ -861,8 +779,6 @@ final public class TreeValue {
                             throw e;
                         }
 
-                        // Extend the value with direct pointers.
-
                         pageSize = pageSize(db, page);
 
                         long ptrGrowth = pointerCount(pageSize, endPos - fInlineLen)
@@ -872,17 +788,12 @@ final public class TreeValue {
                             int newLoc = tryExtendDirect(cursor, frame, kHeaderLoc, vHeaderLoc, vLen,
                                     fHeaderLoc, ptrGrowth * 6);
 
-                            // Note: vHeaderLoc is now wrong and cannot be used.
-
                             if (newLoc < 0) {
-                                // Format conversion or latch re-acquisition.
                                 continue;
                             }
 
-                            // Page reference might have changed.
                             page = node.mPage;
 
-                            // Fix broken location variables that are still required.
                             int delta = newLoc - fHeaderLoc;
                             loc += delta;
 
@@ -892,16 +803,12 @@ final public class TreeValue {
                         if (txn != null) {
                             txn.pushUnextend(cursor.mTree.mId, cursor.mKey, fLen);
                             if (pos >= fLen) {
-                                // Write is fully contained in the extended region, so no more
-                                // undo is required.
                                 txn = null;
                             }
                         }
 
                         updateLengthField(page, fHeaderLoc, endPos);
                     }
-
-                    // Direct pointers.
 
                     final int ipos = (int) (pos - fInlineLen);
                     loc += (ipos / pageSize) * 6;
@@ -912,7 +819,6 @@ final public class TreeValue {
                         final long fNodeId = DirectPageOps.p_uint48GetLE(page, loc);
                         if (fNodeId == 0) {
                             if (amt > 0) {
-                                // Writing into a sparse value. Allocate a node and point to it.
                                 if (txn != null) {
                                     txn.pushUnalloc(cursor.mTree.mId, cursor.mKey, pos, amt);
                                 }
@@ -920,7 +826,6 @@ final public class TreeValue {
                                 try {
                                     DirectPageOps.p_int48PutLE(page, loc, fNode.mId);
 
-                                    // Now write to the new page, zero-filling the gaps.
                                     long fNodePage = fNode.mPage;
                                     DirectPageOps.p_clear(fNodePage, 0, fNodeOff);
                                     DirectPageOps.p_copyFromArray(b, bOff, fNodePage, fNodeOff, amt);
@@ -931,7 +836,6 @@ final public class TreeValue {
                             }
                         } else {
                             if (amt > 0 || b == TOUCH_VALUE) {
-                                // Obtain node from cache, or read it only for partial write.
                                 if (txn == null) {
                                     final Node fNode = db
                                             .nodeMapLoadFragmentExclusive(fNodeId, amt < pageSize);
@@ -974,13 +878,6 @@ final public class TreeValue {
         }
     }
 
-    /**
-     * @param pos   value position being read
-     * @param level inode level; at least 1
-     * @param inode shared latched parent inode; always released by this method
-     * @param b     slice of complete value being reconstructed
-     * @param bLen  must be more than zero
-     */
     private static void readMultilevelFragments(long pos, int level, Node inode,
                                                 final byte[] b, int bOff, int bLen)
             throws IOException {
@@ -994,7 +891,6 @@ final public class TreeValue {
 
             int poffset = ((int) (pos / levelCap)) * 6;
 
-            // Handle a possible partial read from the first page.
             long ppos = pos % levelCap;
 
             while (true) {
@@ -1004,7 +900,6 @@ final public class TreeValue {
                 bLen -= len;
 
                 if (childNodeId == 0) {
-                    // Reading a sparse value.
                     Arrays.fill(b, bOff, bOff + len, (byte) 0);
                     if (bLen <= 0) {
                         inode.releaseShared();
@@ -1027,8 +922,7 @@ final public class TreeValue {
                         }
                     } else {
                         if (bLen <= 0) {
-                            // Tail call.
-                            inode.releaseShared(); // latch coupling release
+                            inode.releaseShared();
                             pos = ppos;
                             inode = childNode;
                             bLen = len;
@@ -1046,30 +940,23 @@ final public class TreeValue {
                 bOff += len;
                 poffset += 6;
 
-                // Remaining reads begin at the start of the page.
                 ppos = 0;
             }
         }
     }
 
-    /**
-     * @param loc location of root inode in the page
-     * @return dirtied root inode with exclusive latch held
-     */
     private static Node prepareMultilevelWrite(LocalDatabase db, long page, int loc)
             throws IOException {
         final Node inode;
         final long inodeId = DirectPageOps.p_uint48GetLE(page, loc);
 
         if (inodeId == 0) {
-            // Writing into a sparse value. Allocate a node and point to it.
             inode = db.allocDirtyFragmentNode();
             DirectPageOps.p_clear(inode.mPage, 0, pageSize(db, inode.mPage));
         } else {
             inode = db.nodeMapLoadFragmentExclusive(inodeId, true);
             try {
                 if (!db.markFragmentDirty(inode)) {
-                    // Already dirty, so no need to update the pointer.
                     return inode;
                 }
             } catch (Throwable e) {
@@ -1083,15 +970,6 @@ final public class TreeValue {
         return inode;
     }
 
-    /**
-     * @param txn   optional transaction for undo operations
-     * @param pos   value position being written
-     * @param ppos  partial value position being written (same as pos - fInlineLen initially)
-     * @param level inode level; at least 1
-     * @param inode exclusively latched parent inode; always released by this method
-     * @param b     slice of complete value being written
-     * @param bLen  can be zero
-     */
     private static void writeMultilevelFragments(LocalTransaction txn, TreeCursor cursor,
                                                  long pos, long ppos, int level, Node inode,
                                                  final byte[] b, int bOff, int bLen)
@@ -1106,7 +984,6 @@ final public class TreeValue {
 
             int poffset = ((int) (ppos / levelCap)) * 6;
 
-            // Handle a possible partial write to the first page.
             ppos %= levelCap;
 
             final int pageSize = pageSize(db, page);
@@ -1123,22 +1000,18 @@ final public class TreeValue {
                     {
                         try {
                             if (childNodeId == 0) {
-                                // Writing into a sparse value. Allocate a node and point to it.
                                 if (txn != null) {
                                     txn.pushUnalloc(cursor.mTree.mId, cursor.mKey, pos, len);
                                 }
                                 childNode = db.allocDirtyFragmentNode();
                                 if (ppos > 0 || len < pageSize) {
-                                    // New page must be zero-filled.
                                     DirectPageOps.p_clear(childNode.mPage, 0, pageSize);
                                 }
                             } else {
                                 if (txn == null) {
-                                    // Obtain node from cache, or read it only for partial write.
                                     childNode = db.nodeMapLoadFragmentExclusive
                                             (childNodeId, ppos > 0 | len < pageSize);
                                 } else {
-                                    // Obtain node from cache, fully reading it for the undo log.
                                     childNode = db.nodeMapLoadFragmentExclusive(childNodeId, true);
                                     txn.pushUnwrite(cursor.mTree.mId, cursor.mKey,
                                             pos, childNode.mPage, (int) ppos, len);
@@ -1146,7 +1019,6 @@ final public class TreeValue {
 
                                 try {
                                     if (!db.markFragmentDirty(childNode)) {
-                                        // Already dirty, so no need to update the pointer.
                                         break setPtr;
                                     }
                                 } catch (Throwable e) {
@@ -1175,16 +1047,12 @@ final public class TreeValue {
                     {
                         try {
                             if (childNodeId == 0) {
-                                // Writing into a sparse value. Allocate a node and point to it.
                                 childNode = db.allocDirtyFragmentNode();
-                                // New page must be zero-filled.
                                 DirectPageOps.p_clear(childNode.mPage, 0, pageSize);
                             } else {
-                                // Obtain node from cache, fully reading if necessary.
                                 childNode = db.nodeMapLoadFragmentExclusive(childNodeId, true);
                                 try {
                                     if (!db.markFragmentDirty(childNode)) {
-                                        // Already dirty, so no need to update the pointer.
                                         break setPtr;
                                     }
                                 } catch (Throwable e) {
@@ -1201,7 +1069,6 @@ final public class TreeValue {
                     }
 
                     if (bLen <= 0) {
-                        // Tail call.
                         inode.releaseExclusive(); // latch coupling release
                         inode = childNode;
                         bLen = len;
@@ -1221,21 +1088,11 @@ final public class TreeValue {
                 bOff += len;
                 poffset += 6;
 
-                // Remaining writes begin at the start of the page.
                 ppos = 0;
             }
         }
     }
 
-    /**
-     * @param txn      optional transaction for undo operations
-     * @param pos      value position being cleared
-     * @param ppos     partial value position being cleared (same as pos - fInlineLen initially)
-     * @param level    inode level; at least 1
-     * @param inode    exclusively latched parent inode; never released by this method
-     * @param clearLen length to clear
-     * @param toEnd    true if clearing to the end of the value
-     */
     private static void clearMultilevelFragments(LocalTransaction txn, TreeCursor cursor,
                                                  long pos, long ppos, int level, final Node inode,
                                                  long clearLen, boolean toEnd)
@@ -1248,7 +1105,6 @@ final public class TreeValue {
 
         int poffset = ((int) (ppos / levelCap)) * 6;
 
-        // Handle a possible partial clear of the first page.
         ppos %= levelCap;
 
         while (true) {
@@ -1257,7 +1113,6 @@ final public class TreeValue {
 
             if (childNodeId != 0) {
                 if (len >= levelCap || toEnd && ppos <= 0) {
-                    // Full clear of inode.
                     full:
                     {
                         Node childNode = null;
@@ -1287,7 +1142,6 @@ final public class TreeValue {
 
                     DirectPageOps.p_int48PutLE(page, poffset, 0);
                 } else {
-                    // Partial clear of inode.
                     Node childNode = db.nodeMapLoadFragmentExclusive(childNodeId, true);
                     try {
                         if (db.markFragmentDirty(childNode)) {
@@ -1318,19 +1172,10 @@ final public class TreeValue {
             pos += len;
             poffset += 6;
 
-            // Remaining clear steps begin at the start of the page.
             ppos = 0;
         }
     }
 
-    /**
-     * Returns the amount of bytes which must be added to the length field for the given
-     * length.
-     *
-     * @param fHeader header byte of fragmented value
-     * @param fLen    new fragmented value length
-     * @return 0, 2, 4, or 6
-     */
     private static int lengthFieldGrowth(int fHeader, long fLen) {
         int growth = 0;
 
@@ -1355,12 +1200,6 @@ final public class TreeValue {
         return growth;
     }
 
-    /**
-     * Updates the fragmented value length, blindly assuming that the field is large enough.
-     *
-     * @param fHeaderLoc location of fragmented value header
-     * @param fLen       new fragmented value length
-     */
     private static void updateLengthField(long page, int fHeaderLoc, long fLen) {
         int fHeader = DirectPageOps.p_byteGet(page, fHeaderLoc);
 
@@ -1380,24 +1219,6 @@ final public class TreeValue {
         }
     }
 
-    /**
-     * Attempt to increase the size of the fragmented length field, for supporting larger
-     * sizes. If not enough space exists to increase the size, the value format is converted
-     * and the field size doesn't change.
-     * <p>
-     * As a side effect of calling this method, the page referenced by the node can change when
-     * a non-negative value is returned. Also, any locations within the page may changed.
-     * Caller should always continue from the beginning after calling this method.
-     * <p>
-     * The node latch is released if an exception is thrown.
-     *
-     * @param frame      latched exclusive and dirtied
-     * @param kHeaderLoc location of key header
-     * @param vHeaderLoc location of raw value header
-     * @param vLen       length of raw value sans header
-     * @param fHeaderLoc location of fragmented value header
-     * @param growth     amount of zero bytes to add to the length field (2, 4, or 6)
-     */
     private static int tryIncreaseLengthField(final TreeCursor cursor, final CursorFrame frame,
                                               final int kHeaderLoc,
                                               final int vHeaderLoc, final int vLen,
@@ -1405,48 +1226,41 @@ final public class TreeValue {
             throws IOException {
         final int fOffset = fHeaderLoc - kHeaderLoc;
         final long newEntryLen = fOffset + vLen + growth;
-        final Node node = frame.mNode;
+        final Node node = frame.getNode();
 
         if (newEntryLen > node.getDatabase().mMaxFragmentedEntrySize) {
             compactDirectFormat(cursor, frame, kHeaderLoc, vHeaderLoc, vLen, fHeaderLoc);
             return -1;
         }
 
-        final _Tree tree = cursor.mTree;
+        final Tree tree = cursor.mTree;
 
         try {
             final int igrowth = (int) growth;
             final byte[] newValue = new byte[vLen + igrowth];
             final long page = node.mPage;
 
-            // Update the header with the new field size.
             int fHeader = DirectPageOps.p_byteGet(page, fHeaderLoc);
             newValue[0] = (byte) (fHeader + (igrowth << 1));
 
-            // Copy the length field.
             int srcLoc = fHeaderLoc + 1;
             int fieldLen = skipFragmentedLengthField(0, fHeader);
             DirectPageOps.p_copyToArray(page, srcLoc, newValue, 1, fieldLen);
 
-            // Copy the rest.
             srcLoc += fieldLen;
             int dstLoc = 1 + fieldLen + igrowth;
             DirectPageOps.p_copyToArray(page, srcLoc, newValue, dstLoc, newValue.length - dstLoc);
 
-            // Clear the fragmented bit so that the update method doesn't delete the pages.
             DirectPageOps.p_bytePut(page, vHeaderLoc, DirectPageOps.p_byteGet(page, vHeaderLoc) & ~Node.ENTRY_FRAGMENTED);
 
-            // The fragmented bit is set again by this call.
-            node.updateLeafValue(frame, tree, frame.mNodePos, Node.ENTRY_FRAGMENTED, newValue);
+            node.updateLeafValue(frame, tree, frame.getNodePos(), Node.ENTRY_FRAGMENTED, newValue);
         } catch (Throwable e) {
             node.releaseExclusive();
             throw e;
         }
 
         if (node.mSplit != null) {
-            // Releases latch if an exception is thrown.
             tree.finishSplit(frame, node);
-            // Finishing the split causes the node latch to be re-acquired, so start over.
             return -2;
         }
 
@@ -1466,27 +1280,7 @@ final public class TreeValue {
                 .subtract(BigInteger.ONE).divide(BigInteger.valueOf(pageSize)).longValue();
     }
 
-    /**
-     * Attempt to add bytes to a fragmented value which uses the direct format. If not enough
-     * space exists to add direct pointers, the value format is converted and no new pointers
-     * are added.
-     * <p>
-     * As a side effect of calling this method, the page referenced by the node can change when
-     * a non-negative value is returned. Also, any locations within the page may changed.
-     * Specifically kHeaderLoc, vHeaderLoc, and fHeaderLoc. All will have moved by the same
-     * amount as fHeaderLoc.
-     * <p>
-     * The node latch is released if an exception is thrown.
-     *
-     * @param frame      latched exclusive and dirtied
-     * @param kHeaderLoc location of key header
-     * @param vHeaderLoc location of raw value header
-     * @param vLen       length of raw value sans header
-     * @param fHeaderLoc location of fragmented value header
-     * @param growth     amount of zero bytes to append
-     * @return updated fHeaderLoc, or negative if caller must continue from the beginning
-     * (caused by format conversion or latch re-acquisition)
-     */
+
     private static int tryExtendDirect(final TreeCursor cursor, final CursorFrame frame,
                                        final int kHeaderLoc,
                                        final int vHeaderLoc, final int vLen,
@@ -1494,66 +1288,46 @@ final public class TreeValue {
             throws IOException {
         final int fOffset = fHeaderLoc - kHeaderLoc;
         final long newEntryLen = fOffset + vLen + growth;
-        final Node node = frame.mNode;
+        final Node node = frame.getNode();
 
         if (newEntryLen > node.getDatabase().mMaxFragmentedEntrySize) {
             compactDirectFormat(cursor, frame, kHeaderLoc, vHeaderLoc, vLen, fHeaderLoc);
             return -1;
         }
 
-        final _Tree tree = cursor.mTree;
+        final Tree tree = cursor.mTree;
 
         try {
             final byte[] newValue = new byte[vLen + (int) growth];
             final long page = node.mPage;
             DirectPageOps.p_copyToArray(page, fHeaderLoc, newValue, 0, vLen);
 
-            // Clear the fragmented bit so that the update method doesn't delete the pages.
             DirectPageOps.p_bytePut(page, vHeaderLoc, DirectPageOps.p_byteGet(page, vHeaderLoc) & ~Node.ENTRY_FRAGMENTED);
 
-            // The fragmented bit is set again by this call.
-            node.updateLeafValue(frame, tree, frame.mNodePos, Node.ENTRY_FRAGMENTED, newValue);
+            node.updateLeafValue(frame, tree, frame.getNodePos(), Node.ENTRY_FRAGMENTED, newValue);
         } catch (Throwable e) {
             node.releaseExclusive();
             throw e;
         }
 
         if (node.mSplit != null) {
-            // Releases latch if an exception is thrown.
             tree.finishSplit(frame, node);
-            // Finishing the split causes the node latch to be re-acquired, so start over.
             return -2;
         }
 
-        return DirectPageOps.p_ushortGetLE(node.mPage, node.searchVecStart() + frame.mNodePos) + fOffset;
+        return DirectPageOps.p_ushortGetLE(node.mPage, node.searchVecStart() + frame.getNodePos()) + fOffset;
     }
 
-    /**
-     * @param loc location of fragmented length field
-     * @return location of inline content length field or first pointer
-     */
     private static int skipFragmentedLengthField(int loc, int fHeader) {
         return loc + 2 + ((fHeader >> 1) & 0x06);
     }
 
-    /**
-     * Compacts a fragmented value of direct pointers. Either its inline content is moved
-     * completely, or the value is converted to indirect format. Caller should always continue
-     * from the beginning after calling this method.
-     * <p>
-     * The node latch is released if an exception is thrown.
-     *
-     * @param frame      latched exclusive and dirtied
-     * @param vHeaderLoc location of raw value header
-     * @param vLen       length of raw value sans header
-     * @param fHeaderLoc location of fragmented value header
-     */
     private static void compactDirectFormat(final TreeCursor cursor, final CursorFrame frame,
                                             final int kHeaderLoc,
                                             final int vHeaderLoc, final int vLen,
                                             final int fHeaderLoc)
             throws IOException {
-        final Node node = frame.mNode;
+        final Node node = frame.getNode();
         final long page = node.mPage;
 
         int loc = fHeaderLoc;
@@ -1570,7 +1344,6 @@ final public class TreeValue {
             loc = loc + 2 + fInlineLen;
         }
 
-        // At this point, loc is at the first direct pointer.
 
         final int tailLen = fHeaderLoc + vLen - loc; // length of all the direct pointers, in bytes
 
@@ -1579,15 +1352,7 @@ final public class TreeValue {
         final int shrinkage;
 
         if (fInlineLen > 0) {
-            // Move all inline content into the fragment pages, and keep the direct format for
-            // now. This avoids pathological cases where so much inline content exists that
-            // converting to indirect format doesn't shrink the value. It also means that
-            // inline content should never exist when using the indirect format, because the
-            // initial store of a large value never creates inline content when indirect.
-
             if (fInlineLen < 4) {
-                // Cannot add a new direct pointer, because there's no room for it in the
-                // current entry. So reconstruct the full value and update it.
                 byte[] newValue;
                 try {
                     byte[] fullValue = db.reconstruct(page, fHeaderLoc, vLen);
@@ -1600,7 +1365,7 @@ final public class TreeValue {
                 }
 
                 try {
-                    node.updateLeafValue(frame, cursor.mTree, frame.mNodePos,
+                    node.updateLeafValue(frame, cursor.mTree, frame.getNodePos(),
                             Node.ENTRY_FRAGMENTED, newValue);
                 } catch (Throwable e) {
                     node.releaseExclusive();
@@ -1608,7 +1373,6 @@ final public class TreeValue {
                 }
 
                 if (node.mSplit != null) {
-                    // Releases latch if an exception is thrown.
                     cursor.mTree.finishSplit(frame, node);
                 }
 
@@ -1620,8 +1384,6 @@ final public class TreeValue {
 
             try {
                 if (pointerCount(pageSize, fLen) * 6 <= tailLen) {
-                    // Highest node is underutilized (caused by an earlier truncation), and so
-                    // a new node isn't required.
                     shrinkage = 2 + fInlineLen;
                 } else {
                     rightNode = db.allocDirtyFragmentNode();
@@ -1632,7 +1394,6 @@ final public class TreeValue {
             } catch (Throwable e) {
                 node.releaseExclusive();
                 try {
-                    // Clean up the mess.
                     if (rightNode != null) {
                         db.deleteNode(rightNode, true);
                     }
@@ -1643,23 +1404,17 @@ final public class TreeValue {
                 throw e;
             }
 
-            // Move the inline content in place now that room has been made.
             DirectPageOps.p_copy(page, loc - fInlineLen, leftNode.mPage, 0, fInlineLen);
             leftNode.releaseExclusive();
 
-            // Shift page contents over inline content and inline length header.
             DirectPageOps.p_copy(page, loc, page, loc - fInlineLen - 2, tailLen);
 
             if (rightNode != null) {
-                // Reference the new node.
                 DirectPageOps.p_int48PutLE(page, loc - fInlineLen - 2 + tailLen, rightNode.mId);
             }
 
-            // Clear the inline length field.
             DirectPageOps.p_bytePut(page, fHeaderLoc, fHeader & ~0x02);
         } else {
-            // Convert to indirect format.
-
             if ((fLen - fInlineLen) > pageSize) {
                 Node inode;
                 try {
@@ -1671,59 +1426,40 @@ final public class TreeValue {
 
                 long ipage = inode.mPage;
                 DirectPageOps.p_copy(page, loc, ipage, 0, tailLen);
-                // Zero-fill the rest.
                 DirectPageOps.p_clear(ipage, tailLen, pageSize);
 
-                // Reference the root inode.
                 DirectPageOps.p_int48PutLE(page, loc, inode.mId);
                 inode.releaseExclusive();
             }
 
-            // Switch to indirect format.
             DirectPageOps.p_bytePut(page, fHeaderLoc, fHeader | 0x01);
 
             shrinkage = tailLen - 6;
         }
 
-        // Update the raw value length.
         int newLen = vLen - shrinkage - 1; // minus one as required by field encoding
         int header = DirectPageOps.p_byteGet(page, vHeaderLoc);
         if ((header & 0x20) == 0) {
-            // Field length is 1..8192.
             DirectPageOps.p_bytePut(page, vHeaderLoc, (header & 0xe0) | (newLen >> 8));
             DirectPageOps.p_bytePut(page, vHeaderLoc + 1, newLen);
         } else {
-            // Field length is 1..1048576.
             DirectPageOps.p_bytePut(page, vHeaderLoc, (header & 0xf0) | (newLen >> 16));
             DirectPageOps.p_bytePut(page, vHeaderLoc + 1, newLen >> 8);
             DirectPageOps.p_bytePut(page, vHeaderLoc + 2, newLen);
         }
 
-        // Update the garbage field.
         node.garbage(node.garbage() + shrinkage);
 
         if (node.shouldLeafMerge()) {
-            // Method always release the node latch, even if an exception is thrown.
             cursor.mergeLeaf(frame, node);
             frame.acquireExclusive();
         }
     }
 
-    /**
-     * Shift the entire contents of a direct-format fragmented value to the right.
-     *
-     * @param startLoc first direct pointer location
-     * @param endLoc   last direct pointer location (exclusive)
-     * @param amount   shift amount in bytes
-     * @param dstNode  optional rightmost fragment node to shift into, latched exclusively
-     * @return leftmost fragment node, latched exclusively
-     */
     private static Node shiftDirectRight(LocalDatabase db, final long page,
                                          int startLoc, int endLoc, int amount,
                                          Node dstNode)
             throws IOException {
-        // First make sure all the fragment nodes are dirtied, in case of an exception.
-
         final Node[] fNodes = new Node[(endLoc - startLoc) / 6];
         final int pageSize = pageSize(db, page);
 
@@ -1775,13 +1511,6 @@ final public class TreeValue {
         return dstNode;
     }
 
-    /**
-     * Convert a fragmented value which has no pointers into a normal non-fragmented value.
-     *
-     * @param fInlineLoc location of inline content
-     * @param fInlineLen length of inline content to keep (normal value length)
-     * @param shrinkage  amount of bytes freed due to pointer deletion and inline reduction
-     */
     private static void fragmentedToNormal(final Node node, final long page,
                                            final int vHeaderLoc, final int fInlineLoc,
                                            final int fInlineLen, final int shrinkage) {
@@ -1803,18 +1532,10 @@ final public class TreeValue {
         node.garbage(node.garbage() + shrinkage + (fInlineLoc - loc));
     }
 
-    /**
-     * Truncate the raw value which encodes a fragmented value.
-     *
-     * @return updated fHeaderLoc
-     */
     private static int truncateFragmented(final Node node, final long page,
                                           final int vHeaderLoc, final int vLen, int shrinkage) {
         final int newLen = vLen - shrinkage;
         int loc = vHeaderLoc;
-
-        // Note: It's sometimes possible to convert from the 3-byte field to the 2-byte field.
-        // It requires that the value be shifted over, and so it's not worth the trouble.
 
         if (vLen <= 8192) {
             DirectPageOps.p_bytePut(page, loc++, 0xc0 | ((newLen - 1) >> 8));
@@ -1831,10 +1552,7 @@ final public class TreeValue {
     }
 
     private static int pageSize(LocalDatabase db, long page) {
-        /*P*/ // [
         // return page.length;
-        /*P*/ // |
         return db.pageSize();
-        /*P*/ // ]
     }
 }

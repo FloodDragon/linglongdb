@@ -4359,7 +4359,7 @@ final public class LocalDatabase extends AbstractDatabase {
     }
 
     @Override
-    void checkpoint(boolean force, long sizeThreshold, long delayThresholdNanos)
+    public void checkpoint(boolean force, long sizeThreshold, long delayThresholdNanos)
             throws IOException {
         mCheckpointLock.lock();
         try {
