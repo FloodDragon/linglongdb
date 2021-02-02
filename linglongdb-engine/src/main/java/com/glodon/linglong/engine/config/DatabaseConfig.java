@@ -32,12 +32,8 @@ import java.util.function.BiConsumer;
 /**
  * @author Stereo
  */
-public class DatabaseConfig implements Cloneable, Serializable {
+public final class DatabaseConfig implements Cloneable, Serializable {
     private static final long serialVersionUID = 1L;
-
-    private static volatile Method cDirectOpen;
-    private static volatile Method cDirectDestroy;
-    private static volatile Method cDirectRestore;
 
     File mBaseFile;
 
@@ -673,30 +669,6 @@ public class DatabaseConfig implements Cloneable, Serializable {
             restore = mReplManager.restoreRequest(mEventListener);
         }
 
-//        Method m;
-//        Object[] args;
-//        if (restore != null) {
-//            args = new Object[]{this, restore};
-//            m = directRestoreMethod();
-//        } else {
-//            args = new Object[]{this};
-//            if (destroy) {
-//                m = directDestroyMethod();
-//            } else {
-//                m = directOpenMethod();
-//            }
-//        }
-//
-//        Throwable e1 = null;
-//        if (m != null) {
-//            try {
-//                return (Database) m.invoke(null, args);
-//            } catch (Exception e) {
-//                handleDirectException(e);
-//                e1 = e;
-//            }
-//        }
-
         try {
             if (restore != null) {
                 return LocalDatabase.restoreFromSnapshot(this, restore);
@@ -708,87 +680,6 @@ public class DatabaseConfig implements Cloneable, Serializable {
         } catch (Throwable throwable) {
             throwable = Utils.rootCause(throwable);
             throw Utils.rethrow(throwable);
-//            if (e1 == null || (e2 instanceof Error && !(e1 instanceof Error))) {
-//                Utils.suppress(e2, e1);
-//                throw Utils.rethrow(e2);
-//            } else {
-//                Utils.suppress(e1, e2);
-//                throw Utils.rethrow(e1);
-//            }
         }
-    }
-
-    private Class<?> directOpenClass() throws IOException {
-        if (mDirectPageAccess == Boolean.FALSE) {
-            return null;
-        }
-        try {
-            return Class.forName("com.glodon.my.LocalDatabase");
-        } catch (Exception e) {
-            handleDirectException(e);
-            return null;
-        }
-    }
-
-    private Method directOpenMethod() throws IOException {
-        if (mDirectPageAccess == Boolean.FALSE) {
-            return null;
-        }
-        Method m = cDirectOpen;
-        if (m == null) {
-            cDirectOpen = m = findMethod("open", DatabaseConfig.class);
-        }
-        return m;
-    }
-
-    private Method directDestroyMethod() throws IOException {
-        if (mDirectPageAccess == Boolean.FALSE) {
-            return null;
-        }
-        Method m = cDirectDestroy;
-        if (m == null) {
-            cDirectDestroy = m = findMethod("destroy", DatabaseConfig.class);
-        }
-        return m;
-    }
-
-    private Method directRestoreMethod() throws IOException {
-        if (mDirectPageAccess == Boolean.FALSE) {
-            return null;
-        }
-        Method m = cDirectRestore;
-        if (m == null) {
-            cDirectRestore = m = findMethod
-                    ("restoreFromSnapshot", DatabaseConfig.class, InputStream.class);
-        }
-        return m;
-    }
-
-    private void handleDirectException(Exception e) throws IOException {
-        if (e instanceof RuntimeException || e instanceof IOException) {
-            throw Utils.rethrow(e);
-        }
-        Throwable cause = e.getCause();
-        if (cause == null) {
-            cause = e;
-        }
-        if (cause instanceof RuntimeException || cause instanceof IOException) {
-            throw Utils.rethrow(cause);
-        }
-        if (mDirectPageAccess == Boolean.TRUE) {
-            throw new DatabaseException("Unable open with direct page access", cause);
-        }
-    }
-
-    private Method findMethod(String name, Class<?>... paramTypes) throws IOException {
-        Class<?> directClass = directOpenClass();
-        if (directClass != null) {
-            try {
-                return directClass.getDeclaredMethod(name, paramTypes);
-            } catch (Exception e) {
-                handleDirectException(e);
-            }
-        }
-        return null;
     }
 }
