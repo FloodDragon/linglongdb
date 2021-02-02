@@ -11,7 +11,7 @@ import com.glodon.linglong.base.exception.LockFailureException;
 import com.glodon.linglong.engine.core.*;
 import com.glodon.linglong.engine.core.frame.Cursor;
 import com.glodon.linglong.engine.core.frame.DatabaseAccess;
-import com.glodon.linglong.engine.core.frame.GhostFrame;
+import com.glodon.linglong.engine.core.GhostFrame;
 import com.glodon.linglong.engine.core.frame.Index;
 import com.glodon.linglong.engine.core.lock.CommitLock;
 import com.glodon.linglong.engine.core.lock.Lock;

@@ -9,8 +9,6 @@ import com.glodon.linglong.engine.core.frame.Cursor;
 import com.glodon.linglong.engine.core.frame.DatabaseAccess;
 import com.glodon.linglong.engine.core.page.DirectPageOps;
 import com.glodon.linglong.engine.core.page.PageDb;
-import com.glodon.linglong.engine.core.frame.CursorFrame;
-import com.glodon.linglong.engine.core.frame.GhostFrame;
 import com.glodon.linglong.engine.core.tx.LocalTransaction;
 import com.glodon.linglong.engine.core.tx.UndoLog;
 import com.glodon.linglong.engine.observer.VerificationObserver;

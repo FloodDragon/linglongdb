@@ -9,7 +9,7 @@ import com.glodon.linglong.base.exception.LockFailureException;
 import com.glodon.linglong.engine.core.frame.Database;
 import com.glodon.linglong.engine.core.frame.Index;
 import com.glodon.linglong.engine.core.LocalDatabase;
-import com.glodon.linglong.engine.core.frame.GhostFrame;
+import com.glodon.linglong.engine.core.GhostFrame;
 import com.glodon.linglong.engine.core.tx.PendingTxn;
 
 import java.lang.ref.SoftReference;

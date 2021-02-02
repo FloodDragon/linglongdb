@@ -673,29 +673,29 @@ public class DatabaseConfig implements Cloneable, Serializable {
             restore = mReplManager.restoreRequest(mEventListener);
         }
 
-        Method m;
-        Object[] args;
-        if (restore != null) {
-            args = new Object[]{this, restore};
-            m = directRestoreMethod();
-        } else {
-            args = new Object[]{this};
-            if (destroy) {
-                m = directDestroyMethod();
-            } else {
-                m = directOpenMethod();
-            }
-        }
-
-        Throwable e1 = null;
-        if (m != null) {
-            try {
-                return (Database) m.invoke(null, args);
-            } catch (Exception e) {
-                handleDirectException(e);
-                e1 = e;
-            }
-        }
+//        Method m;
+//        Object[] args;
+//        if (restore != null) {
+//            args = new Object[]{this, restore};
+//            m = directRestoreMethod();
+//        } else {
+//            args = new Object[]{this};
+//            if (destroy) {
+//                m = directDestroyMethod();
+//            } else {
+//                m = directOpenMethod();
+//            }
+//        }
+//
+//        Throwable e1 = null;
+//        if (m != null) {
+//            try {
+//                return (Database) m.invoke(null, args);
+//            } catch (Exception e) {
+//                handleDirectException(e);
+//                e1 = e;
+//            }
+//        }
 
         try {
             if (restore != null) {
@@ -705,16 +705,16 @@ public class DatabaseConfig implements Cloneable, Serializable {
             } else {
                 return LocalDatabase.open(this);
             }
-        } catch (Throwable e2) {
-            e1 = Utils.rootCause(e1);
-            e2 = Utils.rootCause(e2);
-            if (e1 == null || (e2 instanceof Error && !(e1 instanceof Error))) {
-                Utils.suppress(e2, e1);
-                throw Utils.rethrow(e2);
-            } else {
-                Utils.suppress(e1, e2);
-                throw Utils.rethrow(e1);
-            }
+        } catch (Throwable throwable) {
+            throwable = Utils.rootCause(throwable);
+            throw Utils.rethrow(throwable);
+//            if (e1 == null || (e2 instanceof Error && !(e1 instanceof Error))) {
+//                Utils.suppress(e2, e1);
+//                throw Utils.rethrow(e2);
+//            } else {
+//                Utils.suppress(e1, e2);
+//                throw Utils.rethrow(e1);
+//            }
         }
     }
 

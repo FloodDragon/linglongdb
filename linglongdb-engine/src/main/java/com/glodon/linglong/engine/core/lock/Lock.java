@@ -4,7 +4,7 @@ import com.glodon.linglong.base.concurrent.Latch;
 import com.glodon.linglong.base.concurrent.LatchCondition;
 import com.glodon.linglong.engine.core.frame.Database;
 import com.glodon.linglong.engine.core.LocalDatabase;
-import com.glodon.linglong.engine.core.frame.GhostFrame;
+import com.glodon.linglong.engine.core.GhostFrame;
 import com.glodon.linglong.engine.core.tx.PendingTxn;
 
 import java.util.Arrays;
