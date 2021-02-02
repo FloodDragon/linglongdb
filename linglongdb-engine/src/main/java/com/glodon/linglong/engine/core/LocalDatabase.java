@@ -791,7 +791,7 @@ final public class LocalDatabase extends AbstractDatabase {
         }
     }
 
-    public void debugTest(Tree tree) {
+    private void debugTest(Tree tree) {
         try {
             //******************************************** 读取TreeIndex目录 辅助读取内容后期删除掉 ********************************************
             Cursor namesCursor = tree.newCursor(null);
@@ -2684,14 +2684,11 @@ final public class LocalDatabase extends AbstractDatabase {
             throws IOException {
         checkClosed();
 
-        // Cleanup before opening more trees.
         cleanupUnreferencedTrees();
 
         byte[] nameKey = newKey(KEY_TYPE_INDEX_NAME, name);
 
         if (treeIdBytes == null) {
-            System.out.println(new String(name));
-            debugTest(mRegistryKeyMap);
             treeIdBytes = mRegistryKeyMap.load(findTxn, nameKey);
         }
 
@@ -2805,7 +2802,6 @@ final public class LocalDatabase extends AbstractDatabase {
                 throw new LockFailureException("Index open listener self deadlock");
             }
 
-            debugTest(mRegistry);
             byte[] rootIdBytes = mRegistry.load(txn, treeIdBytes);
 
             Tree tree = quickFindIndex(name);
@@ -2843,11 +2839,9 @@ final public class LocalDatabase extends AbstractDatabase {
                 tree.close();
                 throw e;
             }
-            debugTest(tree);
             return tree;
         } catch (Throwable e) {
             if (idKey != null) {
-                // Rollback create of new tree.
                 try {
                     mRegistryKeyMap.delete(null, idKey);
                     mRegistryKeyMap.delete(null, nameKey);
