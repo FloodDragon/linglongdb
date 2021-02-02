@@ -1,4 +1,4 @@
-package com.glodon.linglong.engine.core;
+package com.glodon.linglong.engine.core.view;
 
 import com.glodon.linglong.engine.core.frame.Combiner;
 import com.glodon.linglong.engine.core.frame.Cursor;

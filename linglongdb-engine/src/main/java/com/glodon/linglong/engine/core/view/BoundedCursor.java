@@ -1,4 +1,4 @@
-package com.glodon.linglong.engine.core;
+package com.glodon.linglong.engine.core.view;
 
 import com.glodon.linglong.base.common.Ordering;
 import com.glodon.linglong.engine.core.frame.Cursor;
@@ -11,9 +11,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Comparator;
 
-import static com.glodon.linglong.engine.core.BoundedView.END_EXCLUSIVE;
-import static com.glodon.linglong.engine.core.BoundedView.START_EXCLUSIVE;
-import static com.glodon.linglong.engine.core.SubView.fail;
+import static com.glodon.linglong.engine.core.view.SubView.fail;
 
 /**
  * @author Stereo
@@ -171,7 +169,7 @@ public final class BoundedCursor implements Cursor {
         Cursor source = mSource;
         if (start == null) {
             result = source.first();
-        } else if ((view.mMode & START_EXCLUSIVE) == 0) {
+        } else if ((view.mMode & BoundedView.START_EXCLUSIVE) == 0) {
             result = source.findGe(start);
         } else {
             result = source.findGt(start);
@@ -218,7 +216,7 @@ public final class BoundedCursor implements Cursor {
         Cursor source = mSource;
         if (end == null) {
             result = mSource.last();
-        } else if ((view.mMode & END_EXCLUSIVE) == 0) {
+        } else if ((view.mMode & BoundedView.END_EXCLUSIVE) == 0) {
             result = source.findLe(end);
         } else {
             result = source.findLt(end);
@@ -235,10 +233,10 @@ public final class BoundedCursor implements Cursor {
         boolean inclusive;
         if (amount >= 0) {
             limitKey = view.mEnd;
-            inclusive = (view.mMode & END_EXCLUSIVE) == 0;
+            inclusive = (view.mMode & BoundedView.END_EXCLUSIVE) == 0;
         } else {
             limitKey = view.mStart;
-            inclusive = (view.mMode & START_EXCLUSIVE) == 0;
+            inclusive = (view.mMode & BoundedView.START_EXCLUSIVE) == 0;
         }
 
         LockResult result = mSource.skip(amount, limitKey, inclusive);
@@ -259,12 +257,12 @@ public final class BoundedCursor implements Cursor {
             if (amount > 0) {
                 if (view.endRangeCompare(limitKey) > 0) {
                     limitKey = view.mEnd;
-                    inclusive = (view.mMode & END_EXCLUSIVE) == 0;
+                    inclusive = (view.mMode & BoundedView.END_EXCLUSIVE) == 0;
                 }
             } else {
                 if (view.startRangeCompare(limitKey) < 0) {
                     limitKey = view.mStart;
-                    inclusive = (view.mMode & START_EXCLUSIVE) == 0;
+                    inclusive = (view.mMode & BoundedView.START_EXCLUSIVE) == 0;
                 }
             }
 
@@ -284,7 +282,7 @@ public final class BoundedCursor implements Cursor {
         Cursor source = mSource;
         if (end == null) {
             result = source.next();
-        } else if ((view.mMode & END_EXCLUSIVE) == 0) {
+        } else if ((view.mMode & BoundedView.END_EXCLUSIVE) == 0) {
             result = source.nextLe(end);
         } else {
             result = source.nextLt(end);
@@ -325,7 +323,7 @@ public final class BoundedCursor implements Cursor {
         Cursor source = mSource;
         if (start == null) {
             result = source.previous();
-        } else if ((view.mMode & START_EXCLUSIVE) == 0) {
+        } else if ((view.mMode & BoundedView.START_EXCLUSIVE) == 0) {
             result = source.previousGe(start);
         } else {
             result = source.previousGt(start);

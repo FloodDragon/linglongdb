@@ -1,6 +1,5 @@
-package com.glodon.linglong.engine.core;
+package com.glodon.linglong.engine.core.view;
 
-import com.glodon.linglong.base.exception.UnmodifiableViewException;
 import com.glodon.linglong.base.common.Ordering;
 import com.glodon.linglong.engine.core.frame.Cursor;
 import com.glodon.linglong.engine.core.lock.LockResult;
@@ -14,250 +13,271 @@ import java.util.Comparator;
 /**
  * @author Stereo
  */
-public abstract class WrappedCursor<C extends Cursor> implements Cursor {
-    protected final C source;
+public final class ReverseCursor implements Cursor {
+    private final Cursor mSource;
 
-    protected WrappedCursor(C source) {
-        this.source = source;
+    public ReverseCursor(Cursor source) {
+        mSource = source;
     }
 
     @Override
     public long valueLength() throws IOException {
-        return source.valueLength();
+        return mSource.valueLength();
     }
 
     @Override
     public void valueLength(long length) throws IOException {
-        throw new UnmodifiableViewException();
+        mSource.valueLength(length);
     }
 
     @Override
     public int valueRead(long pos, byte[] buf, int off, int len) throws IOException {
-        return source.valueRead(pos, buf, off, len);
+        return mSource.valueRead(pos, buf, off, len);
     }
 
     @Override
     public void valueWrite(long pos, byte[] buf, int off, int len) throws IOException {
-        throw new UnmodifiableViewException();
+        mSource.valueWrite(pos, buf, off, len);
     }
 
     @Override
     public void valueClear(long pos, long length) throws IOException {
-        throw new UnmodifiableViewException();
+        mSource.valueClear(pos, length);
     }
 
     @Override
     public InputStream newValueInputStream(long pos) throws IOException {
-        return source.newValueInputStream(pos);
+        return mSource.newValueInputStream(pos);
     }
 
     @Override
     public InputStream newValueInputStream(long pos, int bufferSize) throws IOException {
-        return source.newValueInputStream(pos, bufferSize);
+        return mSource.newValueInputStream(pos, bufferSize);
     }
 
     @Override
     public OutputStream newValueOutputStream(long pos) throws IOException {
-        throw new UnmodifiableViewException();
+        return mSource.newValueOutputStream(pos);
     }
 
     @Override
     public OutputStream newValueOutputStream(long pos, int bufferSize) throws IOException {
-        throw new UnmodifiableViewException();
+        return mSource.newValueOutputStream(pos, bufferSize);
     }
 
     @Override
     public Ordering getOrdering() {
-        return source.getOrdering();
+        return mSource.getOrdering().reverse();
     }
 
     @Override
     public Comparator<byte[]> getComparator() {
-        return source.getComparator();
+        return mSource.getComparator().reversed();
     }
 
     @Override
     public Transaction link(Transaction txn) {
-        return source.link(txn);
+        return mSource.link(txn);
     }
 
     @Override
     public Transaction link() {
-        return source.link();
+        return mSource.link();
     }
 
     @Override
     public byte[] key() {
-        return source.key();
+        return mSource.key();
     }
 
     @Override
     public byte[] value() {
-        return source.value();
+        return mSource.value();
     }
 
     @Override
     public boolean autoload(boolean mode) {
-        return source.autoload(mode);
+        return mSource.autoload(mode);
     }
 
     @Override
     public boolean autoload() {
-        return source.autoload();
+        return mSource.autoload();
     }
 
     @Override
     public int compareKeyTo(byte[] rkey) {
-        return source.compareKeyTo(rkey);
+        return -mSource.compareKeyTo(rkey);
     }
 
     @Override
     public int compareKeyTo(byte[] rkey, int offset, int length) {
-        return source.compareKeyTo(rkey, offset, length);
+        return -mSource.compareKeyTo(rkey, offset, length);
     }
 
     @Override
     public boolean register() throws IOException {
-        return source.register();
+        return mSource.register();
     }
 
     @Override
     public void unregister() {
-        source.unregister();
+        mSource.unregister();
     }
 
     @Override
     public LockResult first() throws IOException {
-        return source.first();
+        return mSource.last();
     }
 
     @Override
     public LockResult last() throws IOException {
-        return source.last();
+        return mSource.first();
     }
 
     @Override
     public LockResult skip(long amount) throws IOException {
-        return source.skip(amount);
+        if (amount == Long.MIN_VALUE) {
+            LockResult result = mSource.skip(Long.MAX_VALUE);
+            if (mSource.key() == null) {
+                return result;
+            }
+            return next();
+        } else {
+            return mSource.skip(-amount);
+        }
     }
 
     @Override
     public LockResult skip(long amount, byte[] limitKey, boolean inclusive) throws IOException {
-        return source.skip(amount, limitKey, inclusive);
+        if (amount == Long.MIN_VALUE) {
+            LockResult result = mSource.skip(Long.MAX_VALUE, limitKey, inclusive);
+            if (mSource.key() == null) {
+                return result;
+            }
+            return next();
+        } else {
+            return mSource.skip(-amount, limitKey, inclusive);
+        }
     }
 
     @Override
     public LockResult next() throws IOException {
-        return source.next();
+        return mSource.previous();
     }
 
     @Override
     public LockResult nextLe(byte[] limitKey) throws IOException {
-        return source.nextLe(limitKey);
+        return mSource.previousGe(limitKey);
     }
 
     @Override
     public LockResult nextLt(byte[] limitKey) throws IOException {
-        return source.nextLt(limitKey);
+        return mSource.previousGt(limitKey);
     }
 
     @Override
     public LockResult previous() throws IOException {
-        return source.previous();
+        return mSource.next();
     }
 
     @Override
     public LockResult previousGe(byte[] limitKey) throws IOException {
-        return source.previousGe(limitKey);
+        return mSource.nextLe(limitKey);
     }
 
     @Override
     public LockResult previousGt(byte[] limitKey) throws IOException {
-        return source.previousGt(limitKey);
+        return mSource.nextLt(limitKey);
     }
 
     @Override
     public LockResult find(byte[] key) throws IOException {
-        return source.find(key);
+        return mSource.find(key);
     }
 
     @Override
     public LockResult findGe(byte[] key) throws IOException {
-        return source.findGe(key);
+        return mSource.findLe(key);
     }
 
     @Override
     public LockResult findGt(byte[] key) throws IOException {
-        return source.findGt(key);
+        return mSource.findLt(key);
     }
 
     @Override
     public LockResult findLe(byte[] key) throws IOException {
-        return source.findLe(key);
+        return mSource.findGe(key);
     }
 
     @Override
     public LockResult findLt(byte[] key) throws IOException {
-        return source.findLt(key);
+        return mSource.findGt(key);
     }
 
     @Override
     public LockResult findNearby(byte[] key) throws IOException {
-        return source.findNearby(key);
+        return mSource.findNearby(key);
     }
 
     @Override
     public LockResult findNearbyGe(byte[] key) throws IOException {
-        return source.findNearbyGe(key);
+        return mSource.findNearbyGe(key);
     }
 
     @Override
     public LockResult findNearbyGt(byte[] key) throws IOException {
-        return source.findNearbyGt(key);
+        return mSource.findNearbyGt(key);
     }
 
     @Override
     public LockResult findNearbyLe(byte[] key) throws IOException {
-        return source.findNearbyLe(key);
+        return mSource.findNearbyLe(key);
     }
 
     @Override
     public LockResult findNearbyLt(byte[] key) throws IOException {
-        return source.findNearbyLt(key);
+        return mSource.findNearbyLt(key);
     }
 
     @Override
     public LockResult random(byte[] lowKey, byte[] highKey) throws IOException {
-        return source.random(lowKey, highKey);
+        return mSource.random(ReverseView.appendZero(highKey), ReverseView.appendZero((lowKey)));
     }
 
     @Override
     public LockResult lock() throws IOException {
-        return source.lock();
+        return mSource.lock();
     }
 
     @Override
     public LockResult load() throws IOException {
-        return source.load();
+        return mSource.load();
     }
 
     @Override
     public void store(byte[] value) throws IOException {
-        throw new UnmodifiableViewException();
+        mSource.store(value);
     }
 
     @Override
     public void commit(byte[] value) throws IOException {
-        throw new UnmodifiableViewException();
+        mSource.commit(value);
+    }
+
+    @Override
+    public Cursor copy() {
+        return new ReverseCursor(mSource.copy());
     }
 
     @Override
     public void reset() {
-        source.reset();
+        mSource.reset();
     }
 
     @Override
     public void close() {
-        source.close();
+        mSource.close();
     }
 }

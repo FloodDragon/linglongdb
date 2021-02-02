@@ -1,14 +1,15 @@
-package com.glodon.linglong.engine.core;
+package com.glodon.linglong.engine.core.view;
 
-import com.glodon.linglong.base.common.Ordering;
 import com.glodon.linglong.base.exception.LockFailureException;
+import com.glodon.linglong.base.exception.UnmodifiableViewException;
 import com.glodon.linglong.base.exception.ViewConstraintException;
+import com.glodon.linglong.base.common.Ordering;
 import com.glodon.linglong.engine.config.DurabilityMode;
-import com.glodon.linglong.engine.core.frame.Cursor;
-import com.glodon.linglong.engine.core.frame.View;
+import com.glodon.linglong.engine.core.frame.*;
 import com.glodon.linglong.engine.core.lock.DeadlockException;
 import com.glodon.linglong.engine.core.lock.LockResult;
 import com.glodon.linglong.engine.core.tx.Transaction;
+import com.glodon.linglong.engine.observer.VerificationObserver;
 
 import java.io.IOException;
 import java.util.Comparator;
@@ -16,21 +17,23 @@ import java.util.Comparator;
 /**
  * @author Stereo
  */
-public final class KeyOnlyView implements View {
+public final class UnmodifiableView implements Index {
+    public static View apply(View view) {
+        return view.isUnmodifiable() ? view : new UnmodifiableView(view);
+    }
+
     private final View mSource;
 
-    public KeyOnlyView(View source) {
+    public UnmodifiableView(View source) {
         mSource = source;
     }
 
-    static void valueCheck(byte[] value) throws ViewConstraintException {
-        if (value != null) {
-            throw new ViewConstraintException("Cannot store non-null value into key-only view");
+    @Override
+    public String toString() {
+        if (mSource instanceof Index) {
+            return ViewUtils.toString(this);
         }
-    }
-
-    static byte[] valueScrub(byte[] value) {
-        return value == null ? null : Cursor.NOT_LOADED;
+        return super.toString();
     }
 
     @Override
@@ -44,8 +47,32 @@ public final class KeyOnlyView implements View {
     }
 
     @Override
+    public long getId() {
+        if (mSource instanceof Index) {
+            return ((Index) mSource).getId();
+        }
+        return 0;
+    }
+
+    @Override
+    public byte[] getName() {
+        if (mSource instanceof Index) {
+            return ((Index) mSource).getName();
+        }
+        return null;
+    }
+
+    @Override
+    public String getNameString() {
+        if (mSource instanceof Index) {
+            return ((Index) mSource).getNameString();
+        }
+        return null;
+    }
+
+    @Override
     public Cursor newCursor(Transaction txn) {
-        return new KeyOnlyCursor(mSource.newCursor(txn));
+        return new UnmodifiableCursor(mSource.newCursor(txn));
     }
 
     @Override
@@ -60,14 +87,7 @@ public final class KeyOnlyView implements View {
 
     @Override
     public byte[] load(Transaction txn, byte[] key) throws IOException {
-        Cursor c = mSource.newCursor(txn);
-        try {
-            c.autoload(false);
-            c.find(key);
-            return valueScrub(c.value());
-        } finally {
-            c.reset();
-        }
+        return mSource.load(txn, key);
     }
 
     @Override
@@ -76,76 +96,56 @@ public final class KeyOnlyView implements View {
     }
 
     @Override
-    public byte[] exchange(Transaction txn, byte[] key, byte[] value) throws IOException {
-        valueCheck(value);
-
-        Cursor c = mSource.newCursor(txn);
-        try {
-            c.autoload(false);
-            c.find(key);
-            byte[] old = valueScrub(c.value());
-            c.store(value);
-            return old;
-        } finally {
-            c.reset();
-        }
+    public void store(Transaction txn, byte[] key, byte[] value) throws IOException {
+        throw new UnmodifiableViewException();
     }
 
     @Override
-    public void store(Transaction txn, byte[] key, byte[] value) throws IOException {
-        valueCheck(value);
-        mSource.store(txn, key, null);
+    public byte[] exchange(Transaction txn, byte[] key, byte[] value) throws IOException {
+        throw new UnmodifiableViewException();
     }
 
     @Override
     public boolean insert(Transaction txn, byte[] key, byte[] value) throws IOException {
-        valueCheck(value);
-        return mSource.insert(txn, key, null);
+        throw new UnmodifiableViewException();
     }
 
     @Override
     public boolean replace(Transaction txn, byte[] key, byte[] value) throws IOException {
-        valueCheck(value);
-        return mSource.replace(txn, key, null);
+        throw new UnmodifiableViewException();
     }
 
     @Override
     public boolean update(Transaction txn, byte[] key, byte[] value) throws IOException {
-        valueCheck(value);
-        return mSource.update(txn, key, null);
+        throw new UnmodifiableViewException();
     }
 
     @Override
     public boolean update(Transaction txn, byte[] key, byte[] oldValue, byte[] newValue)
             throws IOException {
-        valueCheck(newValue);
-
-        if (oldValue == null) {
-            return mSource.update(txn, key, null, null);
-        } else {
-            Cursor c = mSource.newCursor(txn);
-            try {
-                c.autoload(false);
-                c.find(key);
-                if (valueScrub(c.value()) != oldValue) { // don't compare array contents
-                    return false;
-                }
-                c.store(null);
-                return true;
-            } finally {
-                c.reset();
-            }
-        }
+        throw new UnmodifiableViewException();
     }
 
     @Override
     public boolean delete(Transaction txn, byte[] key) throws IOException {
-        return mSource.delete(txn, key);
+        throw new UnmodifiableViewException();
+    }
+
+    @Override
+    public boolean remove(Transaction txn, byte[] key, byte[] value) throws IOException {
+        throw new UnmodifiableViewException();
     }
 
     @Override
     public LockResult touch(Transaction txn, byte[] key) throws LockFailureException {
         return mSource.touch(txn, key);
+    }
+
+    @Override
+    public long evict(Transaction txn, byte[] lowKey, byte[] highKey,
+                      Filter evictionFilter, boolean autoload)
+            throws IOException {
+        throw new UnmodifiableViewException();
     }
 
     @Override
@@ -190,28 +190,78 @@ public final class KeyOnlyView implements View {
     }
 
     @Override
-    public View viewKeys() {
-        return this;
+    public View viewGe(byte[] key) {
+        return apply(mSource.viewGe(key));
+    }
+
+    @Override
+    public View viewGt(byte[] key) {
+        return apply(mSource.viewGt(key));
+    }
+
+    @Override
+    public View viewLe(byte[] key) {
+        return apply(mSource.viewLe(key));
+    }
+
+    @Override
+    public View viewLt(byte[] key) {
+        return apply(mSource.viewLt(key));
+    }
+
+    @Override
+    public View viewPrefix(byte[] prefix, int trim) {
+        return apply(mSource.viewPrefix(prefix, trim));
+    }
+
+    @Override
+    public View viewTransformed(Transformer transformer) {
+        return apply(mSource.viewTransformed(transformer));
     }
 
     @Override
     public View viewReverse() {
-        return new KeyOnlyView(mSource.viewReverse());
+        return apply(mSource.viewReverse());
     }
 
     @Override
     public View viewUnmodifiable() {
-        View source = mSource.viewUnmodifiable();
-        return source == mSource ? this : UnmodifiableView.apply(this);
+        return this;
     }
 
     @Override
     public boolean isUnmodifiable() {
-        return mSource.isUnmodifiable();
+        return true;
     }
 
     @Override
-    public boolean isModifyAtomic() {
-        return mSource.isModifyAtomic();
+    public Stats analyze(byte[] lowKey, byte[] highKey) throws IOException {
+        if (mSource instanceof Index) {
+            return ((Index) mSource).analyze(lowKey, highKey);
+        }
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean verify(VerificationObserver observer) throws IOException {
+        if (mSource instanceof Index) {
+            return ((Index) mSource).verify(observer);
+        }
+        return true;
+    }
+
+    @Override
+    public void close() throws IOException {
+        throw new UnmodifiableViewException();
+    }
+
+    @Override
+    public boolean isClosed() {
+        return false;
+    }
+
+    @Override
+    public void drop() throws IOException {
+        throw new UnmodifiableViewException();
     }
 }

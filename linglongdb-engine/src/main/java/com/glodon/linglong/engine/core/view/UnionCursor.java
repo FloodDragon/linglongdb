@@ -1,4 +1,4 @@
-package com.glodon.linglong.engine.core;
+package com.glodon.linglong.engine.core.view;
 
 import com.glodon.linglong.engine.core.frame.Cursor;
 import com.glodon.linglong.engine.core.lock.LockResult;
@@ -9,42 +9,43 @@ import java.io.IOException;
 /**
  * @author Stereo
  */
-public final class DifferenceCursor extends MergeCursor {
-    public DifferenceCursor(Transaction txn, MergeView view, Cursor first, Cursor second) {
+public final class UnionCursor extends MergeCursor {
+    public UnionCursor(Transaction txn, MergeView view, Cursor first, Cursor second) {
         super(txn, view, first, second);
     }
 
     @Override
     protected MergeCursor newCursor(Cursor first, Cursor second) {
-        return new DifferenceCursor(mTxn, mView, first, second);
+        return new UnionCursor(mTxn, mView, first, second);
     }
 
     @Override
     protected LockResult select(Transaction txn) throws IOException {
         final byte[] k1 = mFirst.key();
-        if (k1 == null) {
-            reset();
-            return LockResult.UNOWNED;
-        }
+        final byte[] k2 = mSecond.key();
 
-        while (true) {
-            final byte[] k2 = mSecond.key();
+        if (k1 == null) {
             if (k2 == null) {
-                mCompare = -2 ^ mDirection; // is 1 when reversed
+                mCompare = 0;
+                mKey = null;
+                mValue = null;
+                return LockResult.UNOWNED;
+            } else {
+                mCompare = 1 ^ mDirection; // is -2 when reversed
+                return selectSecond(txn, k2);
+            }
+        } else if (k2 == null) {
+            mCompare = -2 ^ mDirection; // is 1 when reversed
+            return selectFirst(txn, k1);
+        } else {
+            final int cmp = getComparator().compare(k1, k2);
+            mCompare = cmp;
+            if (cmp == 0) {
+                return selectCombine(txn, k1);
+            } else if ((cmp ^ mDirection) < 0) {
                 return selectFirst(txn, k1);
             } else {
-                final int cmp = getComparator().compare(k1, k2);
-                if (cmp == 0) {
-                    mCompare = 0;
-                    return selectCombine(txn, k1);
-                } else if ((cmp ^ mDirection) < 0) {
-                    mCompare = cmp;
-                    return selectFirst(txn, k1);
-                } else if (mDirection == DIRECTION_FORWARD) {
-                    mSecond.findNearbyGe(k1);
-                } else {
-                    mSecond.findNearbyLe(k1);
-                }
+                return selectSecond(txn, k2);
             }
         }
     }
@@ -53,6 +54,7 @@ public final class DifferenceCursor extends MergeCursor {
     protected void doStore(byte[] key, byte[] value) throws IOException {
         if (value == null) {
             mFirst.store(null);
+            mSecond.store(null);
         } else {
             byte[][] values = mView.mCombiner.separate(key, value);
 
@@ -62,7 +64,7 @@ public final class DifferenceCursor extends MergeCursor {
                 if (values != null) {
                     first = values[0];
                     second = values[1];
-                    if (first != null) {
+                    if (first != null || second != null) {
                         break check;
                     }
                 }

@@ -1,4 +1,4 @@
-package com.glodon.linglong.engine.core;
+package com.glodon.linglong.engine.core.view;
 
 import com.glodon.linglong.base.exception.LockFailureException;
 import com.glodon.linglong.base.exception.ViewConstraintException;

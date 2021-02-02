@@ -1,4 +1,4 @@
-package com.glodon.linglong.engine.core;
+package com.glodon.linglong.engine.core.view;
 
 import com.glodon.linglong.engine.core.frame.Cursor;
 import com.glodon.linglong.engine.core.lock.LockResult;
@@ -9,42 +9,39 @@ import java.io.IOException;
 /**
  * @author Stereo
  */
-public final class IntersectionCursor extends MergeCursor {
-    public IntersectionCursor(Transaction txn, MergeView view, Cursor first, Cursor second) {
+public final class DifferenceCursor extends MergeCursor {
+    public DifferenceCursor(Transaction txn, MergeView view, Cursor first, Cursor second) {
         super(txn, view, first, second);
     }
 
     @Override
     protected MergeCursor newCursor(Cursor first, Cursor second) {
-        return new IntersectionCursor(mTxn, mView, first, second);
+        return new DifferenceCursor(mTxn, mView, first, second);
     }
 
     @Override
     protected LockResult select(Transaction txn) throws IOException {
+        final byte[] k1 = mFirst.key();
+        if (k1 == null) {
+            reset();
+            return LockResult.UNOWNED;
+        }
+
         while (true) {
-            final byte[] k1 = mFirst.key();
-            if (k1 == null) {
-                reset();
-                return LockResult.UNOWNED;
-            }
             final byte[] k2 = mSecond.key();
             if (k2 == null) {
-                reset();
-                return LockResult.UNOWNED;
-            }
-            final int cmp = getComparator().compare(k1, k2);
-            if (cmp == 0) {
-                mCompare = cmp;
-                return selectCombine(txn, k1);
-            } else if (mDirection == DIRECTION_FORWARD) {
-                if (cmp < 0) {
-                    mFirst.findNearbyGe(k2);
-                } else {
-                    mSecond.findNearbyGe(k1);
-                }
+                mCompare = -2 ^ mDirection; // is 1 when reversed
+                return selectFirst(txn, k1);
             } else {
-                if (cmp > 0) {
-                    mFirst.findNearbyLe(k2);
+                final int cmp = getComparator().compare(k1, k2);
+                if (cmp == 0) {
+                    mCompare = 0;
+                    return selectCombine(txn, k1);
+                } else if ((cmp ^ mDirection) < 0) {
+                    mCompare = cmp;
+                    return selectFirst(txn, k1);
+                } else if (mDirection == DIRECTION_FORWARD) {
+                    mSecond.findNearbyGe(k1);
                 } else {
                     mSecond.findNearbyLe(k1);
                 }
@@ -65,7 +62,7 @@ public final class IntersectionCursor extends MergeCursor {
                 if (values != null) {
                     first = values[0];
                     second = values[1];
-                    if (first != null && second != null) {
+                    if (first != null) {
                         break check;
                     }
                 }

@@ -12,6 +12,8 @@ import com.glodon.linglong.engine.core.page.DirectPageOps;
 import com.glodon.linglong.engine.core.tx.LocalTransaction;
 import com.glodon.linglong.engine.core.tx.RedoWriter;
 import com.glodon.linglong.engine.core.tx.Transaction;
+import com.glodon.linglong.engine.core.view.BoundedView;
+import com.glodon.linglong.engine.core.view.UnmodifiableView;
 import com.glodon.linglong.engine.observer.CompactionObserver;
 import com.glodon.linglong.engine.observer.VerificationObserver;
 
