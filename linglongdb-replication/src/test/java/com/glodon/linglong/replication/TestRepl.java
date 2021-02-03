@@ -4,12 +4,16 @@ import com.glodon.linglong.base.exception.UnmodifiableReplicaException;
 import com.glodon.linglong.engine.config.DatabaseConfig;
 import com.glodon.linglong.engine.core.frame.Database;
 import com.glodon.linglong.engine.core.frame.Index;
+import com.glodon.linglong.engine.event.EventListener;
+import com.glodon.linglong.engine.event.EventType;
+import com.glodon.linglong.engine.event.ReplicationEventListener;
 import com.glodon.linglong.engine.extend.RecoveryHandler;
 import com.glodon.linglong.replication.confg.ReplicatorConfig;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -42,6 +46,7 @@ public class TestRepl {
             //启动数据库集群3个成员
             start(3, Role.NORMAL, null);
             teetRW();
+            Thread.sleep(10000L);
         } finally {
             //关闭数据库集群
             close();
@@ -50,20 +55,22 @@ public class TestRepl {
 
     private static void teetRW() throws Exception {
         System.out.println("开始进行读写测试...");
-        byte[] key = ("hello-world").getBytes();
-        byte[] value = ("ling-long").getBytes();
-        Index ix0 = databases[0].openIndex("test");
-        //写入数据
-        ix0.store(null, key, value);
-        Thread.sleep(1000L);
-        for (int i = 0; i < databases.length; i++) {
-            Index ix = databases[i].openIndex("test");
-            byte[] actual = ix.load(null, key);
-            System.out.println("数据库实例: " + i + " Key: " + new String(key) + "  Value: " + new String(actual));
+        for (int j = 1; j <= 10000; j++) {
+            byte[] key = ("hello-world-" + j).getBytes();
+            byte[] value = ("ling-long-" + j).getBytes();
+            Index ix0 = databases[0].openIndex("test");
+            //写入数据
+            ix0.store(null, key, value);
+            Thread.sleep(1000L);
+            for (int i = 0; i < databases.length; i++) {
+                Index ix = databases[i].openIndex("test");
+                byte[] actual = ix.load(null, key);
+                System.out.println("数据库实例: " + i + " Key: " + new String(key) + "  Value: " + new String(actual));
+            }
+            System.out.println("已进行第" + j + "次集群读写测试");
         }
         System.out.println("结束进行读写测试...");
     }
-
 
     private static Database[] start(int members, Role replicaRole, Supplier<RecoveryHandler> handlerSupplier) throws Exception {
         if (members < 1) {
@@ -84,9 +91,17 @@ public class TestRepl {
             replBaseFiles[i] = TestUtils.newTempBaseFile(TestRepl.class);
             replPorts[i] = serverSockets[i].getLocalPort();
             replConfigs[i] = new ReplicatorConfig().groupToken(1).localSocket(serverSockets[i]).baseFile(replBaseFiles[i]);
+            final int index = i;
+            replConfigs[i].eventListener(new ReplicationEventListener(new EventListener() {
+                @Override
+                public void notify(EventType type, String message, Object... args) {
+                    System.out.println("数据库实例 " + index + " type=" + type.toString() + " message=" + message + " args=" + Arrays.toString(args));
+                }
+            }));
             if (i > 0) {
                 replConfigs[i].addSeed(serverSockets[0].getLocalSocketAddress());
                 replConfigs[i].localRole(replicaRole);
+
             }
             replicators[i] = DatabaseReplicator.open(replConfigs[i]);
 
