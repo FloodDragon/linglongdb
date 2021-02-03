@@ -180,7 +180,6 @@ public final class DatabaseConfig implements Cloneable, Serializable {
         return mCachePriming;
     }
 
-    //ReplicatorConfig mReplConfig;
     transient ReplicationManager mReplManager;
 
     public ReplicationManager getReplManager() {
@@ -402,19 +401,10 @@ public final class DatabaseConfig implements Cloneable, Serializable {
         return this;
     }
 
-    /* TODO 复制配置需要优化
-    public DatabaseConfig replicate(ReplicatorConfig config) {
-        mReplConfig = config;
-        mReplManager = null;
-        return this;
-    }
-
     public DatabaseConfig replicate(ReplicationManager manager) {
         mReplManager = manager;
-        mReplConfig = null;
         return this;
     }
-    */
 
     public DatabaseConfig maxReplicaThreads(int num) {
         mMaxReplicaThreads = num;
