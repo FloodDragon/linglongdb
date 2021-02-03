@@ -55,7 +55,7 @@ public class TestRepl {
 
     private static void teetRW() throws Exception {
         System.out.println("开始进行读写测试...");
-        for (int j = 1; j <= 10000; j++) {
+        for (int j = 1; j <= 10; j++) {
             byte[] key = ("hello-world-" + j).getBytes();
             byte[] value = ("ling-long-" + j).getBytes();
             Index ix0 = databases[0].openIndex("test");
