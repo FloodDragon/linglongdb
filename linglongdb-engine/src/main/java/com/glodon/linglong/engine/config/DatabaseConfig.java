@@ -614,20 +614,7 @@ public final class DatabaseConfig implements Cloneable, Serializable {
     }
 
     public final Database open(boolean destroy, InputStream restore) throws IOException {
-        boolean openedReplicator = false;
-        /* 复制配置需要优化
-        if (mReplConfig != null && mReplManager == null
-                && mBaseFile != null && !mBaseFile.isDirectory()) {
-            if (mEventListener != null) {
-                mReplConfig.eventListener(new ReplicationEventListener(mEventListener));
-            }
-            mReplConfig.baseFilePath(mBaseFile.getPath() + ".repl");
-            mReplConfig.createFilePath(mMkdirs);
-            mReplManager = DatabaseReplicator.open(mReplConfig);
-            openedReplicator = true;
-        }
-        */
-
+        boolean openedReplicator = (mReplManager != null && mBaseFile != null && !mBaseFile.isDirectory());
         try {
             return doOpen(destroy, restore);
         } catch (Throwable e) {
