@@ -44,7 +44,7 @@ public class TestRepl {
     public static void main(String[] args) throws Exception {
         try {
             //启动数据库集群3个成员
-            start(3, Role.NORMAL, null);
+            start(3, Role.OBSERVER, null);
             teetRW();
             Thread.sleep(10000L);
         } finally {
@@ -101,7 +101,6 @@ public class TestRepl {
             if (i > 0) {
                 replConfigs[i].addSeed(serverSockets[0].getLocalSocketAddress());
                 replConfigs[i].localRole(replicaRole);
-
             }
             replicators[i] = DatabaseReplicator.open(replConfigs[i]);
 
