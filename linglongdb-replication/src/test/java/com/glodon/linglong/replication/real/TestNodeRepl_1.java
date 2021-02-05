@@ -49,32 +49,21 @@ public class TestNodeRepl_1 {
             //启动数据库集群3个成员
             start(Role.NORMAL, null);
             Thread.sleep(10000L);
-            teetRW();
+            teetR();
         } finally {
             //关闭数据库集群
             close();
         }
     }
 
-    private static void teetRW() throws Exception {
-        System.out.println("Node " + index + " 开始进行读写测试...");
-        if (index == 0) {
-            for (int j = 1; j <= 1000; j++) {
-                byte[] key = ("hello-world-" + j).getBytes();
-                byte[] value = ("ling-long-" + j).getBytes();
-                Index idx = database.openIndex("test");
-                idx.store(null, key, value);
-                System.out.println("Node " + index + " 已进行第" + j + "次集群读写测试");
-                Thread.sleep(1000L);
-            }
-        } else {
-            Index idx = database.openIndex("test");
-            while (true) {
-                debugPrint(idx);
-                Thread.sleep(30000L);
-            }
+    private static void teetR() throws Exception {
+        System.out.println("Node " + index + " 开始进行读测试...");
+        Index idx = database.openIndex("test");
+        for (int i = 0; i < 10000; i++) {
+            //debugPrint(idx);
+            Thread.sleep(30000L);
         }
-        System.out.println("Node " + index + " 结束进行读写测试...");
+        System.out.println("Node " + index + " 结束进行读测试...");
     }
 
     private static void debugPrint(Index index) {

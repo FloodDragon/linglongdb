@@ -2,7 +2,6 @@ package com.glodon.linglong.replication.real;
 
 import com.glodon.linglong.base.exception.UnmodifiableReplicaException;
 import com.glodon.linglong.engine.config.DatabaseConfig;
-import com.glodon.linglong.engine.core.frame.Cursor;
 import com.glodon.linglong.engine.core.frame.Database;
 import com.glodon.linglong.engine.core.frame.Index;
 import com.glodon.linglong.engine.event.EventListener;
@@ -56,50 +55,21 @@ public class TestNodeRepl_0 {
     }
 
     private static void teetRW() throws Exception {
-        System.out.println("Node " + index + " 开始进行读写测试...");
-        if (index == 0) {
-            for (int j = 1; j <= 1000; j++) {
+        System.out.println("Node " + index + " 开始进行写测试...");
+        for (int j = 1; j <= 10000; j++) {
+            try {
                 byte[] key = ("hello-world-" + j).getBytes();
                 byte[] value = ("ling-long-" + j).getBytes();
                 Index idx = database.openIndex("test");
                 idx.store(null, key, value);
-                System.out.println("Node " + index + " 已进行第" + j + "次集群读写测试");
-                Thread.sleep(1000L);
-            }
-        } else {
-            Index idx = database.openIndex("test");
-            while (true) {
-                //debugPrint(idx);
-                Thread.sleep(1000L);
-            }
-        }
-        System.out.println("Node " + index + " 结束进行读写测试...");
-    }
-
-    private static void debugPrint(Index index) {
-        System.out.println("Node " + index + " 全文扫描 >>>>>>>    开始     >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ");
-        try {
-            Cursor namesCursor = index.newCursor(null);
-            try {
-                namesCursor.first();
-                byte[] key;
-                while ((key = namesCursor.key()) != null) {
-                    byte[] value = namesCursor.value();
-                    System.out.println("key string=" + new String(key));
-                    if (value != null && value.length > 0) {
-                        System.out.println("value string=" + new String(value));
-                    }
-                    namesCursor.next();
-                }
+            } catch (Exception ex) {
+                System.out.println("Node " + index + " 数据不能写入");
             } finally {
-                namesCursor.reset();
-                namesCursor.close();
+                System.out.println("Node " + index + " 已进行第" + j + "次集群写测试");
+                Thread.sleep(5000L);
             }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        } finally {
-            System.out.println("Node " + index + " 全文扫描 >>>>>>>    结束     >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ");
         }
+        System.out.println("Node " + index + " 结束进行写测试...");
     }
 
     private static Database start(Role replicaRole, Supplier<RecoveryHandler> handlerSupplier) throws Exception {
