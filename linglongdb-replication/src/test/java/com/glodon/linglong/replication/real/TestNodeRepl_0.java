@@ -47,14 +47,14 @@ public class TestNodeRepl_0 {
             //启动数据库集群3个成员
             start(Role.NORMAL, null);
             Thread.sleep(10000L);
-            teetRW();
+            testRW();
         } finally {
             //关闭数据库集群
             close();
         }
     }
 
-    private static void teetRW() throws Exception {
+    private static void testRW() throws Exception {
         System.out.println("Node " + index + " 开始进行写测试...");
         for (int j = 1; j <= 10000; j++) {
             try {

@@ -49,14 +49,14 @@ public class TestNodeRepl_1 {
             //启动数据库集群3个成员
             start(Role.NORMAL, null);
             Thread.sleep(10000L);
-            teetR();
+            testR();
         } finally {
             //关闭数据库集群
             close();
         }
     }
 
-    private static void teetR() throws Exception {
+    private static void testR() throws Exception {
         System.out.println("Node " + index + " 开始进行读测试...");
         Index idx = database.openIndex("test");
         for (int i = 0; i < 10000; i++) {
