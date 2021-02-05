@@ -2,6 +2,7 @@ package com.glodon.linglong.replication.real;
 
 import com.glodon.linglong.base.exception.UnmodifiableReplicaException;
 import com.glodon.linglong.engine.config.DatabaseConfig;
+import com.glodon.linglong.engine.core.frame.Cursor;
 import com.glodon.linglong.engine.core.frame.Database;
 import com.glodon.linglong.engine.core.frame.Index;
 import com.glodon.linglong.engine.event.EventListener;
@@ -14,8 +15,10 @@ import com.glodon.linglong.replication.confg.ReplicatorConfig;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -55,21 +58,55 @@ public class TestNodeRepl_0 {
     }
 
     private static void testRW() throws Exception {
-        System.out.println("Node " + index + " 开始进行写测试...");
         for (int j = 1; j <= 10000; j++) {
             try {
-                byte[] key = ("hello-world-" + j).getBytes();
-                byte[] value = ("ling-long-" + j).getBytes();
+                System.out.println("Node " + index + " 开始进行写测试...");
+                int code = ThreadLocalRandom.current().nextInt();
+                byte[] key = ("Node " + index + " 写入key " + code).getBytes();
+                byte[] value = ("Node " + index + " 写入value " + code).getBytes();
                 Index idx = database.openIndex("test");
                 idx.store(null, key, value);
+                System.out.println("Node " + index + " 数据写入成功 key=" + new String(key) + " value=" + new String(value));
             } catch (Exception ex) {
-                System.out.println("Node " + index + " 数据不能写入");
+                System.out.println("Node " + index + " 已经失去领导力,数据不能写入");
             } finally {
-                System.out.println("Node " + index + " 已进行第" + j + "次集群写测试");
-                Thread.sleep(5000L);
+                System.out.println("Node " + index + " 结束进行写测试...");
             }
+            Thread.sleep(10000L);
+            testR();
+            Thread.sleep(10000L);
         }
-        System.out.println("Node " + index + " 结束进行写测试...");
+    }
+
+    private static void testR() throws Exception {
+        System.out.println("Node " + index + " 开始进行读测试...");
+        Index idx = database.openIndex("test");
+        debugPrint(idx);
+        System.out.println("Node " + index + " 结束进行读测试...");
+    }
+
+    private static void debugPrint(Index index) {
+        try {
+            Cursor namesCursor = index.newCursor(null);
+            try {
+                namesCursor.first();
+                byte[] key;
+                while ((key = namesCursor.key()) != null) {
+                    byte[] value = namesCursor.value();
+                    System.out.println("key = " + new String(key));
+                    if (value != null && value.length > 0) {
+                        System.out.println("value = " + new String(value));
+                    }
+                    namesCursor.next();
+                }
+            } finally {
+                namesCursor.reset();
+                namesCursor.close();
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        } finally {
+        }
     }
 
     private static Database start(Role replicaRole, Supplier<RecoveryHandler> handlerSupplier) throws Exception {
@@ -82,10 +119,10 @@ public class TestNodeRepl_0 {
             }
         }));
 
-        //if (i > 0) {
-        //    replConfigs[i].addSeed(serverSockets[0].getLocalSocketAddress());
-        //    replConfigs[i].localRole(replicaRole);
-        //}
+        if (index > 0) {
+            replConfig.addSeed(new InetSocketAddress(TestNodeRepl_0.replPort));
+            replConfig.localRole(replicaRole);
+        }
 
         replicator = DatabaseReplicator.open(replConfig);
         dbConfig = new DatabaseConfig()
