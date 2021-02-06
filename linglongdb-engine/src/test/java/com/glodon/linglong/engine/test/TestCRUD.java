@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class TestCRUD {
 
     private static volatile long lastCount = 0;
-    private static final long testTotal = 10000000;
+    private static final long testTotal = 10000000L;
     private static final AtomicLong counter = new AtomicLong(0);
     private static final ExecutorService executorService = Executors.newFixedThreadPool(5);
     private static final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
