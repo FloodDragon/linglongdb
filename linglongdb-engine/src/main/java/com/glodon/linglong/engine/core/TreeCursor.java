@@ -2597,6 +2597,8 @@ public class TreeCursor extends AbstractValueAccessor implements CauseCloseable,
                     LocalDatabase db = mTree.mDatabase;
                     if (mode == 1) {
                         txn = db.threadLocalTransaction(db.mDurabilityMode.alwaysRedo());
+                        //TODO 测试使用
+                        //System.out.println("测试txn对象是否进行转变 ======>  " + txn);
                         try {
                             txn.lockExclusive(mTree.mId, key, hash);
                             byte[] result = doFindAndStore(txn, key, value);
