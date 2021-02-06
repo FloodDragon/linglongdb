@@ -39,7 +39,7 @@ public final class TestCRUD {
         DatabaseConfig config = new DatabaseConfig()
                 .baseFilePath("C:\\Users\\liuj-ai\\Desktop\\数据库开发\\linglongdb\\data")
                 .minCacheSize(100_000_000)
-                .durabilityMode(DurabilityMode.SYNC);
+                .durabilityMode(DurabilityMode.NO_FLUSH);
         //打开数据库
         Database db = Database.open(config);
         for (int i = 0; i < 5; i++) {
@@ -73,6 +73,8 @@ public final class TestCRUD {
                     if (txn != null) {
                         txn.commit();
                     }
+                    long count = userIx.count(null, null);
+                    System.out.println(indexName + " 测试结束 总数量为 " + count);
                     //索引关闭
                     userIx.close();
                 } catch (Exception ex) {
