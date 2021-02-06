@@ -172,6 +172,13 @@ public final class ReplRedoController extends ReplRedoWriter {
         mEngine.mManager.sync();
     }
 
+    /**
+     * 晋升为Leader后会将mTxnRedoWriter变更为ReplRedoWriter对象进行读写
+     *
+     * @return
+     * @throws UnmodifiableReplicaException
+     * @throws IOException
+     */
     ReplRedoWriter leaderNotify() throws UnmodifiableReplicaException, IOException {
         acquireExclusive();
         try {

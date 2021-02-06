@@ -283,6 +283,8 @@ public final class TransactionContext extends Latch implements Flushable {
                    byte[] key, byte[] value)
             throws IOException {
         Utils.keyCheck(key);
+        //TODO ****** 测试使用 ******
+        //System.out.println("集群测试打印 >>>>>>>>>>>>>>>>>>>>   " + redo);
         redo.opWriteCheck(null);
 
         acquireRedoLatch();

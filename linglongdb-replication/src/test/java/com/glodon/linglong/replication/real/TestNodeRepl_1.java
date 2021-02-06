@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -49,36 +50,42 @@ public class TestNodeRepl_1 {
             //启动数据库集群3个成员
             start(Role.NORMAL, null);
             Thread.sleep(10000L);
-            teetRW();
+            testRW();
         } finally {
             //关闭数据库集群
             close();
         }
     }
 
-    private static void teetRW() throws Exception {
-        System.out.println("Node " + index + " 开始进行读写测试...");
-        if (index == 0) {
-            for (int j = 1; j <= 1000; j++) {
-                byte[] key = ("hello-world-" + j).getBytes();
-                byte[] value = ("ling-long-" + j).getBytes();
+    private static void testRW() throws Exception {
+        for (int j = 1; j <= 10000; j++) {
+            try {
+                System.out.println("Node " + index + " 开始进行写测试...");
+                int code = ThreadLocalRandom.current().nextInt();
+                byte[] key = ("Node " + index + " 写入key " + code).getBytes();
+                byte[] value = ("Node " + index + " 写入value " + code).getBytes();
                 Index idx = database.openIndex("test");
                 idx.store(null, key, value);
-                System.out.println("Node " + index + " 已进行第" + j + "次集群读写测试");
-                Thread.sleep(1000L);
+                System.out.println("Node " + index + " 数据写入成功 key=" + new String(key) + " value=" + new String(value));
+            } catch (Exception ex) {
+                System.out.println("Node " + index + " 已经失去领导力,数据不能写入");
+            } finally {
+                System.out.println("Node " + index + " 结束进行写测试...");
             }
-        } else {
-            Index idx = database.openIndex("test");
-            while (true) {
-                debugPrint(idx);
-                Thread.sleep(30000L);
-            }
+            Thread.sleep(10000L);
+            testR();
+            Thread.sleep(10000L);
         }
-        System.out.println("Node " + index + " 结束进行读写测试...");
+    }
+
+    private static void testR() throws Exception {
+        System.out.println("Node " + index + " 开始进行读测试...");
+        Index idx = database.openIndex("test");
+        debugPrint(idx);
+        System.out.println("Node " + index + " 结束进行读测试...");
     }
 
     private static void debugPrint(Index index) {
-        System.out.println("Node " + index + " 全文扫描 >>>>>>>    开始     >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ");
         try {
             Cursor namesCursor = index.newCursor(null);
             try {
@@ -86,9 +93,9 @@ public class TestNodeRepl_1 {
                 byte[] key;
                 while ((key = namesCursor.key()) != null) {
                     byte[] value = namesCursor.value();
-                    System.out.println("key string=" + new String(key));
+                    System.out.println("key = " + new String(key));
                     if (value != null && value.length > 0) {
-                        System.out.println("value string=" + new String(value));
+                        System.out.println("value = " + new String(value));
                     }
                     namesCursor.next();
                 }
@@ -99,7 +106,6 @@ public class TestNodeRepl_1 {
         } catch (Exception ex) {
             ex.printStackTrace();
         } finally {
-            System.out.println("Node " + index + " 全文扫描 >>>>>>>    结束     >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ");
         }
     }
 

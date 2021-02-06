@@ -7,47 +7,84 @@ import com.glodon.linglong.engine.core.frame.Index;
 import com.glodon.linglong.engine.core.tx.Transaction;
 
 import java.io.IOException;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by liuj-ai on 2021/2/2.
  */
-public class TestCRUD {
+public final class TestCRUD {
 
+    private static volatile long lastCount = 0;
+    private static final long testTotal = 10000000L;
+    private static final AtomicLong counter = new AtomicLong(0);
+    private static final ExecutorService executorService = Executors.newFixedThreadPool(5);
+    private static final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
 
-    public static void main(String[] args) throws IOException {
-        DatabaseConfig config = new DatabaseConfig()
-                .baseFilePath("C:\\Users\\liuj-ai\\Desktop\\数据库开发\\my-db\\data")
-                .minCacheSize(100_000_000)
-                .durabilityMode(DurabilityMode.SYNC);
-        long time = 0;
-        //打开数据库
-        Database db = Database.open(config);
-        //开始事务
-        Transaction txn = db.newTransaction();
-        //构建索引
-        Index userIx = db.openIndex("userIndex");
-        String msg = "正在进行数据库测试";
-
-        byte[] key = null;
-        for (int i = 1; i <= 10000000; i++) {
-            time = System.currentTimeMillis();
-            userIx.insert(txn, key = String.valueOf(ThreadLocalRandom.current().nextInt()).getBytes(), msg.getBytes());
-            System.out.println("写入数量: " + i + " 耗时: " + (System.currentTimeMillis() - time));
-            if (key != null) {
-                time = System.currentTimeMillis();
-                byte[] data = userIx.load(txn, key);
-                System.out.println("读取写入数据: " + new String(data == null ? new byte[0] : data) + " 耗时: " + (System.currentTimeMillis() - time));
+    static {
+        scheduledExecutorService.scheduleAtFixedRate(() -> {
+            if (lastCount == 0) {
+                lastCount = counter.get();
+            } else {
+                long count = counter.get();
+                System.out.println("当前已写入数据总量 " + count + " ,每秒读写 " + (count - lastCount) + " 次/s");
+                lastCount = count;
             }
-
-        }
-        //事务提交 & 回滚
-        txn.commit();//txn.reset();
-
-        //索引关闭
-        userIx.close();
-        //关闭数据库
-        db.close();
+        }, 0, 1000l, TimeUnit.MILLISECONDS);
     }
 
+    public static void main(String[] args) throws IOException, InterruptedException {
+        System.out.println("数据库性能测试开始......");
+        DatabaseConfig config = new DatabaseConfig()
+                .baseFilePath("C:\\Users\\liuj-ai\\Desktop\\数据库开发\\linglongdb\\data")
+                .minCacheSize(100_000_000)
+                .durabilityMode(DurabilityMode.SYNC);
+        //打开数据库
+        Database db = Database.open(config);
+        for (int i = 0; i < 5; i++) {
+            final int index = i;
+            executorService.submit(() -> {
+                try {
+                    String indexName = "linglongTest-" + index;
+                    //开始事务
+                    Transaction txn = null;
+                    //构建索引
+                    Index userIx = db.openIndex(indexName);
+                    String msg = "Hi 大家好,我是玲珑数据库.";
+                    byte[] key;
+                    for (int j = 1; j <= testTotal; j++) {
+                        if (txn == null) {
+                            txn = db.newTransaction();
+                        }
+                        userIx.insert(txn, key = String.valueOf(indexName + "-" + j).getBytes(), msg.getBytes());
+                        if (key != null) {
+                            byte[] data = userIx.load(txn, key);
+                            //System.out.println("indexName=" + indexName + " data=" + new String(data));
+                        }
+                        counter.incrementAndGet();
+
+                        if (j % 10000 == 0) {
+                            //事务提交 & 回滚
+                            txn.commit();//txn.reset();
+                            txn = null;
+                        }
+                    }
+                    if (txn != null) {
+                        txn.commit();
+                    }
+                    //索引关闭
+                    userIx.close();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            });
+        }
+        executorService.shutdown();
+        while (!executorService.awaitTermination(1000L, TimeUnit.MILLISECONDS)) ;
+        //关闭数据库
+        db.close();
+        System.out.println("数据库性能测试10s后即将关闭......");
+        Thread.sleep(1000 * 10L);
+        scheduledExecutorService.shutdown();
+    }
 }
