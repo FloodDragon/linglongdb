@@ -74,7 +74,7 @@ public final class TestCRUD {
                         txn.commit();
                     }
                     long count = userIx.count(null, null);
-                    System.out.println(indexName + " 测试结束 总数量为 " + count);
+                    System.out.println(indexName + " 索引测试结束 总写入数量为 " + count);
                     //索引关闭
                     userIx.close();
                 } catch (Exception ex) {
