@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class TestCRUD {
 
     private static volatile long lastCount = 0;
-    private static final long testTotal = 1000000L;
+    private static final long testTotal = 10000000L;
     private static final AtomicLong counter = new AtomicLong(0);
     private static final ExecutorService executorService = Executors.newFixedThreadPool(5);
     private static final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
@@ -47,21 +47,31 @@ public final class TestCRUD {
                 try {
                     String indexName = "linglongTest-" + index;
                     //开始事务
-                    Transaction txn = db.newTransaction();
+                    Transaction txn = null;
                     //构建索引
                     Index userIx = db.openIndex(indexName);
-                    String msg = "Hi 大家好,我是玲珑数据库";
+                    String msg = "Hi 大家好,我是玲珑数据库.";
                     byte[] key;
                     for (int j = 1; j <= testTotal; j++) {
+                        if (txn == null) {
+                            txn = db.newTransaction();
+                        }
                         userIx.insert(txn, key = String.valueOf(indexName + "-" + j).getBytes(), msg.getBytes());
                         if (key != null) {
                             byte[] data = userIx.load(txn, key);
                             //System.out.println("indexName=" + indexName + " data=" + new String(data));
                         }
                         counter.incrementAndGet();
+
+                        if (j % 10000 == 0) {
+                            //事务提交 & 回滚
+                            txn.commit();//txn.reset();
+                            txn = null;
+                        }
                     }
-                    //事务提交 & 回滚
-                    txn.commit();//txn.reset();
+                    if (txn != null) {
+                        txn.commit();
+                    }
                     //索引关闭
                     userIx.close();
                 } catch (Exception ex) {
