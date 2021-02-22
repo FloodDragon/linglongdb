@@ -68,13 +68,13 @@ public class TestNodeRepl_2 {
                 idx.store(null, key, value);
                 System.out.println("Node " + index + " 数据写入成功 key=" + new String(key) + " value=" + new String(value));
             } catch (Exception ex) {
-                System.out.println("Node " + index + " 已经失去领导力,数据不能写入");
+                System.out.println("Node " + index + " 不是主节点,数据不能写入");
             } finally {
                 System.out.println("Node " + index + " 结束进行写测试...");
             }
-            Thread.sleep(10000L);
-            testR();
-            Thread.sleep(10000L);
+            Thread.sleep(3000L);
+            //testR();
+            //Thread.sleep(10000L);
         }
     }
 
