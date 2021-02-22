@@ -254,9 +254,11 @@ class GroupJoiner {
                     addr = null;
                 }
             } else if (op == OP_JOINED) {
+                //加入集群后返回数据
                 mPrevTerm = cin.readLongLE();
                 mTerm = cin.readLongLE();
                 mIndex = cin.readLongLE();
+                //返回的地址数据落盘放到组文件里
                 try (FileOutputStream out = new FileOutputStream(mFile)) {
                     cin.drainTo(out);
                 }
