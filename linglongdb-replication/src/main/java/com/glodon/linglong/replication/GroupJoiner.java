@@ -22,6 +22,8 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 
 /**
+ * (集群俱乐部)用于组内成员进行相互发现
+ *
  * @author Stereo
  */
 class GroupJoiner {
@@ -65,6 +67,13 @@ class GroupJoiner {
         this(null, null, groupToken, null, null);
     }
 
+    /**
+     * 加入集群
+     *
+     * @param seeds
+     * @param timeoutMillis
+     * @throws IOException
+     */
     void join(Set<SocketAddress> seeds, int timeoutMillis) throws IOException {
         try {
             doJoin(seeds, timeoutMillis, out -> {
@@ -76,6 +85,14 @@ class GroupJoiner {
         }
     }
 
+    /**
+     * 退出集群
+     *
+     * @param seeds
+     * @param timeoutMillis
+     * @param memberId
+     * @throws IOException
+     */
     void unjoin(Set<SocketAddress> seeds, int timeoutMillis, long memberId) throws IOException {
         try {
             doJoin(seeds, timeoutMillis, out -> {
@@ -87,6 +104,14 @@ class GroupJoiner {
         }
     }
 
+    /**
+     * 退出集群
+     *
+     * @param seeds
+     * @param timeoutMillis
+     * @param memberAddr
+     * @throws IOException
+     */
     void unjoin(Set<SocketAddress> seeds, int timeoutMillis, SocketAddress memberAddr)
             throws IOException {
         try {
@@ -226,6 +251,14 @@ class GroupJoiner {
         channel.connect(addr);
     }
 
+    /**
+     * 处理加入集群后结果
+     *
+     * @param s
+     * @param timeoutMillis
+     * @return
+     * @throws IOException
+     */
     private SocketAddress processReply(Socket s, long timeoutMillis) throws IOException {
         InputStream in = s.getInputStream();
 

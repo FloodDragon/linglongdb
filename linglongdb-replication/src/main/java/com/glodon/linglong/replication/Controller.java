@@ -22,7 +22,7 @@ import static com.glodon.linglong.base.common.IOUtils.encodeLongLE;
 import static com.glodon.linglong.base.common.IOUtils.rethrow;
 
 /**
- * 复制核心控制器
+ * 复制核心控制器(基于RAFT共识协议)
  *
  * @author Stereo
  */
@@ -143,6 +143,9 @@ final class Controller extends Latch implements StreamReplicator, Channel {
         }
     }
 
+    /**
+     * 刷新对等网络
+     */
     private void refreshPeerSet() {
         Map<Long, Channel> currentPeerChannels = new HashMap<>();
 
@@ -844,6 +847,9 @@ final class Controller extends Latch implements StreamReplicator, Channel {
         }
     }
 
+    /**
+     * 执行选举任务
+     */
     private void doElectionTask() {
         Channel[] peerChannels;
         long term, candidateId;
@@ -917,6 +923,9 @@ final class Controller extends Latch implements StreamReplicator, Channel {
         doAffirmLeadership();
     }
 
+    /**
+     * 进行维护领导地位
+     */
     private void doAffirmLeadership() {
         LogWriter writer;
         long highestIndex, commitIndex;
@@ -1013,6 +1022,13 @@ final class Controller extends Latch implements StreamReplicator, Channel {
         closeQuietly(s);
     }
 
+    /**
+     * 接受加入集群请求
+     *
+     * @param s
+     * @return
+     * @throws IOException
+     */
     private boolean doRequestJoin(Socket s) throws IOException {
         ChannelInputStream in = new ChannelInputStream(s.getInputStream(), 100);
 
@@ -1064,6 +1080,11 @@ final class Controller extends Latch implements StreamReplicator, Channel {
 
         switch (op) {
             case GroupJoiner.OP_ADDRESS:
+                /**
+                 * 首次节点连接
+                 * 重要: gfIn为组文件内容
+                 * 在GroupFile的applyJoin中会将组文件读取发送至连接者，帮助他发现所有节点
+                 */
                 message = mGroupFile.proposeJoin(CONTROL_OP_JOIN, addr, (gfIn, index) -> {
                     try {
                         if (gfIn == null) {

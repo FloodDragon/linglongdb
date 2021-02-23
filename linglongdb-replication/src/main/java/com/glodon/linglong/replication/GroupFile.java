@@ -506,6 +506,14 @@ public final class GroupFile extends Latch {
         return consumer;
     }
 
+    /**
+     * 将节点加入组并回调group file中的组内容信息
+     *
+     * @param index
+     * @param message
+     * @return
+     * @throws IOException
+     */
     public Peer applyJoin(long index, byte[] message) throws IOException {
         ObjLongConsumer<InputStream> consumer;
         Peer peer = null;
