@@ -17,6 +17,7 @@ import java.util.function.LongPredicate;
 import java.util.zip.Checksum;
 
 /**
+ * 不同类型客户端管理
  * 复制通道管理
  *
  * @author Stereo
@@ -359,6 +360,9 @@ final class ChannelManager {
         mChannels.remove(channel);
     }
 
+    /**
+     * 接收连接主程
+     */
     private void acceptLoop() {
         ServerSocket ss;
         Channel localServer;
@@ -386,6 +390,13 @@ final class ChannelManager {
         }
     }
 
+    /**
+     * 接受连接后根据不同的连接类型进行处理
+     *
+     * @param ss
+     * @param localServer
+     * @throws IOException
+     */
     private void doAccept(final ServerSocket ss, final Channel localServer) throws IOException {
         Socket s = ss.accept();
 
@@ -670,6 +681,9 @@ final class ChannelManager {
             return true;
         }
 
+        /**
+         * 输入主程逻辑(客户端与服务端公用一套处理逻辑)
+         */
         private void inputLoop() {
             Channel localServer;
             ChannelInputStream in;
