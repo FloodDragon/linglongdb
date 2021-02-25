@@ -252,7 +252,7 @@ class GroupJoiner {
     }
 
     /**
-     * 处理加入集群后结果
+     * 处理加入集群后结果(只有leader才会响应OP_JOINED指令,响应OP_ADDRESS代表需要重新访问leader节点)
      *
      * @param s
      * @param timeoutMillis
