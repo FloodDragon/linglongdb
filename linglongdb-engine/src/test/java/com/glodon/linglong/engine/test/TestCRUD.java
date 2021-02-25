@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public final class TestCRUD {
 
+    private static final String basePath = "C:\\Users\\liuj-ai\\Desktop\\数据库开发\\linglongdb\\data";
     private static volatile long lastCount = 0;
     private static final long testTotal = 20000000L;
     private static final AtomicLong counter = new AtomicLong(0);
@@ -37,7 +38,7 @@ public final class TestCRUD {
         long start = System.currentTimeMillis();
         System.out.println("数据库性能测试开始......");
         DatabaseConfig config = new DatabaseConfig()
-                .baseFilePath("C:\\Users\\liuj-ai\\Desktop\\数据库开发\\linglongdb\\data")
+                .baseFilePath(basePath)
                 .minCacheSize(100_000_000)
                 .durabilityMode(DurabilityMode.NO_FLUSH);
         //打开数据库
