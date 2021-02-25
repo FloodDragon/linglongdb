@@ -225,6 +225,18 @@ public class ReplRedoWriter extends RedoWriter {
         return false;
     }
 
+
+    /**
+     * 数据写入redo复制缓冲区
+     *
+     * @param flush
+     * @param bytes
+     * @param offset
+     * @param length
+     * @param commitLen
+     * @return
+     * @throws IOException
+     */
     @Override
     public final long write(boolean flush, byte[] bytes, int offset, int length, int commitLen)
             throws IOException {
@@ -380,6 +392,9 @@ public class ReplRedoWriter extends RedoWriter {
         return mEngine.mController.nowUnmodifiable(mReplWriter);
     }
 
+    /**
+     * 从缓冲区消费执行复制
+     */
     private void consume() {
         mBufferLatch.acquireExclusive();
 

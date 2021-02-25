@@ -629,6 +629,16 @@ final class Controller extends Latch implements StreamReplicator, Channel {
             return mWriter.commitIndex();
         }
 
+        /**
+         * 复制数据广播到集群中其他节点
+         *
+         * @param data
+         * @param offset
+         * @param length
+         * @param highestIndex
+         * @return
+         * @throws IOException
+         */
         @Override
         public int write(byte[] data, int offset, int length, long highestIndex)
                 throws IOException {
