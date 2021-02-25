@@ -1530,6 +1530,18 @@ final class Controller extends Latch implements StreamReplicator, Channel {
         return true;
     }
 
+    /**
+     * 接受数据写入Log中
+     *
+     * @param from
+     * @param prevTerm
+     * @param term
+     * @param index
+     * @param highestIndex
+     * @param commitIndex
+     * @param data
+     * @return
+     */
     @Override
     public boolean writeData(Channel from, long prevTerm, long term, long index,
                              long highestIndex, long commitIndex, byte[] data) {

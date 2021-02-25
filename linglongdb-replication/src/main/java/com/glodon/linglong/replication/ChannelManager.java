@@ -712,7 +712,7 @@ final class ChannelManager {
                     int commandLength = (opAndLength >> 8) & 0xffffff;
                     int op = opAndLength & 0xff;
                     //****** 跟踪BUG后续删除 ******
-                    System.out.println(this.getClass().getSimpleName() + " 读取OP ---------> " + op);
+                    //System.out.println(this.getClass().getSimpleName() + " 读取OP ---------> " + op);
                     switch (op) {
                         case OP_NOP:
                             localServer.nop(this);

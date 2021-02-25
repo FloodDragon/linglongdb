@@ -384,6 +384,15 @@ final class FileTermLog extends Latch implements TermLog {
         return waitForCommit(index, nanosTimeout, this);
     }
 
+    /**
+     * 等待日志提交
+     *
+     * @param index
+     * @param nanosTimeout
+     * @param waiter
+     * @return
+     * @throws InterruptedIOException
+     */
     long waitForCommit(long index, long nanosTimeout, Object waiter)
             throws InterruptedIOException {
         boolean exclusive = false;
@@ -936,6 +945,12 @@ final class FileTermLog extends Latch implements TermLog {
         releaseExclusive();
     }
 
+    /**
+     * 触发(write/commit)
+     * notifyCommitTasks换线等待提交的读线程
+     *
+     * @param commitIndex
+     */
     private void notifyCommitTasks(long commitIndex) {
         PriorityQueue<Delayed> tasks = mCommitTasks;
 
