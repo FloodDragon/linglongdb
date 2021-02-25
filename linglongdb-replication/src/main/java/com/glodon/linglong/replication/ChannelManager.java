@@ -566,6 +566,11 @@ final class ChannelManager {
     static final AtomicIntegerFieldUpdater<SocketChannel> cWriteStateUpdater =
             AtomicIntegerFieldUpdater.newUpdater(SocketChannel.class, "mWriteState");
 
+    /**
+     * 网络通道(内部实现集群节点请求指令，集群节点处理指令)
+     * ClientChannel触发处理指令时,代表是服务器响应指令
+     * ServerChannel触发触发指令是,代表是客户端请求指令
+     */
     abstract class SocketChannel extends Latch implements Channel, Closeable, Consumer<Socket> {
         final Peer mPeer;
         private Channel mLocalServer;
@@ -707,7 +712,7 @@ final class ChannelManager {
                     int commandLength = (opAndLength >> 8) & 0xffffff;
                     int op = opAndLength & 0xff;
                     //****** 跟踪BUG后续删除 ******
-                    System.out.println(this.getClass().getSimpleName() + " 读取OP ---------> " + op);
+                    //System.out.println(this.getClass().getSimpleName() + " 读取OP ---------> " + op);
                     switch (op) {
                         case OP_NOP:
                             localServer.nop(this);
@@ -1148,7 +1153,7 @@ final class ChannelManager {
         }
 
         /**
-         * Caller must hold exclusive latch.
+         * 调用者必须持有独占锁,防止缓存非安全性
          *
          * @param command must have at least 8 bytes, used for the header
          * @param length  max allowed is 16,777,216 bytes

@@ -81,7 +81,7 @@ public abstract class RedoDecoder {
                 return true;
             }
             //****** 跟踪BUG后续删除 ******
-            System.out.println("Decoder 读取OP ---------> " + op);
+            //System.out.println("Decoder 读取OP ---------> " + op);
             switch (op &= 0xff) {
                 case 0:
                     if (mLenient) {
