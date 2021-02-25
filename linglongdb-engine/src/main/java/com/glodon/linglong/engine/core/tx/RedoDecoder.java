@@ -12,6 +12,10 @@ import static com.glodon.linglong.engine.core.tx.RedoOps.*;
 
 /**
  * @author Stereo
+ * @See ReplRedoDecoder 用于各个节点数据复制流程如下
+ * 1.主节点将数据广播到各个节点的Log日志中
+ * 2.各个节点会将数据进行解码
+ * 3.将解码后的数据根据操作类型进行处理doRun()
  */
 public abstract class RedoDecoder {
     private final boolean mLenient;
@@ -76,7 +80,8 @@ public abstract class RedoDecoder {
             if (op < 0) {
                 return true;
             }
-
+            //****** 跟踪BUG后续删除 ******
+            System.out.println("Decoder 读取OP ---------> " + op);
             switch (op &= 0xff) {
                 case 0:
                     if (mLenient) {
