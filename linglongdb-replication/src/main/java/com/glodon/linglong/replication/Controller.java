@@ -1283,6 +1283,16 @@ final class Controller extends Latch implements StreamReplicator, Channel {
         return true;
     }
 
+    /**
+     * 投票(由拉选票者广播发送而触发)
+     *
+     * @param from
+     * @param term
+     * @param candidateId
+     * @param highestTerm
+     * @param highestIndex
+     * @return
+     */
     @Override
     public boolean requestVote(Channel from, long term, long candidateId,
                                long highestTerm, long highestIndex) {
@@ -1319,6 +1329,14 @@ final class Controller extends Latch implements StreamReplicator, Channel {
         return term < info.mTerm || (term == info.mTerm && index < info.mHighestIndex);
     }
 
+    /**
+     * 投票返回投票结果
+     * (mGrantsRemaining<0 , mLocalMode=MODE_CANDIDATE 晋升为leader)
+     *
+     * @param from
+     * @param term
+     * @return
+     */
     @Override
     public boolean requestVoteReply(Channel from, long term) {
         acquireExclusive();
