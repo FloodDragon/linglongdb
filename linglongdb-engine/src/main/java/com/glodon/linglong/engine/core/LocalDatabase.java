@@ -893,16 +893,25 @@ final public class LocalDatabase extends AbstractDatabase {
         }
     }
 
+    /**
+     * 写入控制信息
+     *
+     * @param message
+     * @return
+     * @throws IOException
+     */
     private long writeControlMessage(byte[] message) throws IOException {
         CommitLock.Shared shared = mCommitLock.acquireShared();
         try {
             RedoWriter redo = txnRedoWriter();
             TransactionContext context = anyTransactionContext();
+            //写入控制信息到重做文件(集群复制下同步到其他节点)
             long commitPos = context.redoControl(redo, message);
 
             redo.commitSync(context, commitPos);
 
             try {
+                //集群复制下调用controlMessageReceived接收控制信息
                 ((ReplRedoController) mRedoWriter).getManager().control(commitPos, message);
             } catch (Throwable e) {
                 Utils.closeQuietly(this, e);
