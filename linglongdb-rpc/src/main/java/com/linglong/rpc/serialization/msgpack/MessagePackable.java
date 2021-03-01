@@ -23,7 +23,7 @@ import com.linglong.rpc.serialization.msgpack.unpacker.Unpacker;
 import java.io.IOException;
 
 /**
- * Created by liuj-ai on 18-8-10.
+ * @author Stereo
  */
 public interface MessagePackable {
     public void writeTo(Packer pk) throws IOException;

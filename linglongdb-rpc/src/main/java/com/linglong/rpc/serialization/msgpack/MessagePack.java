@@ -46,7 +46,7 @@ import java.nio.ByteBuffer;
  * 基于公版MessagePack 0.6.0 改进
  * (可序列化和反序列化任何Java对象,同时放弃MessagePack跨语言的特性)
  * <p>
- * Created by liuj-ai on 18-8-10.
+ * @author Stereo
  */
 public class MessagePack {
     private TemplateRegistry registry;
