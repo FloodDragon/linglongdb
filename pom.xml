@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.glodon.linglong</groupId>
+    <groupId>com.linglong</groupId>
     <artifactId>linglongdb</artifactId>
     <packaging>pom</packaging>
     <version>0.0.1-SNAPSHOT</version>
@@ -16,6 +16,7 @@
         <module>linglongdb-server</module>
         <module>linglongdb-assembly</module>
         <module>linglongdb-jdbc</module>
+        <module>linglongdb-rpc</module>
     </modules>
 
     <properties>
@@ -30,6 +31,12 @@
         <jcip.version>1.0-1</jcip.version>
         <linglongdb.version>0.0.1-SNAPSHOT</linglongdb.version>
         <springboot.version>1.5.12.RELEASE</springboot.version>
+        <slf4j-api.version>1.7.25</slf4j-api.version>
+        <json-simple.version>1.1.1</json-simple.version>
+        <javassist.version>3.20.0-GA</javassist.version>
+        <netty.version>4.1.25.Final</netty.version>
+        <commons-lang3.version>3.6</commons-lang3.version>
+        <commons-beanutils.version>1.9.3</commons-beanutils.version>
     </properties>
 
     <dependencyManagement>
@@ -43,6 +50,42 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-web</artifactId>
                 <version>${springboot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-all</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.javassist</groupId>
+                <artifactId>javassist</artifactId>
+                <version>${javassist.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-beanutils</groupId>
+                <artifactId>commons-beanutils</artifactId>
+                <version>${commons-beanutils.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.googlecode.json-simple</groupId>
+                <artifactId>json-simple</artifactId>
+                <version>${json-simple.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>junit</groupId>
