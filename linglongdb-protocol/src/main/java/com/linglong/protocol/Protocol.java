@@ -3,8 +3,8 @@ package com.linglong.protocol;
 import com.linglong.rpc.serialization.msgpack.BeanMessage;
 
 /**
- * TODO
- * Created by liuj-ai on 2021/3/5.
+ * TODO 设计中...
+ * @author Stereo
  */
 public abstract class Protocol implements BeanMessage {
 }

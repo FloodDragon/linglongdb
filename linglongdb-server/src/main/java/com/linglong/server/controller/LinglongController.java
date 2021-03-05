@@ -1,8 +1,8 @@
 package com.linglong.server.controller;
 
 /**
- * TODO
- * Created by liuj-ai on 2021/3/5.
+ * TODO 设计中...
+ * @author Stereo
  */
 public interface LinglongController {
 }
