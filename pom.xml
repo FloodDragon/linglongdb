@@ -17,6 +17,7 @@
         <module>linglongdb-assembly</module>
         <module>linglongdb-jdbc</module>
         <module>linglongdb-rpc</module>
+        <module>linglongdb-protocol</module>
     </modules>
 
     <properties>
