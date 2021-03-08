@@ -8,24 +8,12 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-
-    <packaging>jar</packaging>
-    <name>linglongdb-server</name>
-    <artifactId>linglongdb-server</artifactId>
-
+    <name>linglongdb-protocol</name>
+    <artifactId>linglongdb-protocol</artifactId>
     <dependencies>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.linglong</groupId>
-            <artifactId>linglongdb-replication</artifactId>
-            <version>${parent.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.linglong</groupId>
-            <artifactId>linglongdb-protocol</artifactId>
+            <artifactId>linglongdb-rpc</artifactId>
             <version>${parent.version}</version>
         </dependency>
     </dependencies>
