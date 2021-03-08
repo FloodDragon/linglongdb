@@ -7,7 +7,10 @@ import com.linglong.rpc.serialization.msgpack.BeanMessage;
  *
  * @author Stereo
  */
-public abstract class Protocol implements BeanMessage {
+public abstract class Message implements BeanMessage {
+    private String id;
+    private long timestamp;
+    private String version;
 
     //txId
     //创建临时库
