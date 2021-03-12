@@ -74,28 +74,23 @@ public final class PredicateExtractor implements OptionalSQLSegmentExtractor {
                 return result;
             }
         }
-//        if (5 == predicateNode.get().getChildCount() && "BETWEEN".equalsIgnoreCase(predicateNode.get().getChild(1).getText())) {
-//            result = extractBetweenPredicate(predicateNode.get(), parameterMarkerIndexes, column.get());
-//            if (result.isPresent()) {
-//                return result;
-//            }
-//        }
-
-        /*
         if (5 == predicateNode.get().getChildCount() && "BETWEEN".equalsIgnoreCase(predicateNode.get().getChild(1).getText())) {
-            // BETWEEN
+            result = extractBetweenPredicate(predicateNode.get(), column.get());
+            if (result.isPresent()) {
+                return result;
+            }
         }
-        */
         return Optional.absent();
     }
-//    private Optional<PredicateSegment> extractBetweenPredicate(final ParserRuleContext predicateNode, final Map<ParserRuleContext, Integer> parameterMarkerIndexes, final ColumnSegment column) {
-//        Optional<? extends ExpressionSegment> betweenSQLExpression = expressionExtractor.extract((ParserRuleContext) predicateNode.getChild(2), parameterMarkerIndexes);
-//        Optional<? extends ExpressionSegment> andSQLExpression = expressionExtractor.extract((ParserRuleContext) predicateNode.getChild(4), parameterMarkerIndexes);
-//        return betweenSQLExpression.isPresent() && andSQLExpression.isPresent()
-//                ? Optional.of(new PredicateSegment(
-//                predicateNode.getStart().getStartIndex(), predicateNode.getStop().getStopIndex(), column, new PredicateBetweenRightValue(betweenSQLExpression.get(), andSQLExpression.get())))
-//                : Optional.<PredicateSegment>absent();
-//    }
+
+    private Optional<PredicateSegment> extractBetweenPredicate(final ParserRuleContext predicateNode, final ColumnWhereSegment column) {
+        Optional<? extends ExpressionSegment> betweenSQLExpression = expressionExtractor.extract((ParserRuleContext) predicateNode.getChild(2));
+        Optional<? extends ExpressionSegment> andSQLExpression = expressionExtractor.extract((ParserRuleContext) predicateNode.getChild(4));
+        return betweenSQLExpression.isPresent() && andSQLExpression.isPresent()
+                ? Optional.of(new PredicateSegment(
+                predicateNode.getStart().getStartIndex(), predicateNode.getStop().getStopIndex(), column, new PredicateBetweenRightValueSegment(betweenSQLExpression.get(), andSQLExpression.get())))
+                : Optional.<PredicateSegment>absent();
+    }
 
     private Optional<PredicateSegment> extractInPredicate(final ParserRuleContext predicateNode, final ColumnWhereSegment column) {
         Collection<ExpressionSegment> sqlExpressions = extractInExpressionSegments(predicateNode);

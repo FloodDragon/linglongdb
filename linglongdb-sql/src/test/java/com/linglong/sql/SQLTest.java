@@ -12,8 +12,9 @@ public class SQLTest {
     public static void main(String[] args) throws IOException, InterruptedException {
         String SQL = "SELECT (time + 1) as timeStamp, sum(DISTINCT(v.n)) as b, avg('v.s') as a, min(c) as c FROM \"enno\".\"two_day_only\".\"device_environmentcontrolequipment_events\",(SELECT * FROM TEST WHERE projectId = '6dec6a02-2afd-4cef-89c7-07af5283598c' and attrCode = 'temp' group by a,c,d order by a asc, d desc, c limit 1 offset 2) WHERE projectId = '6dec6a02-2afd-4cef-89c7-07af5283598c' and attrCode = 'temp' group by a,c,d order by a asc, d desc, c limit 1 offset 2";
         SQL = "select * from a where b in (1,2,3,4)";
+        SQL = "SELECT create_time data FROM sys_enforce_event WHERE create_time BETWEEN 1 AND 100";
         System.out.println(SQL);
-        System.out.println();
+        int count = 0;
         while (true) {
             long start = System.currentTimeMillis();
             LinglongSQLParseKernel kernel = new LinglongSQLParseKernel(SQL);
@@ -21,6 +22,10 @@ public class SQLTest {
             System.out.println(selectStatement);
             System.out.println("SQL解析损耗: " + (System.currentTimeMillis() - start) + "ms");
             Thread.sleep(1000L);
+            count++;
+            if (count == 3) {
+                break;
+            }
         }
 
         /*
