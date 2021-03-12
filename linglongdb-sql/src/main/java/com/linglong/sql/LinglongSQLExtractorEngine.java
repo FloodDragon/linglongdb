@@ -5,7 +5,7 @@ import com.linglong.sql.extractor.LinglongSQLSegmentExtractor;
 import com.linglong.sql.extractor.select.SelectExtractor;
 import com.linglong.sql.rule.StatementRule;
 import com.linglong.sql.segment.complex.SelectSegment;
-import com.linglong.sql.statement.InfluxSQLStatement;
+import com.linglong.sql.statement.LinglongSQLStatement;
 import com.linglong.sql.statement.SelectStatement;
 import com.google.common.base.Optional;
 
@@ -16,7 +16,7 @@ import com.google.common.base.Optional;
 public final class LinglongSQLExtractorEngine {
 
 
-    public InfluxSQLStatement extract(final LinglongSQLAST ast) {
+    public LinglongSQLStatement extract(final LinglongSQLAST ast) {
         StatementRule rule = ast.getStatementRule();
         LinglongSQLSegmentExtractor extractor = ast.getStatementRule().getExtractor();
         switch (rule.getRuleType()) {
@@ -25,10 +25,10 @@ public final class LinglongSQLExtractorEngine {
                 if (selectSegmentOptional.isPresent()) {
                     return new SelectStatement(selectSegmentOptional.get());
                 } else {
-                    throw new LinglongSQLParsingException("Influx Sql extract Error");
+                    throw new LinglongSQLParsingException("Linglong Sql extract Error");
                 }
             default:
-                throw new LinglongSQLParsingException(String.format("Influx Sql Extract Unsupported of Rule <`%s`>", rule.getRuleType().name()));
+                throw new LinglongSQLParsingException(String.format("Linglong Sql Extract Unsupported of Rule <`%s`>", rule.getRuleType().name()));
         }
     }
 }

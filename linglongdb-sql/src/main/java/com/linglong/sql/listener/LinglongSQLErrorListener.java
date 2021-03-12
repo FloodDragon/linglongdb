@@ -16,7 +16,7 @@ import java.util.BitSet;
 public class LinglongSQLErrorListener implements ANTLRErrorListener {
     @Override
     public void syntaxError(Recognizer<?, ?> recognizer, Object o, int i, int i1, String s, RecognitionException e) {
-        throw new LinglongSQLParsingException("Influx SQL Syntax Error, Please Check.");
+        throw new LinglongSQLParsingException("Linglong SQL Syntax Error, Please Check.");
     }
 
     @Override

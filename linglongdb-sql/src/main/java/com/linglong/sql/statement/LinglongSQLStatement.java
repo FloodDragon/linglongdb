@@ -6,7 +6,7 @@ import com.google.common.base.Optional;
 
 import java.util.Collection;
 
-public interface InfluxSQLStatement {
+public interface LinglongSQLStatement {
     
     Collection<LinglongSQLSegment> getAllSQLSegments();
     

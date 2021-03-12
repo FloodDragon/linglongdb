@@ -1,32 +1,32 @@
 package com.linglong.sql;
 
-import com.linglong.sql.statement.InfluxSQLStatement;
+import com.linglong.sql.statement.LinglongSQLStatement;
 
 /**
  * @author Stereo on 2019/10/11.
  */
 public final class LinglongSQLParseKernel {
 
-    private final LinglongSQLParserEngine influxSQLParserEngine;
-    private final LinglongSQLExtractorEngine influxSQLExtractorEngine;
+    private final LinglongSQLParserEngine linglongSQLParserEngine;
+    private final LinglongSQLExtractorEngine linglongSQLExtractorEngine;
 
 
     public LinglongSQLParseKernel(final String sql) {
-        influxSQLParserEngine = new LinglongSQLParserEngine(sql);
-        influxSQLExtractorEngine = new LinglongSQLExtractorEngine();
+        linglongSQLParserEngine = new LinglongSQLParserEngine(sql);
+        linglongSQLExtractorEngine = new LinglongSQLExtractorEngine();
     }
 
-    public InfluxSQLStatement parse() {
-        LinglongSQLAST influxSQLAST = influxSQLParserEngine.parse();
-        InfluxSQLStatement influxSQLStatement = influxSQLExtractorEngine.extract(influxSQLAST);
-        return influxSQLStatement;
+    public LinglongSQLStatement parse() {
+        LinglongSQLAST linglongSQLAST = linglongSQLParserEngine.parse();
+        LinglongSQLStatement linglongSQLStatement = linglongSQLExtractorEngine.extract(linglongSQLAST);
+        return linglongSQLStatement;
     }
 
     public LinglongSQLExtractorEngine getExtractorEngine() {
-        return influxSQLExtractorEngine;
+        return linglongSQLExtractorEngine;
     }
 
     public LinglongSQLParserEngine getParserEngine() {
-        return influxSQLParserEngine;
+        return linglongSQLParserEngine;
     }
 }

@@ -10,7 +10,7 @@ import java.util.LinkedList;
 /**
  * @author Stereo
  */
-public abstract class AbstractStatement implements InfluxSQLStatement {
+public abstract class AbstractStatement implements LinglongSQLStatement {
 
     private final Collection<LinglongSQLSegment> sqlSegments = new LinkedList<>();
 
