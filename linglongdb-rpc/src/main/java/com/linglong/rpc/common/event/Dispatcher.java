@@ -1,7 +1,7 @@
 package com.linglong.rpc.common.event;
 
 /**
- * Created by liuj-ai on 2019/11/1.
+ * @author Stereo on 2019/11/1.
  */
 public interface Dispatcher {
 

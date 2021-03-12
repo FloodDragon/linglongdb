@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Configuration;
 
 
 /**
- * Created by liuj-ai on 2021/2/18.
+ * @author Stereo on 2021/2/18.
  */
 @Configuration
 public class HttpServerConfiguration {

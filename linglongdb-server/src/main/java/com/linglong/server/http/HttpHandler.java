@@ -7,7 +7,7 @@ import java.io.IOException;
 
 
 /**
- * Created by liuj-ai on 2019/8/7.
+ * @author Stereo on 2019/8/7.
  */
 public interface HttpHandler {
     void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;

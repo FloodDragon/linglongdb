@@ -3,7 +3,7 @@ package com.linglong.server.http;
 import java.net.InetSocketAddress;
 
 /**
- * Created by liuj-ai on 2019/8/7.
+ * @author Stereo on 2019/8/7.
  */
 public class ServerConfig {
 

@@ -6,7 +6,7 @@ import com.linglong.rpc.common.utils.NetUtil;
 import java.net.InetSocketAddress;
 
 /**
- * Created by liuj-ai on 2019/12/12.
+ * @author Stereo on 2019/12/12.
  */
 public final class Config {
     private int soLinger = -1;

@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by liuj-ai on 2019/11/15.
+ * @author Stereo
  */
 public abstract class AbstractClient extends AbstractService implements Client, ChannelHandler {
 

@@ -9,7 +9,7 @@ import com.linglong.rpc.common.utils.SystemClock;
 import com.linglong.rpc.server.event.enums.HeartbeatEnum;
 
 /**
- * Created by liuj-ai on 2019/3/28.
+ * @author Stereo on 2019/3/28.
  */
 public class HeartbeatEvent implements Event<HeartbeatEnum> {
     private long timestamp;

@@ -5,7 +5,7 @@ import com.linglong.rpc.server.skeleton.liveliness.listener.ClientListenerRegist
 import java.util.Collection;
 
 /**
- * Created by liuj-ai on 2019/1/21.
+ * @author Stereo on 2019/1/21.
  */
 public interface ILiveliness<O> {
 

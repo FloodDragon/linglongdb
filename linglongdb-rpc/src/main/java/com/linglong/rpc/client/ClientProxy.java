@@ -10,7 +10,7 @@ import java.lang.reflect.InvocationHandler;
 /**
  * RPC客户端代理
  * <p>
- * Created by liuj-ai on 2019/12/10.
+ * @author Stereo on 2019/12/10.
  */
 public class ClientProxy extends AbstractClient {
 

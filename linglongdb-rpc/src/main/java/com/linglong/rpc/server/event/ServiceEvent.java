@@ -7,7 +7,7 @@ import com.linglong.rpc.common.utils.SystemClock;
 import com.linglong.rpc.server.event.enums.ServiceEnum;
 
 /**
- * Created by liuj-ai on 2019/3/28.
+ * @author Stereo on 2019/3/28.
  */
 public class ServiceEvent<T> implements Event<ServiceEnum> {
     private T target;

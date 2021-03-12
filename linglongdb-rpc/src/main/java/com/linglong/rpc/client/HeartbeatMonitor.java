@@ -17,7 +17,7 @@ import java.util.concurrent.TimeoutException;
 /**
  * 心跳监测器
  * <p>
- * Created by liuj-ai on 2019/11/15.
+ * @author Stereo
  */
 public final class HeartbeatMonitor extends AbstractService implements Runnable, HeartbeatPostMan, HeartBeatState {
 

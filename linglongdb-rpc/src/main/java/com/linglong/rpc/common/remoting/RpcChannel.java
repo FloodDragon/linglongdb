@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Created by liuj-ai on 2019/11/15.
+ * @author Stereo
  */
 public final class RpcChannel extends AbstractChannel {
 

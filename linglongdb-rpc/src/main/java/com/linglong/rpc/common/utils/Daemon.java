@@ -3,7 +3,7 @@ package com.linglong.rpc.common.utils;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * Created by liuj-ai on 2018/4/10.
+ * @author Stereo on 2018/4/10.
  */
 public class Daemon extends Thread {
     {

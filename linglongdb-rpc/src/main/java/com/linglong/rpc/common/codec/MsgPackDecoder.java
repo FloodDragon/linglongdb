@@ -10,7 +10,7 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 /**
  * MessagePack 解码器, 基于长度的拆包
  * <p>
- * Created by liuj-ai on 2019/11/15.
+ * @author Stereo
  */
 public class MsgPackDecoder extends LengthFieldBasedFrameDecoder {
 

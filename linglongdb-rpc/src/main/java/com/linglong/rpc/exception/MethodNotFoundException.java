@@ -3,7 +3,7 @@ package com.linglong.rpc.exception;
 import java.util.Arrays;
 
 /**
- * Created by liuj-ai on 2019/12/12.
+ * @author Stereo on 2019/12/12.
  */
 public class MethodNotFoundException extends RuntimeException {
 

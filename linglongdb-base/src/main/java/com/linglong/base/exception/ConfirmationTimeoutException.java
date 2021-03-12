@@ -5,7 +5,7 @@ import com.linglong.base.common.Utils;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by liuj-ai on 2021/1/26.
+ * @author Stereo on 2021/1/26.
  */
 public class ConfirmationTimeoutException extends ConfirmationFailureException {
     private static final long serialVersionUID = 1L;

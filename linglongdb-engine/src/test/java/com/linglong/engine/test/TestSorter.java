@@ -12,7 +12,7 @@ import java.util.Random;
 /**
  * 字典排序
  * <p>
- * Created by liuj-ai on 2021/3/8.
+ * @author Stereo on 2021/3/8.
  */
 public class TestSorter {
 

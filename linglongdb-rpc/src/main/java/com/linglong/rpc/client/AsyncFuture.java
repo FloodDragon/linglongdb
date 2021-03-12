@@ -9,7 +9,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Created by liuj-ai on 2019/12/11.
+ * @author Stereo
  */
 public class AsyncFuture<V> implements Future<V> {
 	private boolean canceled = false;

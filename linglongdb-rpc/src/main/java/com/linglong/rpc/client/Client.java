@@ -7,7 +7,7 @@ import com.linglong.rpc.common.remoting.Channel;
 import com.linglong.rpc.common.remoting.Endpoint;
 
 /**
- * Created by liuj-ai on 2019/11/15.
+ * @author Stereo
  */
 public interface Client extends Endpoint, Channel {
 
