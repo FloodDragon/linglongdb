@@ -1,7 +1,7 @@
 
 grammar BaseRule;
 
-import Symbol,Keyword, InfluxSQLKeyword, Literals;
+import Symbol,Keyword, LinglongSQLKeyword, Literals;
 
 parameterMarker
     : QUESTION_

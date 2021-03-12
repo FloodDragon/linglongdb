@@ -9,6 +9,7 @@ import com.linglong.sql.util.RuleName;
 import com.google.common.base.Preconditions;
 import org.antlr.v4.runtime.ParserRuleContext;
 import com.google.common.base.Optional;
+
 import java.util.*;
 
 /**
@@ -73,13 +74,22 @@ public final class PredicateExtractor implements OptionalSQLSegmentExtractor {
                 return result;
             }
         }
-
-        /*
         if (5 == predicateNode.get().getChildCount() && "BETWEEN".equalsIgnoreCase(predicateNode.get().getChild(1).getText())) {
-            // BETWEEN
+            result = extractBetweenPredicate(predicateNode.get(), column.get());
+            if (result.isPresent()) {
+                return result;
+            }
         }
-        */
         return Optional.absent();
+    }
+
+    private Optional<PredicateSegment> extractBetweenPredicate(final ParserRuleContext predicateNode, final ColumnWhereSegment column) {
+        Optional<? extends ExpressionSegment> betweenSQLExpression = expressionExtractor.extract((ParserRuleContext) predicateNode.getChild(2));
+        Optional<? extends ExpressionSegment> andSQLExpression = expressionExtractor.extract((ParserRuleContext) predicateNode.getChild(4));
+        return betweenSQLExpression.isPresent() && andSQLExpression.isPresent()
+                ? Optional.of(new PredicateSegment(
+                predicateNode.getStart().getStartIndex(), predicateNode.getStop().getStopIndex(), column, new PredicateBetweenRightValueSegment(betweenSQLExpression.get(), andSQLExpression.get())))
+                : Optional.<PredicateSegment>absent();
     }
 
     private Optional<PredicateSegment> extractInPredicate(final ParserRuleContext predicateNode, final ColumnWhereSegment column) {
