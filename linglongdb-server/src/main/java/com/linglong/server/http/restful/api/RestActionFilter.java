@@ -5,5 +5,5 @@ package com.linglong.server.http.restful.api;
  */
 public interface RestActionFilter {
 
-    void doFilter(RestAction op, RestActionFilterChain filterChain);
+    void doFilter(RestAction restAction, RestActionFilterChain restActionFilterChain);
 }

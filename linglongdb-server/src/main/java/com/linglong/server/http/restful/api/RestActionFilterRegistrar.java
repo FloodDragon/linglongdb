@@ -10,21 +10,23 @@ import java.util.List;
  */
 public final class RestActionFilterRegistrar implements RestActionFilterRegistration {
 
-    private static final List<RestActionFilter> backendFilters = new ArrayList<>();
+    private static final List<RestActionFilter> restActionFilters = new ArrayList<>();
 
     protected static RestActionFilter[] getFilters() {
-        return backendFilters.size() > 0 ? backendFilters.toArray(new RestActionFilter[backendFilters.size()]) : null;
+        return restActionFilters.size() > 0 ? restActionFilters.toArray(new RestActionFilter[restActionFilters.size()]) : null;
     }
 
     @Override
-    public void registerFilter(RestActionFilter backendFilter) {
-        if (backendFilter != null)
-            backendFilters.add(backendFilter);
+    public void registerFilter(RestActionFilter restActionFilter) {
+        if (restActionFilter != null) {
+            this.restActionFilters.add(restActionFilter);
+        }
     }
 
     @Override
-    public void registerFilter(List<RestActionFilter> backendFilters) {
-        if (!CollectionUtils.isEmpty(backendFilters))
-            backendFilters.addAll(backendFilters);
+    public void registerFilter(List<RestActionFilter> restActionFilters) {
+        if (!CollectionUtils.isEmpty(restActionFilters)) {
+            this.restActionFilters.addAll(restActionFilters);
+        }
     }
 }

@@ -8,5 +8,5 @@ public interface RestActionFilterChain {
 
     void doFilter(RestAction op);
 
-    void addFilter(RestActionFilter backendFilter);
+    void addFilter(RestActionFilter restActionFilter);
 }

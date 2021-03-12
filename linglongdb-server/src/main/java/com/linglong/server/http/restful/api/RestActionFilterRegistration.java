@@ -7,7 +7,7 @@ import java.util.List;
  */
 public interface RestActionFilterRegistration {
 
-    void registerFilter(RestActionFilter backendFilter);
+    void registerFilter(RestActionFilter restActionFilter);
 
-    void registerFilter(List<RestActionFilter> backendFilters);
+    void registerFilter(List<RestActionFilter> restActionFilters);
 }

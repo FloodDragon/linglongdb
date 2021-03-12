@@ -25,11 +25,11 @@ public final class RestActionFilterChainImpl implements RestActionFilterChain {
     }
 
     @Override
-    public void doFilter(RestAction op) {
+    public void doFilter(RestAction restAction) {
         if (this.pos < this.len) {
             filtered = true;
-            RestActionFilter backendFilter = this.filters[this.pos++];
-            backendFilter.doFilter(op, this);
+            RestActionFilter restActionFilter = this.filters[this.pos++];
+            restActionFilter.doFilter(restAction, this);
         } else {
             callback.call();
             filtered = false;
@@ -37,13 +37,13 @@ public final class RestActionFilterChainImpl implements RestActionFilterChain {
     }
 
     @Override
-    public void addFilter(RestActionFilter backendFilter) {
+    public void addFilter(RestActionFilter restActionFilter) {
         RestActionFilter[] newFilters = this.filters;
         int len$ = newFilters.length;
 
         for (int i$ = 0; i$ < len$; ++i$) {
             RestActionFilter filter = newFilters[i$];
-            if (filter == backendFilter) {
+            if (filter == restActionFilter) {
                 return;
             }
         }
@@ -53,6 +53,6 @@ public final class RestActionFilterChainImpl implements RestActionFilterChain {
             System.arraycopy(this.filters, 0, newFilters, 0, this.len);
             this.filters = newFilters;
         }
-        this.filters[this.len++] = backendFilter;
+        this.filters[this.len++] = restActionFilter;
     }
 }

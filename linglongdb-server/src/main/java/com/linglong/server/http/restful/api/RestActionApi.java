@@ -6,8 +6,8 @@ import com.linglong.server.http.HttpHandler;
  * @author Stereo on 2019/7/31.
  */
 public interface RestActionApi extends HttpHandler, RestActionHandler {
-    String REST_API_ENCODING = "UTF-8";
-    String REST_API_CONTENT_TYPE = "application/json;charset=UTF-8";
+    final String REST_API_ENCODING = "UTF-8";
+    final String REST_API_CONTENT_TYPE = "application/json;charset=UTF-8";
 
     enum ProxyMapping {
         STATE("/state", "state", "GET"),
