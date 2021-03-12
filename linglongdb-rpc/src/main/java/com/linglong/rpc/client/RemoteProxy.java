@@ -17,7 +17,7 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * 远程调用代理
- * Created by liuj-ai on 2019/12/10.
+ * @author Stereo on 2019/12/10.
  */
 public final class RemoteProxy implements InvocationHandler {
 

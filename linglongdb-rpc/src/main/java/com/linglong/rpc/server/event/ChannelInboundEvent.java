@@ -7,7 +7,7 @@ import com.linglong.rpc.common.utils.SystemClock;
 import com.linglong.rpc.server.event.enums.ChannelInboundEnum;
 
 /**
- * Created by liuj-ai on 2019/3/28.
+ * @author Stereo on 2019/3/28.
  */
 public class ChannelInboundEvent implements Event<ChannelInboundEnum> {
     private long timestamp;

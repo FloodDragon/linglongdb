@@ -9,7 +9,7 @@ import com.linglong.rpc.server.skeleton.liveliness.ILiveliness;
 import com.linglong.rpc.server.skeleton.service.ServiceEventHandler;
 
 /**
- * Created by liuj-ai on 2020/4/27.
+ * @author Stereo on 2020/4/27.
  */
 public abstract class AbstractSkeletonContext extends AbstractService implements Iterable<IService>, IServiceContext {
 

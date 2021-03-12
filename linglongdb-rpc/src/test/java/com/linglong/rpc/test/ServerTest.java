@@ -6,7 +6,7 @@ import com.linglong.rpc.server.RpcServiceServer;
 import com.linglong.rpc.test.protocol.TestService;
 
 /**
- * Created by liuj-ai on 2020/4/27.
+ * @author Stereo on 2020/4/27.
  */
 public class ServerTest {
 

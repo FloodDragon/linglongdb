@@ -9,7 +9,7 @@ import com.linglong.server.http.ServerConfig;
 /**
  * 嵌入式tomcat http 绑定
  * <p>
- * Created by liuj-ai on 2019/8/7.
+ * @author Stereo on 2019/8/7.
  */
 public class TomcatHttpBinder implements HttpBinder {
 

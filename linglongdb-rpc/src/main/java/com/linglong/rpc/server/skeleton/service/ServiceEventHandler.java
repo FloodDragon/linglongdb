@@ -6,7 +6,7 @@ import com.linglong.rpc.common.event.EventHandler;
 import com.linglong.rpc.server.event.enums.ServiceEnum;
 
 /**
- * Created by liuj-ai on 2019/12/10.
+ * @author Stereo on 2019/12/10.
  */
 public interface ServiceEventHandler<RequestEvent, ResponseEvent> extends EventHandler<Event<ServiceEnum>> {
 

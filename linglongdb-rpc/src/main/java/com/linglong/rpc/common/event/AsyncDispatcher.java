@@ -14,7 +14,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 
 /**
- * Created by liuj-ai on 2019/11/1.
+ * @author Stereo on 2019/11/1.
  */
 public class AsyncDispatcher extends AbstractService implements Dispatcher {
 

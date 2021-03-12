@@ -22,7 +22,7 @@ import static org.junit.Assert.assertNotNull;
 /**
  * 测试数据库集群流复制
  * <p>
- * Created by liuj-ai on 2021/2/3.
+ * @author Stereo on 2021/2/3.
  */
 public class TestRepl {
 

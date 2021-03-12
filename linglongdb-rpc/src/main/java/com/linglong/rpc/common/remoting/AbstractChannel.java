@@ -5,7 +5,7 @@ import com.linglong.rpc.common.config.Config;
 import com.linglong.rpc.exception.RpcException;
 
 /**
- * Created by liuj-ai on 2019/12/12.
+ * @author Stereo on 2019/12/12.
  */
 public abstract class AbstractChannel implements Channel, ChannelHandler {
 

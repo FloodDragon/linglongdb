@@ -1,7 +1,7 @@
 package com.linglong.rpc.server.skeleton.liveliness.listener;
 
 /**
- * Created by liuj-ai on 2020/4/3.
+ * @author Stereo on 2020/4/3.
  */
 public class ClientListenerRegistryImpl implements ClientListenerRegistry {
     private volatile ClientRegisterListener clientRegisterListener;//客户端注册心跳监听

@@ -6,7 +6,7 @@ import com.linglong.protocol.message.LoadValueRequest;
 import com.linglong.protocol.message.LoadValueResponse;
 
 /**
- * Created by liuj-ai on 2021/3/8.
+ * @author Stereo on 2021/3/8.
  */
 public interface KeyValueProtocol {
 

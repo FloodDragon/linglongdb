@@ -12,7 +12,7 @@ import io.netty.handler.codec.MessageToByteEncoder;
  *
  * @注意 前4位代表数据包大小, 剩下其余都是数据包, 防止粘包/断保
  * <p>
- * Created by liuj-ai on 2019/11/15.
+ * @author Stereo
  */
 public class MsgPackEncoder extends MessageToByteEncoder<Packet> {
 

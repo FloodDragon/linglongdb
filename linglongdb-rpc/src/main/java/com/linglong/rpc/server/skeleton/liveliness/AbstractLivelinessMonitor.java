@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Created by liuj-ai on 2019/3/28.
+ * @author Stereo on 2019/3/28.
  */
 public abstract class AbstractLivelinessMonitor<O> extends AbstractService implements ILiveliness<O> {
 

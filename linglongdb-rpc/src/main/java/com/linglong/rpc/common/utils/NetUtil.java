@@ -11,7 +11,7 @@ import java.util.Enumeration;
 import java.util.regex.Pattern;
 
 /**
- * Created by liuj-ai on 2018/7/6.
+ * @author Stereo on 2018/7/6.
  */
 public class NetUtil {
     private static final Logger logger = LoggerFactory.getLogger(NetUtil.class);

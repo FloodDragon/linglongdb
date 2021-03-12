@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
 /**
- * Created by liuj-ai on 2019/3/28.
+ * @author Stereo on 2019/3/28.
  */
 public class Liveliness extends AbstractLivelinessMonitor<Channel> implements EventHandler<HeartbeatEvent> {
 

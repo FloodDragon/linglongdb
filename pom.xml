@@ -18,6 +18,7 @@
         <module>linglongdb-jdbc</module>
         <module>linglongdb-rpc</module>
         <module>linglongdb-protocol</module>
+        <module>linglongdb-sql</module>
     </modules>
 
     <properties>
@@ -38,6 +39,8 @@
         <netty.version>4.1.42.Final</netty.version>
         <commons-lang3.version>3.6</commons-lang3.version>
         <commons-beanutils.version>1.9.4</commons-beanutils.version>
+        <antlr4.version>4.7.1</antlr4.version>
+        <guava.version>18.0</guava.version>
     </properties>
 
     <dependencyManagement>
@@ -87,6 +90,16 @@
                         <artifactId>*</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4-runtime</artifactId>
+                <version>${antlr4.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
             </dependency>
             <dependency>
                 <groupId>junit</groupId>

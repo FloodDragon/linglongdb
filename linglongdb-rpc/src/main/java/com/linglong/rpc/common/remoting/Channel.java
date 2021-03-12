@@ -3,7 +3,7 @@ package com.linglong.rpc.common.remoting;
 import java.net.InetSocketAddress;
 
 /**
- * Created by liuj-ai on 2019/11/15.
+ * @author Stereo
  */
 public interface Channel extends Endpoint {
 

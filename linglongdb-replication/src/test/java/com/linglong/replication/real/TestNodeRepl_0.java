@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 import static org.junit.Assert.assertNotNull;
 
 /**
- * Created by liuj-ai on 2021/2/4.
+ * @author Stereo on 2021/2/4.
  */
 public class TestNodeRepl_0 {
 
@@ -65,14 +65,15 @@ public class TestNodeRepl_0 {
                 int code = ThreadLocalRandom.current().nextInt();
                 byte[] key = ("Node " + index + " 写入key " + code).getBytes();
                 byte[] value = ("Node " + index + " 写入value " + code).getBytes();
-                Transaction tx = database.newTransaction();
+                //Transaction tx = database.newTransaction();
                 Index idx = database.openIndex("test");
-                idx.store(tx, key, value);
-                tx.commit();
+                idx.store(null, key, value);
+                //tx.commit();
                 System.out.println("Node " + index + " 数据写入成功 key=" + new String(key) + " value=" + new String(value));
             } catch (Exception ex) {
-                System.out.println("Node " + index + " 不是主节点,数据不能写入");
-                ex.printStackTrace();
+                System.out.println("Node " + index + " 不是主节点,数据不能写入,转读取");
+                //ex.printStackTrace();
+                testR();
             } finally {
                 System.out.println("Node " + index + " 结束进行写测试...");
                 Thread.sleep(3000L);

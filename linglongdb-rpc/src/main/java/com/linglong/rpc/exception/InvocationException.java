@@ -1,7 +1,7 @@
 package com.linglong.rpc.exception;
 
 /**
- * Created by liuj-ai on 2019/12/12.
+ * @author Stereo on 2019/12/12.
  */
 public class InvocationException extends RuntimeException {
     public InvocationException() {
