@@ -28,5 +28,10 @@
             <artifactId>linglongdb-protocol</artifactId>
             <version>${parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.linglong</groupId>
+            <artifactId>linglongdb-sql</artifactId>
+            <version>${parent.version}</version>
+        </dependency>
     </dependencies>
 </project>
