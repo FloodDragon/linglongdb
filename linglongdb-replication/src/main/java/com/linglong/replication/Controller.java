@@ -420,6 +420,11 @@ final class Controller extends Latch implements StreamReplicator, Channel {
     }
 
     @Override
+    public boolean isLocalLeader() {
+        return mLocalMode == MODE_LEADER;
+    }
+
+    @Override
     public Role getLocalRole() {
         acquireShared();
         Role role = mGroupFile.localMemberRole();

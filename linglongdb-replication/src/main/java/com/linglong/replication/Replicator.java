@@ -16,6 +16,8 @@ public interface Replicator extends Closeable {
 
     SocketAddress getLocalAddress();
 
+    boolean isLocalLeader();
+
     Role getLocalRole();
 
     Socket connect(SocketAddress addr) throws IOException;

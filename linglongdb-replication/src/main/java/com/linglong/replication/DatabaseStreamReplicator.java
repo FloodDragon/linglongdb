@@ -52,6 +52,11 @@ final class DatabaseStreamReplicator implements DatabaseReplicator {
     }
 
     @Override
+    public boolean isLocalLeader() {
+        return mRepl.isLocalLeader();
+    }
+
+    @Override
     public Role getLocalRole() {
         return mRepl.getLocalRole();
     }
