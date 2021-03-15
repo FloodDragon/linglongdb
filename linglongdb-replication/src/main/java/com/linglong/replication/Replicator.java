@@ -11,10 +11,14 @@ import java.util.function.Consumer;
  * @author Stereo
  */
 public interface Replicator extends Closeable {
-    
+
     long getLocalMemberId();
 
     SocketAddress getLocalAddress();
+
+    boolean isLocalLeader();
+
+    Peer getLeaderPeer();
 
     Role getLocalRole();
 

@@ -48,6 +48,7 @@ public class TestNodeRepl_0 {
 
     public static void main(String[] args) throws Exception {
         try {
+            CleanNodoFile.clean(replBaseFile);
             //启动数据库集群3个成员
             start(Role.NORMAL, null);
             Thread.sleep(10000L);
@@ -61,6 +62,7 @@ public class TestNodeRepl_0 {
     private static void testRW() throws Exception {
         for (int j = 1; j <= 10000; j++) {
             try {
+                System.out.println("Node" + index + (replicator.isLocalLeader() ? " is Leader ! " : " is Not Leader !, Leader is " + (replicator.getLeaderPeer() == null ? "None" : replicator.getLeaderPeer().getAddress())));
                 System.out.println("Node " + index + " 开始进行写测试...");
                 int code = ThreadLocalRandom.current().nextInt();
                 byte[] key = ("Node " + index + " 写入key " + code).getBytes();
@@ -98,13 +100,14 @@ public class TestNodeRepl_0 {
                 byte[] key;
                 while ((key = namesCursor.key()) != null) {
                     byte[] value = namesCursor.value();
-                    System.out.println("key = " + new String(key));
+                    System.out.print("key = " + new String(key) + " ");
                     if (value != null && value.length > 0) {
-                        System.out.println("value = " + new String(value));
+                        System.out.print("value = " + new String(value) + " ");
                     }
                     namesCursor.next();
                 }
             } finally {
+                System.out.println();
                 namesCursor.reset();
                 namesCursor.close();
             }

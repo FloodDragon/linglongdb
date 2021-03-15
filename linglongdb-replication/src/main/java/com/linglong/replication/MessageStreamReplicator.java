@@ -36,6 +36,16 @@ final class MessageStreamReplicator implements MessageReplicator {
     }
 
     @Override
+    public boolean isLocalLeader() {
+        return mRepl.isLocalLeader();
+    }
+
+    @Override
+    public Peer getLeaderPeer() {
+        return mRepl.getLeaderPeer();
+    }
+
+    @Override
     public Role getLocalRole() {
         return mRepl.getLocalRole();
     }
