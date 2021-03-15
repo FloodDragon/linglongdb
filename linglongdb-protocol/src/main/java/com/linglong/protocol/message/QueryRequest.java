@@ -5,7 +5,7 @@ import com.linglong.protocol.Message;
 /**
  * @author Stereo on 2021/3/9.
  */
-public class LoadValueRequest extends Message {
+public class QueryRequest extends Message {
 
     /* 索引名称 */
     private String index;
