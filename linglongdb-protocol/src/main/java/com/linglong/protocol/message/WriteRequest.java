@@ -3,19 +3,18 @@ package com.linglong.protocol.message;
 import com.linglong.protocol.Message;
 
 /**
- * @author Stereo on 2021/3/9.
+ * Created by liuj-ai on 2021/3/15.
  */
-public class LoadValueResponse extends Message {
+public class WriteRequest extends Message {
+
     /* 索引名称 */
     private String index;
     /* 索引键 */
     private byte[] key;
     /* 索引值 */
     private byte[] value;
-    /* 加载错误码 */
-    private int errorCode;
-    /* 加载错误信息 */
-    private String errorMessage;
+    /* 索引旧值 */
+    private byte[] oldValue;
 
     public String getIndex() {
         return index;
@@ -41,19 +40,11 @@ public class LoadValueResponse extends Message {
         this.value = value;
     }
 
-    public int getErrorCode() {
-        return errorCode;
+    public byte[] getOldValue() {
+        return oldValue;
     }
 
-    public void setErrorCode(int errorCode) {
-        this.errorCode = errorCode;
-    }
-
-    public String getErrorMessage() {
-        return errorMessage;
-    }
-
-    public void setErrorMessage(String errorMessage) {
-        this.errorMessage = errorMessage;
+    public void setOldValue(byte[] oldValue) {
+        this.oldValue = oldValue;
     }
 }

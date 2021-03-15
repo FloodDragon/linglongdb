@@ -5,15 +5,17 @@ import com.linglong.protocol.Message;
 /**
  * @author Stereo on 2021/3/9.
  */
-public class InsertKeyValueRequest extends Message {
+public class QueryResponse extends Message {
     /* 索引名称 */
     private String index;
+    /* 索引键 */
     private byte[] key;
+    /* 索引值 */
     private byte[] value;
-    /* 事务id */
-    private String xid;
-    /* 是否开启事务 */
-    private boolean isOpenTx;
+    /* 加载错误码 */
+    private int errorCode;
+    /* 加载错误信息 */
+    private String errorMessage;
 
     public String getIndex() {
         return index;
@@ -39,19 +41,19 @@ public class InsertKeyValueRequest extends Message {
         this.value = value;
     }
 
-    public boolean isOpenTx() {
-        return isOpenTx;
+    public int getErrorCode() {
+        return errorCode;
     }
 
-    public void setOpenTx(boolean openTx) {
-        isOpenTx = openTx;
+    public void setErrorCode(int errorCode) {
+        this.errorCode = errorCode;
     }
 
-    public String getXid() {
-        return xid;
+    public String getErrorMessage() {
+        return errorMessage;
     }
 
-    public void setXid(String xid) {
-        this.xid = xid;
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
     }
 }
