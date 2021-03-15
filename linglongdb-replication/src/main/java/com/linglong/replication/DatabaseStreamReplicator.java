@@ -57,6 +57,11 @@ final class DatabaseStreamReplicator implements DatabaseReplicator {
     }
 
     @Override
+    public Peer getLeaderPeer() {
+        return mRepl.getLeaderPeer();
+    }
+
+    @Override
     public Role getLocalRole() {
         return mRepl.getLocalRole();
     }

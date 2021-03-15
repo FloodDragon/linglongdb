@@ -57,10 +57,10 @@ final class Controller extends Latch implements StreamReplicator, Channel {
     private Channel[] mConsensusChannels;
     private Channel[] mAllChannels;
 
-    private Channel mLeaderReplyChannel;
+    private volatile Channel mLeaderReplyChannel;
     private Channel mLeaderRequestChannel;
 
-    private int mLocalMode;
+    private volatile int mLocalMode;
 
     private long mCurrentTerm;
     private int mGrantsRemaining;
@@ -421,7 +421,12 @@ final class Controller extends Latch implements StreamReplicator, Channel {
 
     @Override
     public boolean isLocalLeader() {
-        return mLocalMode == MODE_LEADER;
+        return this.mLocalMode == MODE_LEADER;
+    }
+
+    @Override
+    public Peer getLeaderPeer() {
+        return this.mLeaderReplyChannel != null ? this.mLeaderReplyChannel.peer() : null;
     }
 
     @Override

@@ -9,12 +9,12 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 /**
  * @author Stereo
  */
-final class Peer implements Comparable<Peer> {
+public final class Peer implements Comparable<Peer> {
     private static final AtomicLongFieldUpdater<Peer> cGroupVersionUpdater =
-        AtomicLongFieldUpdater.newUpdater(Peer.class, "mGroupVersion");
+            AtomicLongFieldUpdater.newUpdater(Peer.class, "mGroupVersion");
 
     private static final AtomicReferenceFieldUpdater<Peer, SnapshotScore> cSnapshotScoreUpdater =
-        AtomicReferenceFieldUpdater.newUpdater(Peer.class, SnapshotScore.class, "mSnapshotScore");
+            AtomicReferenceFieldUpdater.newUpdater(Peer.class, SnapshotScore.class, "mSnapshotScore");
 
     final long mMemberId;
     final SocketAddress mAddress;
@@ -49,8 +49,7 @@ final class Peer implements Comparable<Peer> {
         while (true) {
             long currentVersion = mGroupVersion;
             if (groupVersion <= currentVersion ||
-                cGroupVersionUpdater.compareAndSet(this, currentVersion, groupVersion))
-            {
+                    cGroupVersionUpdater.compareAndSet(this, currentVersion, groupVersion)) {
                 return currentVersion;
             }
         }
@@ -88,6 +87,18 @@ final class Peer implements Comparable<Peer> {
         }
     }
 
+    public long getMemberId() {
+        return mMemberId;
+    }
+
+    public SocketAddress getAddress() {
+        return mAddress;
+    }
+
+    public Role getRole() {
+        return mRole;
+    }
+
     @Override
     public int hashCode() {
         return Long.hashCode(mMemberId) + Objects.hashCode(mAddress) + Objects.hashCode(mRole);
@@ -101,7 +112,7 @@ final class Peer implements Comparable<Peer> {
         if (obj instanceof Peer) {
             Peer other = (Peer) obj;
             return mMemberId == other.mMemberId && Objects.equals(mAddress, other.mAddress)
-                && Objects.equals(mRole, other.mRole);
+                    && Objects.equals(mRole, other.mRole);
         }
         return false;
     }
@@ -114,6 +125,6 @@ final class Peer implements Comparable<Peer> {
     @Override
     public String toString() {
         return "Peer: {memberId=" + Long.toUnsignedString(mMemberId)
-            + ", address=" + mAddress + ", role=" + mRole + '}';
+                + ", address=" + mAddress + ", role=" + mRole + '}';
     }
 }
