@@ -3,7 +3,7 @@ package com.linglong.protocol.message;
 import com.linglong.protocol.Message;
 
 /**
- * @author Stereo on 2021/3/8.
+ * Created by liuj-ai on 2021/3/16.
  */
-public class IndexResponse extends Message {
+public class IndexDropResponse extends Message {
 }
