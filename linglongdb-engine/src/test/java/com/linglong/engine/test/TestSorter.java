@@ -17,7 +17,7 @@ import java.util.Random;
 public class TestSorter {
 
     private static final String tableName = "data";
-    private static final String basePath = "C:\\Users\\liuj-ai\\Desktop\\数据库开发\\linglongdb\\";
+    private static final String basePath = "C:\\Users\\liuj-ai\\Desktop\\数据库开发\\linglongdb-test\\";
 
     public static void main(String[] args) throws IOException {
         DatabaseConfig config = new DatabaseConfig()

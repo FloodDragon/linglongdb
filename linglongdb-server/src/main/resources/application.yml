@@ -1,0 +1,47 @@
+spring:
+  main:
+    web-environment: true
+  application:
+    name: LingLongDB
+
+logging:
+  level:
+    root: info
+
+endpoints:
+  shutdown:
+    enabled: true
+    sensitive: false
+
+management:
+  address: 127.0.0.1
+  context-path: /management
+
+##Linglongdb config
+linglongdb:
+  baseDir: C:\\Users\\liuj-ai\\Desktop\\数据库开发\\linglongdb
+  pageSize: 4096
+  minCacheSize: 100000000
+  maxCacheSize: 100000000
+  lockTimeout: 1000
+  checkpointRate: 1000
+  durabilityMode: SYNC
+  checkpointSizeThreshold: 1048576
+  checkpointDelayThreshold: 60000
+  maxCheckpointThreads: 8
+  replica:
+    enabled: true
+  http:
+    serverHost: 0.0.0.0
+    serverPort: 7001
+    maxThreads: 200
+    minSpareThreads: 200
+    maxConnections: -1
+    handlerVersion: v1
+
+
+
+
+
+
+

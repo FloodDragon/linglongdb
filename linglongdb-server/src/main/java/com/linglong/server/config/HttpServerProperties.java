@@ -11,11 +11,11 @@ import org.springframework.validation.annotation.Validated;
 public class HttpServerProperties {
 
     private String serverHost;
-    private int serverPort = 7001;
-    private int maxThreads = 200;
-    private int minSpareThreads = 200;
-    private int maxConnections = -1;
-    private String handlerVersion = "v1";
+    private int serverPort;
+    private int maxThreads;
+    private int minSpareThreads;
+    private int maxConnections;
+    private String handlerVersion;
 
     public String getServerHost() {
         return serverHost;
