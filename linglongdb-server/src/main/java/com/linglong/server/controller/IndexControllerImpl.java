@@ -1,12 +1,11 @@
 package com.linglong.server.controller;
 
 import com.linglong.protocol.message.*;
-import com.linglong.rpc.server.skeleton.service.Service;
 
 /**
  * Created by liuj-ai on 2021/3/17.
  */
-public class IndexControllerImpl extends Service implements IndexController {
+public class IndexControllerImpl extends Coordinator implements IndexController {
 
     public IndexControllerImpl() {
         super(IndexController.class);
