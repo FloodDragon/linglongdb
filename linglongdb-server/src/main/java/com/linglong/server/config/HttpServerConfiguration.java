@@ -21,12 +21,11 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(HttpServerProperties.class)
 public class HttpServerConfiguration {
 
-
     @Bean
     @ConditionalOnExpression("#{'v1'.equals(environment['linglongdb.http.handlerVersion'])}")
     public RestActionHandler backendHandler() {
         RestActionHandler backendHandler = new BackendV1Handler();
-       //TODO
+        //TODO
         return backendHandler;
     }
 

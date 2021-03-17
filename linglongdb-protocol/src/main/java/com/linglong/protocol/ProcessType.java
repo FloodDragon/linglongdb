@@ -1,7 +1,7 @@
 package com.linglong.protocol;
 
 /**
- * Created by liuj-ai on 2021/3/15.
+ * @author Stereo on 2021/3/15.
  */
 public enum ProcessType {
 
