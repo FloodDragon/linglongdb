@@ -25,7 +25,7 @@ import java.util.TreeMap;
 import static org.junit.Assert.*;
 
 /**
- * Created by liuj-ai on 2021/3/17.
+ * @author Stereo on 2021/3/17.
  */
 public class TestAll {
     protected Database mDb;

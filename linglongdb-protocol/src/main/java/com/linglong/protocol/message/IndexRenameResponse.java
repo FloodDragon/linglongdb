@@ -3,7 +3,7 @@ package com.linglong.protocol.message;
 import com.linglong.protocol.Message;
 
 /**
- * Created by liuj-ai on 2021/3/17.
+ * @author Stereo on 2021/3/17.
  */
 public class IndexRenameResponse extends Message {
     private String newName;

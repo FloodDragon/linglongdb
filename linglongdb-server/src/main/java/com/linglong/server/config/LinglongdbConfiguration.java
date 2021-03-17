@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by liuj-ai on 2021/3/17.
+ * @author Stereo on 2021/3/17.
  */
 @Configuration
 @EnableConfigurationProperties(LinglongdbProperties.class)

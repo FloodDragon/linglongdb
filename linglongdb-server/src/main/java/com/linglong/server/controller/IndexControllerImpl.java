@@ -3,7 +3,7 @@ package com.linglong.server.controller;
 import com.linglong.protocol.message.*;
 
 /**
- * Created by liuj-ai on 2021/3/17.
+ * @author Stereo on 2021/3/17.
  */
 public class IndexControllerImpl extends Coordinator implements IndexController {
 

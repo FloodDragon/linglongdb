@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * Created by liuj-ai on 2021/3/17.
+ * @author Stereo on 2021/3/17.
  */
 @Validated
 @ConfigurationProperties("linglongdb")

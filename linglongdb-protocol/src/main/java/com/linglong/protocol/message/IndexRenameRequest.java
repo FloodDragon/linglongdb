@@ -1,7 +1,7 @@
 package com.linglong.protocol.message;
 
 /**
- * Created by liuj-ai on 2021/3/17.
+ * @author Stereo on 2021/3/17.
  */
 public class IndexRenameRequest extends IndexRequest {
     private String newName;
