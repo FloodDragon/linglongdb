@@ -30,4 +30,20 @@ public interface IndexProtocol {
      * @return
      */
     IndexDropResponse drop(IndexRequest request);
+
+    /**
+     * 索引修改名称
+     *
+     * @param request
+     * @return
+     */
+    IndexRenameResponse rename(IndexRenameRequest request);
+
+    /**
+     * 索引状态
+     *
+     * @param request
+     * @return
+     */
+    IndexStatsResponse stats(IndexRequest request);
 }

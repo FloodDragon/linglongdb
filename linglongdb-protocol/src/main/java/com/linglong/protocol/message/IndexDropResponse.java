@@ -6,4 +6,14 @@ import com.linglong.protocol.Message;
  * Created by liuj-ai on 2021/3/16.
  */
 public class IndexDropResponse extends Message {
+    /* 是否销毁成功 */
+    private boolean destroyed;
+
+    public boolean isDestroyed() {
+        return destroyed;
+    }
+
+    public void setDestroyed(boolean destroyed) {
+        this.destroyed = destroyed;
+    }
 }

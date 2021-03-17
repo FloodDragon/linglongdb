@@ -1,11 +1,9 @@
 package com.linglong.protocol.message;
 
-import com.linglong.protocol.Message;
-
 /**
  * @author Stereo on 2021/3/8.
  */
-public class IndexStatsResponse extends Message {
+public class IndexStatsResponse extends IndexRequest {
     private double entryCount;
     private double keyBytes;
     private double valueBytes;
