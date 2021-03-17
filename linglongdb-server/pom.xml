@@ -29,6 +29,16 @@
         </dependency>
         <dependency>
             <groupId>com.linglong</groupId>
+            <artifactId>linglongdb-engine</artifactId>
+            <version>${parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.linglong</groupId>
+            <artifactId>linglongdb-base</artifactId>
+            <version>${parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.linglong</groupId>
             <artifactId>linglongdb-protocol</artifactId>
             <version>${parent.version}</version>
         </dependency>

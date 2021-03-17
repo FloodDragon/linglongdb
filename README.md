@@ -17,7 +17,7 @@ Linglongdb
 - **linglongdb-engine(数据库引擎)**
 - **linglongdb-sql(数据库SQL解析与重写)**
 - **linglongdb-rpc(数据库网络通信)**
-- **linglongdb-protocol(数据库集群通信协议)** 正在设计
-- **linglongdb-server(数据库服务器)** 正在开发
-- **linglongdb-client(数据库客户端)** 正在开发
-- **linglongdb-jdbc(数据库jdbc客户端)** 正在规划
+- **linglongdb-protocol(数据库集群通信协议)** **"正在设计"**
+- **linglongdb-server(数据库服务器)** **"正在开发"**
+- **linglongdb-client(数据库客户端)** **"正在开发"**
+- **linglongdb-jdbc(数据库jdbc客户端)** **"正在规划"**
