@@ -352,7 +352,6 @@ public class TestAll {
             ix.store(Transaction.BOGUS, key, value);
             assertTrue(ix.replace(txn, key, value2));
             txn.exit();
-            // Bogus transaction artifact. Undo log entry was created earler.
             assertNull(ix.load(txn, key));
 
             ix.store(Transaction.BOGUS, key, value);
