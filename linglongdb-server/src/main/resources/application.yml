@@ -4,6 +4,9 @@ spring:
   application:
     name: LingLongDB
 
+server:
+  port: 8080
+
 logging:
   level:
     root: info
@@ -30,7 +33,7 @@ linglongdb:
   checkpointDelayThreshold: 60000
   maxCheckpointThreads: 8
   replicaEnabled: true
-  replicaPort: 7099
+  replicaPort: 7070
   replicaRole: NORMAL
   replicaGroupToken: 1
   #replicaSeedAddresses:
@@ -43,6 +46,7 @@ linglongdb:
     maxConnections: -1
     handlerVersion: v1
   rpc:
+
 
 
 
