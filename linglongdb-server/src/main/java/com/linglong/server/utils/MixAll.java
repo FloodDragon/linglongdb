@@ -18,6 +18,21 @@ import java.util.zip.InflaterInputStream;
 
 public class MixAll {
 
+    public static boolean checkPowerOfTwo(long num) {
+        if (num >= 2) {
+            while (num != 1) {
+                if (num % 2 == 0) {
+                    num = num / 2;
+                } else {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     public static boolean createIfNotExistsDir(File file) {
         return file != null && (file.exists() ? file.isDirectory() : file.mkdirs());
     }

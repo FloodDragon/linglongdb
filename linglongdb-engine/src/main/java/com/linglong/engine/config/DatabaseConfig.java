@@ -32,7 +32,7 @@ import java.util.function.BiConsumer;
  */
 public final class DatabaseConfig implements Cloneable, Serializable {
     private static final long serialVersionUID = 1L;
-    private static final String DATA = "data";
+    public static final String DATA = "data";
 
     File mBaseFile;
 
