@@ -33,7 +33,7 @@ public class TestAll {
     @Before
     public void open() throws Exception {
         DatabaseConfig config = new DatabaseConfig()
-                .baseFile(new File("C:\\Users\\liuj-ai\\Desktop\\数据库开发\\linglongdb-test\\"))
+                .baseFile(new File("C:\\Users\\liuj-ai\\Desktop\\数据库开发\\linglongdb-test\\data"))
                 .minCacheSize(100_000_000)
                 .durabilityMode(DurabilityMode.NO_FLUSH);
         mDb = Database.open(config);

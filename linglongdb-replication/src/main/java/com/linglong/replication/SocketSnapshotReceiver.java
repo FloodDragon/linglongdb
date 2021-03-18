@@ -32,6 +32,7 @@ final class SocketSnapshotReceiver implements SnapshotReceiver {
         try {
             dec = new OptionsDecoder(socket.getInputStream());
         } catch (EOFException e) {
+            e.printStackTrace();
             Utils.closeQuietly(socket);
             throw new IOException("Disconnected");
         }

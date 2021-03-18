@@ -129,9 +129,8 @@ public class TestNodeRepl_2 {
 
         if (index > 0) {
             replConfig.addSeed(new InetSocketAddress(TestNodeRepl_0.replPort));
-            replConfig.localRole(replicaRole);
         }
-
+        replConfig.localRole(replicaRole);
         replicator = DatabaseReplicator.open(replConfig);
         dbConfig = new DatabaseConfig()
                 .baseFile(replBaseFile)

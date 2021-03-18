@@ -19,7 +19,7 @@ management:
 
 ##Linglongdb config
 linglongdb:
-  baseDir: C:\\Users\\liuj-ai\\Desktop\\数据库开发\\linglongdb
+  baseDir: C:\Users\liuj-ai\Desktop\数据库开发\node-0
   pageSize: 4096
   minCacheSize: 100000000
   maxCacheSize: 100000000
@@ -29,16 +29,20 @@ linglongdb:
   checkpointSizeThreshold: 1048576
   checkpointDelayThreshold: 60000
   maxCheckpointThreads: 8
-  replica:
-    enabled: true
+  replicaEnabled: true
+  replicaPort: 7099
+  replicaRole: NORMAL
+  replicaGroupToken: 1
+  #replicaSeedAddresses:
+  #  - localhost:7099
   http:
-    serverHost: 0.0.0.0
+    serverHost: 127.0.0.1
     serverPort: 7001
     maxThreads: 200
     minSpareThreads: 200
     maxConnections: -1
     handlerVersion: v1
-
+  rpc:
 
 
 

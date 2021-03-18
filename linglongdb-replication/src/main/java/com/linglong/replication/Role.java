@@ -28,4 +28,14 @@ public enum Role {
                 throw new IllegalArgumentException();
         }
     }
+
+    public static Role getRole(String role) {
+        Role[] roles = Role.values();
+        for (Role r : roles) {
+            if (r.name().equals(role)) {
+                return r;
+            }
+        }
+        return null;
+    }
 }

@@ -3,6 +3,8 @@ package com.linglong.server.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
+import java.util.List;
+
 /**
  * @author Stereo on 2021/3/17.
  */
@@ -20,6 +22,11 @@ public class LinglongdbProperties {
     private long checkpointSizeThreshold;
     private long checkpointDelayThreshold;
     private int maxCheckpointThreads;
+    private boolean replicaEnabled;
+    private int replicaPort;
+    private String replicaRole;
+    private long replicaGroupToken;
+    private List<String> replicaSeedAddresses;
 
     public String getBaseDir() {
         return baseDir;
@@ -99,5 +106,45 @@ public class LinglongdbProperties {
 
     public void setCheckpointDelayThreshold(long checkpointDelayThreshold) {
         this.checkpointDelayThreshold = checkpointDelayThreshold;
+    }
+
+    public boolean isReplicaEnabled() {
+        return replicaEnabled;
+    }
+
+    public void setReplicaEnabled(boolean replicaEnabled) {
+        this.replicaEnabled = replicaEnabled;
+    }
+
+    public int getReplicaPort() {
+        return replicaPort;
+    }
+
+    public void setReplicaPort(int replicaPort) {
+        this.replicaPort = replicaPort;
+    }
+
+    public String getReplicaRole() {
+        return replicaRole;
+    }
+
+    public void setReplicaRole(String replicaRole) {
+        this.replicaRole = replicaRole;
+    }
+
+    public long getReplicaGroupToken() {
+        return replicaGroupToken;
+    }
+
+    public void setReplicaGroupToken(long replicaGroupToken) {
+        this.replicaGroupToken = replicaGroupToken;
+    }
+
+    public List<String> getReplicaSeedAddresses() {
+        return replicaSeedAddresses;
+    }
+
+    public void setReplicaSeedAddresses(List<String> replicaSeedAddresses) {
+        this.replicaSeedAddresses = replicaSeedAddresses;
     }
 }
