@@ -19,7 +19,7 @@ management:
 
 ##Linglongdb config
 linglongdb:
-  baseDir: C:\\Users\\liuj-ai\\Desktop\\数据库开发\\linglongdb
+  baseDir: C:\Users\liuj-ai\Desktop\数据库开发\node-0
   pageSize: 4096
   minCacheSize: 100000000
   maxCacheSize: 100000000

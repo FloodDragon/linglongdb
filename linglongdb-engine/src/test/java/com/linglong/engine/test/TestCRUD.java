@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class TestCRUD {
 
     private static final String tableName = "data";
-    private static final String basePath = "C:\\Users\\liuj-ai\\Desktop\\数据库开发\\linglongdb-test\\";
+    private static final String basePath = "C:\\Users\\liuj-ai\\Desktop\\数据库开发\\linglongdb-test\\" + tableName;
     private static volatile long lastCount = 0;
     private static final long testTotal = 20000000L;
     private static final AtomicLong counter = new AtomicLong(0);

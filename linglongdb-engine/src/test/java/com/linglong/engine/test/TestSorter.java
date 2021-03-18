@@ -12,12 +12,13 @@ import java.util.Random;
 /**
  * 字典排序
  * <p>
+ *
  * @author Stereo on 2021/3/8.
  */
 public class TestSorter {
 
     private static final String tableName = "data";
-    private static final String basePath = "C:\\Users\\liuj-ai\\Desktop\\数据库开发\\linglongdb-test\\";
+    private static final String basePath = "C:\\Users\\liuj-ai\\Desktop\\数据库开发\\linglongdb-test\\" + tableName;
 
     public static void main(String[] args) throws IOException {
         DatabaseConfig config = new DatabaseConfig()

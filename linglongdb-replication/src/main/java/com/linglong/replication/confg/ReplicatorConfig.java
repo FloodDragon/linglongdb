@@ -2,7 +2,6 @@ package com.linglong.replication.confg;
 
 import com.linglong.base.common.LocalHost;
 import com.linglong.base.common.Utils;
-import com.linglong.engine.config.DatabaseConfig;
 import com.linglong.replication.GroupFile;
 import com.linglong.replication.Role;
 
@@ -84,7 +83,6 @@ public class ReplicatorConfig implements Cloneable, Serializable {
             throw new IllegalArgumentException();
         }
         mBaseFile = file.getAbsoluteFile();
-        mBaseFile = new File(file.getAbsoluteFile(), DatabaseConfig.DATA);
         return this;
     }
 
@@ -92,7 +90,7 @@ public class ReplicatorConfig implements Cloneable, Serializable {
         if (path == null) {
             throw new IllegalArgumentException();
         }
-        mBaseFile = new File(path, DatabaseConfig.DATA).getAbsoluteFile();
+        mBaseFile = new File(path).getAbsoluteFile();
         return this;
     }
 

@@ -32,7 +32,6 @@ import java.util.function.BiConsumer;
  */
 public final class DatabaseConfig implements Cloneable, Serializable {
     private static final long serialVersionUID = 1L;
-    public static final String DATA = "data";
 
     File mBaseFile;
 
@@ -499,7 +498,6 @@ public final class DatabaseConfig implements Cloneable, Serializable {
         }
 
         if (mDataPageArray != null) {
-            // Return after the base file checks have been performed.
             return null;
         }
 
@@ -609,7 +607,7 @@ public final class DatabaseConfig implements Cloneable, Serializable {
     }
 
     private static File abs(File file) {
-        return new File(file.getAbsoluteFile(), DATA);
+        return file.getAbsoluteFile();//new File(file.getAbsoluteFile(), DATA);
     }
 
     public final Database open(boolean destroy, InputStream restore) throws IOException {
