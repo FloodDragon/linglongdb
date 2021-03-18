@@ -4,9 +4,11 @@ import com.linglong.engine.config.DatabaseConfig;
 import com.linglong.engine.config.DurabilityMode;
 import com.linglong.engine.core.LocalDatabase;
 import com.linglong.engine.core.frame.Database;
+import com.linglong.engine.event.ReplicationEventListener;
 import com.linglong.replication.DatabaseReplicator;
 import com.linglong.replication.Role;
 import com.linglong.replication.confg.ReplicatorConfig;
+import com.linglong.server.logger.ReplicationLoggerListener;
 import com.linglong.server.utils.MixAll;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -28,7 +30,7 @@ public class LinglongdbConfiguration {
     private final static String LINGLONGDB_DATA = "data";
 
     @Bean(destroyMethod = "close")
-    public Database database(LinglongdbProperties linglongdbProperties) throws IOException {
+    public Database database(LinglongdbProperties linglongdbProperties, ReplicationEventListener replicationEventListener) throws IOException {
         File file = new File(linglongdbProperties.getBaseDir());
         if (file.isFile()) {
             throw new IllegalArgumentException("linglongdb base dir must be directory: " + file.getAbsolutePath());
@@ -83,6 +85,7 @@ public class LinglongdbConfiguration {
                     .groupToken(linglongdbProperties.getReplicaGroupToken())
                     .localPort(linglongdbProperties.getReplicaPort())
                     .localRole(role)
+                    .eventListener(replicationEventListener)
                     .baseFile(file);
 
             //设置集群复制发现地址
@@ -96,5 +99,10 @@ public class LinglongdbConfiguration {
             config.replicate(databaseReplicator);
         }
         return Database.open(config);
+    }
+
+    @Bean
+    public ReplicationEventListener replicationLoggerListener(LinglongdbProperties linglongdbProperties) {
+        return new ReplicationEventListener(new ReplicationLoggerListener(linglongdbProperties));
     }
 }
