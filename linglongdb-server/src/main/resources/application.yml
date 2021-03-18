@@ -37,7 +37,7 @@ linglongdb:
   replicaRole: NORMAL
   replicaGroupToken: 1
   #replicaSeedAddresses:
-  #  - localhost:7099
+  #  - localhost:7070
   http:
     serverHost: 127.0.0.1
     serverPort: 7001
