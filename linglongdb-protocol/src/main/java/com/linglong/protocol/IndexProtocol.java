@@ -1,11 +1,12 @@
 package com.linglong.protocol;
 
 import com.linglong.protocol.message.*;
+import com.linglong.rpc.common.service.IService;
 
 /**
  * @author Stereo on 2021/3/8.
  */
-public interface IndexProtocol {
+public interface IndexProtocol extends IService {
 
     /**
      * 索引写操作
