@@ -16,6 +16,7 @@ public class IndexControllerImpl extends Service implements IndexController {
 
     @Override
     public WriteResponse write(WriteRequest request) {
+        //TODO
         return null;
     }
 
