@@ -2,7 +2,6 @@ package com.linglong.server.config;
 
 import com.linglong.engine.config.DatabaseConfig;
 import com.linglong.engine.config.DurabilityMode;
-import com.linglong.engine.core.LocalDatabase;
 import com.linglong.engine.core.frame.Database;
 import com.linglong.engine.event.ReplicationEventListener;
 import com.linglong.replication.DatabaseReplicator;
@@ -11,13 +10,14 @@ import com.linglong.replication.confg.ReplicatorConfig;
 import com.linglong.server.logger.ReplicationLoggerListener;
 import com.linglong.server.utils.MixAll;
 import org.apache.commons.collections.CollectionUtils;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -95,13 +95,20 @@ public class LinglongdbConfiguration {
                 }
             }
             //开启集群复制器
-            DatabaseReplicator databaseReplicator = DatabaseReplicator.open(replicatorConfig);
+            DatabaseReplicator databaseReplicator = databaseReplicator(replicatorConfig);
             config.replicate(databaseReplicator);
         }
         return Database.open(config);
     }
 
     @Bean
+    @ConditionalOnExpression("#{'true'.equals(environment['linglongdb.replicaEnabled'])}")
+    public DatabaseReplicator databaseReplicator(ReplicatorConfig replicatorConfig) throws IOException {
+        return DatabaseReplicator.open(replicatorConfig);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public ReplicationEventListener replicationLoggerListener(LinglongdbProperties linglongdbProperties) {
         return new ReplicationEventListener(new ReplicationLoggerListener(linglongdbProperties));
     }
