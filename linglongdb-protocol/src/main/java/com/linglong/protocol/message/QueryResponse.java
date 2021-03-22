@@ -12,10 +12,6 @@ public class QueryResponse extends Message {
     private byte[] key;
     /* 索引值 */
     private byte[] value;
-    /* 加载错误码 */
-    private int errorCode;
-    /* 加载错误信息 */
-    private String errorMessage;
 
     public String getIndex() {
         return index;
@@ -39,21 +35,5 @@ public class QueryResponse extends Message {
 
     public void setValue(byte[] value) {
         this.value = value;
-    }
-
-    public int getErrorCode() {
-        return errorCode;
-    }
-
-    public void setErrorCode(int errorCode) {
-        this.errorCode = errorCode;
-    }
-
-    public String getErrorMessage() {
-        return errorMessage;
-    }
-
-    public void setErrorMessage(String errorMessage) {
-        this.errorMessage = errorMessage;
     }
 }

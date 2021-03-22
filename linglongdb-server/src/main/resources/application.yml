@@ -39,13 +39,25 @@ linglongdb:
   #replicaSeedAddresses:
   #  - localhost:7070
   http:
-    serverHost: 127.0.0.1
+    serverHost: 0.0.0.0
     serverPort: 7001
     maxThreads: 200
     minSpareThreads: 200
     maxConnections: -1
     handlerVersion: v1
   rpc:
+    serverHost: 0.0.0.0
+    serverPort: 7002
+    useEpoll: false
+    payload: 16777216
+    sendTimeout: 5000
+    readTimeout: 15000
+    connectTimeout: 5000
+    threadConcurrency: 200
+    sendBufferSize: 65535
+    receiveBufferSize: 65535
+    heartBeatExpireInterval: 60000
+
 
 
 

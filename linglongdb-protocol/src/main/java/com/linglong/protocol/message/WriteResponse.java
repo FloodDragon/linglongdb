@@ -15,15 +15,17 @@ public class WriteResponse extends Message {
         return value;
     }
 
-    public void setValue(byte[] value) {
+    public WriteResponse setValue(byte[] value) {
         this.value = value;
+        return this;
     }
 
     public boolean isSuccessful() {
         return successful;
     }
 
-    public void setSuccessful(boolean successful) {
+    public WriteResponse setSuccessful(boolean successful) {
         this.successful = successful;
+        return this;
     }
 }

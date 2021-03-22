@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * @author Stereo on 2019/7/31.
  */
-public class RestActionApiImpl extends AbstractRestActionApi {
+public class RestActionApiImpl extends AbsRestActionApi {
 
     public RestActionApiImpl(RestActionHandler restActionHandler) {
         super(restActionHandler);

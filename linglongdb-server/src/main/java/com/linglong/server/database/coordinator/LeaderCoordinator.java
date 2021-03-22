@@ -1,4 +1,4 @@
-package com.linglong.server.coordinator;
+package com.linglong.server.database.coordinator;
 
 
 /**
@@ -21,10 +21,13 @@ public class LeaderCoordinator {
      *
      *
      *  协调器
-     *  1.
+     *  1.当前节点是否是Leader
+     *  2.
      *
      *
      */
+
+
 
 
 
