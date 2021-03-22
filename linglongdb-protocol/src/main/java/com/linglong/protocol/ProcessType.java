@@ -32,7 +32,17 @@ public enum ProcessType {
     /* 索引分析 */
     INDEX_ANALYZE((byte) 0x13),
     /* 索引数据驱逐 */
-    INDEX_EVICT((byte) 0x14);
+    INDEX_EVICT((byte) 0x14),
+    /* 索引打开 */
+    INDEX_OPEN((byte) 0x15),
+    /* 索引关闭 */
+    INDEX_CLOSE((byte) 0x16),
+    /* 事务打开 */
+    TXN_OPEN((byte) 0x17),
+    /* 事务提交 */
+    TXN_COMMIT((byte) 0x18),
+    /* 事务提交 */
+    TXN_ROLLBACK((byte) 0x19);
 
     private byte type;
 
@@ -53,4 +63,4 @@ public enum ProcessType {
         }
         return null;
     }
-}
+    }

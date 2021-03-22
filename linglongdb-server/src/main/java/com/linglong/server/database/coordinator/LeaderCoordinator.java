@@ -22,7 +22,8 @@ public class LeaderCoordinator {
      *
      *  协调器
      *  1.当前节点是否是Leader
-     *  2.
+     *  2.提供Leader peer client
+     *  3.转发到leader
      *
      *
      */
