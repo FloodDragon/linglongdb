@@ -11,6 +11,7 @@ import com.linglong.replication.Role;
 import com.linglong.replication.confg.ReplicatorConfig;
 import com.linglong.server.config.LinglongdbProperties;
 import com.linglong.server.database.coordinator.LeaderCoordinator;
+import com.linglong.server.utils.Actor;
 import com.linglong.server.utils.MixAll;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -18,6 +19,8 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -25,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * Created by liuj-ai on 2021/3/22.
  */
-public class DatabaseProcessor implements InitializingBean, DisposableBean {
+public class DatabaseProcessor extends Actor implements InitializingBean, DisposableBean {
 
     private final static String LINGLONGDB_DATA = "data";
     private Role role;
@@ -36,6 +39,10 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     private ReplicatorConfig replicatorConfig;
     private DatabaseReplicator databaseReplicator;
     private LeaderCoordinator leaderCoordinator;
+
+    private Map<byte[], Index> indexBytesMap = new HashMap<>();
+    private Map<String, Index> indexNameMap = new HashMap<>();
+    private Map<Long, Transaction> transactionMap = new HashMap<>();
 
     private LinglongdbProperties linglongdbProperties;
     private ReplicationEventListener replicationEventListener;
@@ -146,6 +153,12 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         return durabilityMode;
     }
 
+    @Override
+    protected void doAct() throws InterruptedException {
+        //TODO 清理空闲的Index
+        //TODO 清理事务
+    }
+
     public interface Processor<T, R> {
         R doProcess(T t) throws Exception;
     }
@@ -206,6 +219,14 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         @Override
         public Index doProcess(_Index index) throws Exception {
             return StringUtils.isBlank(index.name) ? database.openIndex(index.name) : index.nameBytes != null ? database.openIndex(index.nameBytes) : null;
+        }
+    }
+
+    private final class CloseIndex implements Processor<Index, Void> {
+        @Override
+        public Void doProcess(Index index) throws Exception {
+            index.close();
+            return null;
         }
     }
 
