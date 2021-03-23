@@ -6,11 +6,14 @@ import com.linglong.engine.config.DurabilityMode;
 import com.linglong.engine.core.frame.Database;
 import com.linglong.engine.core.frame.Index;
 import com.linglong.engine.core.tx.Transaction;
+import com.linglong.engine.event.EventListener;
+import com.linglong.engine.event.EventType;
 import com.linglong.engine.event.ReplicationEventListener;
 import com.linglong.replication.DatabaseReplicator;
 import com.linglong.replication.Role;
 import com.linglong.replication.confg.ReplicatorConfig;
 import com.linglong.server.config.LinglongdbProperties;
+import com.linglong.server.database.exception.TxnNotFoundException;
 import com.linglong.server.utils.MixAll;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -82,8 +85,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         if (linglongdbProperties.getMaxCacheSize() <= 0) {
             throw new IllegalArgumentException("linglongdb max cache size must be greater than zero");
         }
-        this.role = Role.getRole(linglongdbProperties.getReplicaRole());
-        if (this.role == null) {
+        if (linglongdbProperties.isReplicaEnabled() && (this.role = Role.getRole(linglongdbProperties.getReplicaRole())) == null) {
             throw new IllegalArgumentException("linglongdb replica role error");
         }
         this.linglongdbProperties = linglongdbProperties;
@@ -159,10 +161,14 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     public Index findIndex(String indexName) throws Exception {
         try {
             indexLock.acquireShared();
-            return StringUtils.isBlank(indexName) ? null : (indexMap.containsKey(indexName) ? indexMap.get(indexName) : new OpenIndex().process(new _IndexName().name(indexName)));
+            return StringUtils.isBlank(indexName) ? null : (indexMap.containsKey(indexName) ? indexMap.get(indexName) : new OpenIndex().process(new _IndexName().indexName(indexName)));
         } finally {
             indexLock.releaseShared();
         }
+    }
+
+    public _Txn findTxn(long txnId) throws Exception {
+        return new _Txn().txnId(txnId).transaction(transactionMap.get(txnId));
     }
 
     public interface Processor<T, R> {
@@ -185,20 +191,21 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         }
     }
 
-    public static class _IndexName {
+    public static class _IndexName extends _Txn {
         String indexName;
 
-        public _IndexName name(String name) {
+        public _IndexName indexName(String name) {
             this.indexName = name;
             return this;
         }
     }
 
     public static class _Txn {
-        long txnId;
+        Long txnId;
         boolean isCommit;
+        Transaction transaction;
 
-        public _Txn txnId(long txnId) {
+        public _Txn txnId(Long txnId) {
             this.txnId = txnId;
             return this;
         }
@@ -212,13 +219,18 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
             this.isCommit = false;
             return this;
         }
+
+        public _Txn transaction(Transaction transaction) {
+            this.transaction = transaction;
+            return this;
+        }
     }
 
     public static class _Variable extends _IndexName {
         byte[] key;
         byte[] value;
         byte[] oldValue;
-        boolean openTxn;
+        boolean newTxn;
         byte[] lowKey;
         byte[] highKey;
         long count;
@@ -253,27 +265,47 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
             return this;
         }
 
-        public _Variable openTxn() {
-            this.openTxn = true;
+        public _Variable newTxn() {
+            this.newTxn = true;
             return this;
         }
 
+        public _Variable indexName(String name) {
+            super.indexName = name;
+            return this;
+        }
+
+        public _Variable txnId(Long txnId) {
+            super.txnId = txnId;
+            return this;
+        }
     }
 
     public abstract class KeyValueHandler implements Processor<_Variable, Boolean> {
         @Override
         public Boolean doProcess(_Variable kvContent) throws Exception {
-            final Index index = StringUtils.isBlank(kvContent.indexName) ? null : (indexMap.containsKey(kvContent.indexName) ? indexMap.get(kvContent.indexName) : new OpenIndex().process(new _IndexName().name(kvContent.indexName)));
+            final Index index = StringUtils.isBlank(kvContent.indexName) ? null : (indexMap.containsKey(kvContent.indexName) ? indexMap.get(kvContent.indexName) : new OpenIndex().process(kvContent));
             if (index != null) {
-                final Transaction txn = kvContent.openTxn ? null : new OpenTxn().process(null);
+                Transaction txn;
+                if (kvContent.newTxn) {
+                    txn = new OpenTxn().process(null).transaction;
+                } else if (kvContent.txnId != null) {
+                    txn = findTxn(kvContent.txnId).transaction;
+                    if (txn == null) {
+                        throw new TxnNotFoundException(kvContent.txnId);
+                    }
+                } else {
+                    txn = null;
+                }
+                boolean commitOrRollback = txn != null && kvContent.txnId == null;
                 try {
                     Boolean r = doHandle(index, txn, kvContent);
-                    if (txn != null) {
+                    if (commitOrRollback) {
                         new TxnCommitOrRollback().process(r ? new _Txn().txnId(txn.getId()).commit() : new _Txn().txnId(txn.getId()).rollback());
                     }
                     return r;
                 } catch (Exception ex) {
-                    if (txn != null) {
+                    if (commitOrRollback) {
                         new TxnCommitOrRollback().process(new _Txn().txnId(txn.getId()).rollback());
                     }
                     throw ex;
@@ -356,19 +388,19 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
         @Override
         public void after() {
-            indexLock.acquireExclusive();
+            indexLock.releaseExclusive();
         }
     }
 
     /**
      * 开启事务
      */
-    public class OpenTxn implements Processor<DurabilityMode, Transaction> {
+    public class OpenTxn implements Processor<DurabilityMode, _Txn> {
         @Override
-        public Transaction doProcess(DurabilityMode mode) throws Exception {
+        public _Txn doProcess(DurabilityMode mode) throws Exception {
             Transaction transaction = mode == null ? database.newTransaction() : database.newTransaction(mode);
             transactionMap.put(transaction.getId(), transaction);
-            return transaction;
+            return new _Txn().txnId(transaction.getId()).transaction(transaction);
         }
     }
 
