@@ -2,7 +2,7 @@ package com.linglong.server.database.controller;
 
 import com.linglong.protocol.IndexProtocol;
 import com.linglong.protocol.message.*;
-import com.linglong.server.database.DatabaseProcessor;
+import com.linglong.server.database.process.DatabaseProcessor;
 
 /**
  * 数据库索引控制器

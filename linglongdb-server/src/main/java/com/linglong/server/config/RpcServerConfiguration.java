@@ -1,18 +1,16 @@
 package com.linglong.server.config;
 
-import com.linglong.engine.core.frame.Database;
 import com.linglong.protocol.IndexProtocol;
 import com.linglong.protocol.TableProtocol;
 import com.linglong.rpc.common.config.Config;
 import com.linglong.rpc.common.service.IService;
 import com.linglong.rpc.server.RpcServiceServer;
-import com.linglong.server.database.DatabaseProcessor;
+import com.linglong.server.database.process.DatabaseProcessor;
 import com.linglong.server.database.controller.TableControllerImpl;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import com.linglong.server.database.controller.IndexControllerImpl;
-import org.springframework.context.annotation.DependsOn;
 
 import java.net.InetSocketAddress;
 

@@ -1,7 +1,7 @@
 package com.linglong.server.database.controller;
 
 import com.linglong.protocol.TableProtocol;
-import com.linglong.server.database.DatabaseProcessor;
+import com.linglong.server.database.process.DatabaseProcessor;
 
 /**
  * Created by liuj-ai on 2021/3/22.

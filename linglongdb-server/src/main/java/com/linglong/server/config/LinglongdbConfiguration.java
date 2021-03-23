@@ -1,7 +1,7 @@
 package com.linglong.server.config;
 
 import com.linglong.engine.event.ReplicationEventListener;
-import com.linglong.server.database.DatabaseProcessor;
+import com.linglong.server.database.process.DatabaseProcessor;
 import com.linglong.server.logger.ReplicationLoggerListener;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

@@ -1,4 +1,4 @@
-package com.linglong.server.database.coordinator;
+package com.linglong.server.database.process;
 
 /**
  * Created by liuj-ai on 2021/3/22.
