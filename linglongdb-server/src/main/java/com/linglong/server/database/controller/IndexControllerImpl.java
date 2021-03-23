@@ -1,23 +1,27 @@
-package com.linglong.server.controller;
+package com.linglong.server.database.controller;
 
+import com.linglong.protocol.IndexProtocol;
 import com.linglong.protocol.message.*;
-import com.linglong.rpc.server.skeleton.service.Service;
+import com.linglong.server.database.process.DatabaseProcessor;
 
 /**
  * 数据库索引控制器
  *
  * @author Stereo on 2021/3/17.
  */
-public class IndexControllerImpl extends Service implements IndexController {
+public class IndexControllerImpl extends AbsController implements IndexProtocol {
 
-    public IndexControllerImpl() {
-        super(IndexController.class);
+    public IndexControllerImpl(DatabaseProcessor processor) {
+        super(IndexProtocol.class, processor);
     }
 
     @Override
     public WriteResponse write(WriteRequest request) {
-        //TODO
-        return null;
+        try {
+            //TODO to invoke leader -> call back
+            return null;
+        } finally {
+        }
     }
 
     @Override

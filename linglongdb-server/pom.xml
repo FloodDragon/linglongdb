@@ -44,6 +44,11 @@
         </dependency>
         <dependency>
             <groupId>com.linglong</groupId>
+            <artifactId>linglongdb-rpc</artifactId>
+            <version>${parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.linglong</groupId>
             <artifactId>linglongdb-sql</artifactId>
             <version>${parent.version}</version>
         </dependency>

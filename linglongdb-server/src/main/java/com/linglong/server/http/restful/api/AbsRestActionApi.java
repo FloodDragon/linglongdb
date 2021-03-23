@@ -17,14 +17,14 @@ import java.util.HashMap;
 /**
  * @author Stereo on 2019/8/7.
  */
-public abstract class AbstractRestActionApi implements RestActionApi {
+public abstract class AbsRestActionApi implements RestActionApi {
     protected static final Logger LOGGER = LoggerFactory.getLogger(RestActionApi.class);
 
     protected final RestActionHandler restActionHandler;
     protected final HashMap _methodMap = new HashMap();
     protected final UrlPathHelper urlPathHelper = new UrlPathHelper();
 
-    public AbstractRestActionApi(RestActionHandler restActionHandler) {
+    public AbsRestActionApi(RestActionHandler restActionHandler) {
         this.restActionHandler = restActionHandler;
         Method[] methodList = RestActionApi.class.getMethods();
         for (int i = 0; i < methodList.length; i++) {

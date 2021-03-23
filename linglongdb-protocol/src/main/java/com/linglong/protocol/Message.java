@@ -10,8 +10,6 @@ public abstract class Message implements BeanMessage {
     private String id;
     /* 请求/响应时间 */
     private long timestamp;
-    /* 消息版本 */
-    private String version;
     /* 事务id */
     private String xid;
     /* 消息处理错误码 */
@@ -25,55 +23,53 @@ public abstract class Message implements BeanMessage {
         return id;
     }
 
-    public void setId(String id) {
+    public Message setId(String id) {
         this.id = id;
+        return this;
     }
 
     public long getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(long timestamp) {
+    public Message setTimestamp(long timestamp) {
         this.timestamp = timestamp;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public void setVersion(String version) {
-        this.version = version;
+        return this;
     }
 
     public String getXid() {
         return xid;
     }
 
-    public void setXid(String xid) {
+    public Message setXid(String xid) {
         this.xid = xid;
+        return this;
     }
 
     public int getErrorCode() {
         return errorCode;
     }
 
-    public void setErrorCode(int errorCode) {
+    public Message setErrorCode(int errorCode) {
         this.errorCode = errorCode;
+        return this;
     }
 
     public String getErrorMessage() {
         return errorMessage;
     }
 
-    public void setErrorMessage(String errorMessage) {
+    public Message setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
+        return this;
     }
 
     public byte getProcessType() {
         return processType;
     }
 
-    public void setProcessType(byte processType) {
+    public Message setProcessType(byte processType) {
         this.processType = processType;
+        return this;
     }
 }
