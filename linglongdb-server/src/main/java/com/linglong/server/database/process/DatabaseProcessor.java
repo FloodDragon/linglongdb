@@ -214,7 +214,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         }
     }
 
-    public static class _KVContent extends _IndexName {
+    public static class _Variable extends _IndexName {
         byte[] key;
         byte[] value;
         byte[] oldValue;
@@ -223,46 +223,46 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         byte[] highKey;
         long count;
 
-        public _KVContent key(byte[] key) {
+        public _Variable key(byte[] key) {
             this.key = key;
             return this;
         }
 
-        public _KVContent value(byte[] value) {
+        public _Variable value(byte[] value) {
             this.value = value;
             return this;
         }
 
-        public _KVContent oldValue(byte[] value) {
+        public _Variable oldValue(byte[] value) {
             this.oldValue = oldValue;
             return this;
         }
 
-        public _KVContent lowKey(byte[] lowKey) {
+        public _Variable lowKey(byte[] lowKey) {
             this.lowKey = lowKey;
             return this;
         }
 
-        public _KVContent highKey(byte[] highKey) {
+        public _Variable highKey(byte[] highKey) {
             this.highKey = highKey;
             return this;
         }
 
-        public _KVContent count(long count) {
+        public _Variable count(long count) {
             this.count = count;
             return this;
         }
 
-        public _KVContent openTxn() {
+        public _Variable openTxn() {
             this.openTxn = true;
             return this;
         }
 
     }
 
-    public abstract class KeyValueHandler implements Processor<_KVContent, Boolean> {
+    public abstract class KeyValueHandler implements Processor<_Variable, Boolean> {
         @Override
-        public Boolean doProcess(_KVContent kvContent) throws Exception {
+        public Boolean doProcess(_Variable kvContent) throws Exception {
             final Index index = StringUtils.isBlank(kvContent.indexName) ? null : (indexMap.containsKey(kvContent.indexName) ? indexMap.get(kvContent.indexName) : new OpenIndex().process(new _IndexName().name(kvContent.indexName)));
             if (index != null) {
                 final Transaction txn = kvContent.openTxn ? null : new OpenTxn().process(null);
@@ -293,7 +293,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
             indexLock.releaseShared();
         }
 
-        protected abstract boolean doHandle(Index index, Transaction txn, _KVContent kvContent) throws Exception;
+        protected abstract boolean doHandle(Index index, Transaction txn, _Variable kvContent) throws Exception;
     }
 
     /**
@@ -398,7 +398,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     public class KeyValueStore extends KeyValueHandler {
 
         @Override
-        protected boolean doHandle(Index index, Transaction txn, _KVContent kvContent) throws Exception {
+        protected boolean doHandle(Index index, Transaction txn, _Variable kvContent) throws Exception {
             index.store(txn, kvContent.key, kvContent.value);
             return true;
         }
@@ -410,7 +410,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     public class KeyValueInsert extends KeyValueHandler {
 
         @Override
-        protected boolean doHandle(Index index, Transaction txn, _KVContent kvContent) throws Exception {
+        protected boolean doHandle(Index index, Transaction txn, _Variable kvContent) throws Exception {
             return index.insert(txn, kvContent.key, kvContent.value);
         }
     }
@@ -421,7 +421,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     public class KeyValueReplace extends KeyValueHandler {
 
         @Override
-        protected boolean doHandle(Index index, Transaction txn, _KVContent kvContent) throws Exception {
+        protected boolean doHandle(Index index, Transaction txn, _Variable kvContent) throws Exception {
             return index.replace(txn, kvContent.key, kvContent.value);
         }
     }
@@ -432,7 +432,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     public class KeyValueUpdate extends KeyValueHandler {
 
         @Override
-        protected boolean doHandle(Index index, Transaction txn, _KVContent kvContent) throws Exception {
+        protected boolean doHandle(Index index, Transaction txn, _Variable kvContent) throws Exception {
             return index.update(txn, kvContent.key, kvContent.oldValue, kvContent.value);
         }
     }
@@ -443,7 +443,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     public class KeyValueDelete extends KeyValueHandler {
 
         @Override
-        protected boolean doHandle(Index index, Transaction txn, _KVContent kvContent) throws Exception {
+        protected boolean doHandle(Index index, Transaction txn, _Variable kvContent) throws Exception {
             return index.delete(txn, kvContent.key);
         }
     }
@@ -454,7 +454,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     public class KeyValueRemove extends KeyValueHandler {
 
         @Override
-        protected boolean doHandle(Index index, Transaction txn, _KVContent kvContent) throws Exception {
+        protected boolean doHandle(Index index, Transaction txn, _Variable kvContent) throws Exception {
             return index.remove(txn, kvContent.key, kvContent.value);
         }
     }
@@ -465,7 +465,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     public class KeyValueExchange extends KeyValueHandler {
 
         @Override
-        protected boolean doHandle(Index index, Transaction txn, _KVContent kvContent) throws Exception {
+        protected boolean doHandle(Index index, Transaction txn, _Variable kvContent) throws Exception {
             kvContent.oldValue(index.exchange(txn, kvContent.key, kvContent.value));
             return true;
         }
@@ -477,7 +477,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     public class KeyValueExists extends KeyValueHandler {
 
         @Override
-        protected boolean doHandle(Index index, Transaction txn, _KVContent kvContent) throws Exception {
+        protected boolean doHandle(Index index, Transaction txn, _Variable kvContent) throws Exception {
             return index.exists(txn, kvContent.key);
 
         }
@@ -489,7 +489,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     public class KeyValueLoad extends KeyValueHandler {
 
         @Override
-        protected boolean doHandle(Index index, Transaction txn, _KVContent kvContent) throws Exception {
+        protected boolean doHandle(Index index, Transaction txn, _Variable kvContent) throws Exception {
             kvContent.value(index.load(txn, kvContent.key));
             return true;
         }
@@ -501,7 +501,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     public class KeyValueCount extends KeyValueHandler {
 
         @Override
-        protected boolean doHandle(Index index, Transaction txn, _KVContent kvContent) throws Exception {
+        protected boolean doHandle(Index index, Transaction txn, _Variable kvContent) throws Exception {
             kvContent.count(index.count(kvContent.lowKey, kvContent.highKey));
             return true;
         }
