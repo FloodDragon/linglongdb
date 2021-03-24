@@ -5,6 +5,9 @@ import com.linglong.engine.event.EventType;
 import com.linglong.engine.event.ReplicationEventListener;
 import com.linglong.server.config.LinglongdbProperties;
 
+import java.util.Map;
+import java.util.function.Consumer;
+
 /**
  * Created by liuj-ai on 2021/3/23.
  */
@@ -29,21 +32,60 @@ public class DatabaseProcessorTest {
         linglongdbProperties.setPageSize(4096);
         linglongdbProperties.setMinCacheSize(100000000L);
         linglongdbProperties.setMaxCacheSize(100000000L);
-        linglongdbProperties.setLockTimeout(1000);
+        linglongdbProperties.setLockTimeout(10 * 1000L);
         linglongdbProperties.setCheckpointRate(1000);
         linglongdbProperties.setDurabilityMode("SYNC");
         linglongdbProperties.setCheckpointSizeThreshold(1048576);
         linglongdbProperties.setCheckpointDelayThreshold(60000);
         linglongdbProperties.setMaxCheckpointThreads(8);
         linglongdbProperties.setReplicaEnabled(false);
-        DatabaseProcessor databaseProcessor = new DatabaseProcessor(linglongdbProperties, replicationEventListener);
-        databaseProcessor.afterPropertiesSet();
-        DatabaseProcessor._Txn txn = databaseProcessor.new OpenTxn().process(null);
+        DatabaseProcessor processor = new DatabaseProcessor(linglongdbProperties, replicationEventListener);
+        processor.afterPropertiesSet();
+        final String indexName = "test";
+        DatabaseProcessor._Txn txn = processor.new OpenTxn().process(null);
         for (int i = 0; i < 10000; i++) {
-            databaseProcessor.new KeyValueInsert().process(new DatabaseProcessor._Variable().txnId(txn.txnId).indexName("test").key(String.valueOf(i).getBytes()).value(String.valueOf(i).getBytes()));
-            System.out.println("已写入 " + String.valueOf(i));
+            processor.new KeyValueStore().process(processor.newOptions().txn(txn.txnId).indexName(indexName).key(toBytes(i)).value(String.valueOf(i).getBytes()));
+            //Thread.sleep(1000L);
         }
-        databaseProcessor.new TxnCommitOrRollback().process(txn.commit());
-        databaseProcessor.destroy();
+        System.out.println("数据库测试 步骤1 已写入完成.");
+
+        processor.new IndexKeyValueScan().process(processor.newOptions().txn(txn.txnId).indexName(indexName).scan(new Consumer<Map.Entry<byte[], byte[]>>() {
+            @Override
+            public void accept(Map.Entry<byte[], byte[]> entry) {
+                System.out.println("key=" + toLong(entry.getKey()) + "  value=" + new String(entry.getValue()));
+            }
+        }));
+        System.out.println("数据库测试 步骤2 已扫描完成.");
+        processor.new IndexDelete().process(new DatabaseProcessor._IndexName().indexName(indexName));
+        System.out.println("数据库测试 步骤3 已删除索引(" + indexName + ")完成");
+        DatabaseProcessor._Options options = processor.newOptions().indexName(indexName);
+        processor.new IndexCount().process(options);
+        System.out.println("数据库测试 步骤4 索引数据长度大小(" + options.count + ")");
+        processor.new TxnCommitOrRollback().process(txn.commit());
+        processor.destroy();
+    }
+
+    private static byte[] toBytes(long num) {
+        byte buf[] = new byte[8];
+        buf[0] = (byte) (num >>> 56);
+        buf[1] = (byte) (num >>> 48);
+        buf[2] = (byte) (num >>> 40);
+        buf[3] = (byte) (num >>> 32);
+        buf[4] = (byte) (num >>> 24);
+        buf[5] = (byte) (num >>> 16);
+        buf[6] = (byte) (num >>> 8);
+        buf[7] = (byte) (num >>> 0);
+        return buf;
+    }
+
+    private static long toLong(byte[] bytes) {
+        return (((long) bytes[0] << 56) +
+                ((long) (bytes[1] & 255) << 48) +
+                ((long) (bytes[2] & 255) << 40) +
+                ((long) (bytes[3] & 255) << 32) +
+                ((long) (bytes[4] & 255) << 24) +
+                ((bytes[5] & 255) << 16) +
+                ((bytes[6] & 255) << 8) +
+                ((bytes[7] & 255) << 0));
     }
 }
