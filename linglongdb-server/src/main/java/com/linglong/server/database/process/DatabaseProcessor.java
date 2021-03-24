@@ -7,6 +7,7 @@ import com.linglong.engine.core.frame.Database;
 import com.linglong.engine.core.frame.Index;
 import com.linglong.engine.core.frame.Scanner;
 import com.linglong.engine.core.tx.Transaction;
+import com.linglong.engine.core.updater.Updater;
 import com.linglong.engine.event.ReplicationEventListener;
 import com.linglong.replication.DatabaseReplicator;
 import com.linglong.replication.Role;
@@ -25,7 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 /**
  * 数据库处理器
@@ -198,125 +198,6 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         }
 
         default void after(R r) throws Exception {
-        }
-    }
-
-    public static class _IndexName {
-        String idxName;
-        String newName;
-
-        public _IndexName indexName(String name) {
-            this.idxName = name;
-            return this;
-        }
-
-        public _IndexName newName(String newName) {
-            this.newName = newName;
-            return this;
-        }
-    }
-
-    public static class _Txn {
-        Long txnId;
-        boolean willCommit;
-        Transaction transaction;
-
-        public _Txn txnId(Long txnId) {
-            this.txnId = txnId;
-            return this;
-        }
-
-        public _Txn commit() {
-            this.willCommit = true;
-            return this;
-        }
-
-        public _Txn rollback() {
-            this.willCommit = false;
-            return this;
-        }
-
-        public _Txn transaction(Transaction transaction) {
-            this.transaction = transaction;
-            return this;
-        }
-    }
-
-    public static class _Options extends _IndexName {
-        byte[] key;
-        byte[] value;
-        byte[] oldValue;
-        byte[] lowKey;
-        byte[] highKey;
-        long count;
-
-        //开启新事务
-        boolean newTxn;
-        //已开启事务
-        Long openedTxnId;
-        boolean openedTxn;
-        //索引数据驱逐过滤
-        KeyValueEvictFilter evictFilter;
-        //索引数据扫描
-        Consumer<Map.Entry<byte[], byte[]>> scanConsumer;
-
-        public _Options key(byte[] key) {
-            this.key = key;
-            return this;
-        }
-
-        public _Options value(byte[] value) {
-            this.value = value;
-            return this;
-        }
-
-        public _Options oldValue(byte[] value) {
-            this.oldValue = oldValue;
-            return this;
-        }
-
-        public _Options lowKey(byte[] lowKey) {
-            this.lowKey = lowKey;
-            return this;
-        }
-
-        public _Options highKey(byte[] highKey) {
-            this.highKey = highKey;
-            return this;
-        }
-
-        public _Options count(long count) {
-            this.count = count;
-            return this;
-        }
-
-        public _Options newTxn() {
-            this.newTxn = true;
-            this.openedTxn = false;
-            this.openedTxnId = null;
-            return this;
-        }
-
-        public _Options indexName(String name) {
-            super.indexName(name);
-            return this;
-        }
-
-        public _Options txn(Long txnId) {
-            this.openedTxn = true;
-            this.newTxn = false;
-            this.openedTxnId = txnId;
-            return this;
-        }
-
-        public _Options evict(KeyValueEvictFilter filter) {
-            this.evictFilter = filter;
-            return this;
-        }
-
-        public _Options scan(Consumer<Map.Entry<byte[], byte[]>> consumer) {
-            this.scanConsumer = consumer;
-            return this;
         }
     }
 
@@ -673,7 +554,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
         @Override
         public Index.Stats doProcess(_Options options) throws Exception {
-            Index index = StringUtils.isBlank(options.idxName) ? null : (indexMap.containsKey(options.idxName) ? indexMap.get(options.idxName) : new FindIndex().process(options));
+            Index index = findIndex(options);
             return index != null ? index.analyze(options.lowKey, options.highKey) : null;
         }
 
@@ -748,6 +629,26 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
                 }
             });
             scanner.close();
+            return Boolean.TRUE;
+        }
+    }
+
+    /**
+     * 索引批量更新
+     */
+    public class IndexKeyValueUpdater extends AbsIndexHandler {
+
+        @Override
+        protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
+            Updater updater = index.newUpdater(txn);
+            updater.updateAll((k, v) -> {
+                if (options.updater != null) {
+                    return options.updater.apply(k, v);
+                } else {
+                    return null;
+                }
+            });
+            updater.close();
             return Boolean.TRUE;
         }
     }
