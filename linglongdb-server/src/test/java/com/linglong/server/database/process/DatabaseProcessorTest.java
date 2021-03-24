@@ -28,13 +28,13 @@ public class DatabaseProcessorTest {
         });
 
         LinglongdbProperties linglongdbProperties = new LinglongdbProperties();
-        linglongdbProperties.setBaseDir("C:\\Users\\liuj-ai\\Desktop\\数据库开发\\node-0");
+        linglongdbProperties.setBaseDir("D:\\workspace\\linglongdb\\");
         linglongdbProperties.setPageSize(4096);
         linglongdbProperties.setMinCacheSize(100000000L);
         linglongdbProperties.setMaxCacheSize(100000000L);
         linglongdbProperties.setLockTimeout(10 * 1000L);
         linglongdbProperties.setCheckpointRate(1000);
-        linglongdbProperties.setDurabilityMode("SYNC");
+        linglongdbProperties.setDurabilityMode("NO_FLUSH");
         linglongdbProperties.setCheckpointSizeThreshold(1048576);
         linglongdbProperties.setCheckpointDelayThreshold(60000);
         linglongdbProperties.setMaxCheckpointThreads(8);
@@ -45,6 +45,7 @@ public class DatabaseProcessorTest {
         _Txn txn = processor.new OpenTxn().process(null);
         for (int i = 0; i < 10000; i++) {
             processor.new KeyValueStore().process(processor.newOptions().txn(txn.txnId).indexName(indexName).key(toBytes(i)).value(String.valueOf(i).getBytes()));
+            System.out.println("数据库测试 步骤0 写入" + i);
             //Thread.sleep(1000L);
         }
         System.out.println("数据库测试 步骤1 已写入完成.");
