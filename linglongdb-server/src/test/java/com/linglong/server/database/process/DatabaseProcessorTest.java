@@ -36,21 +36,21 @@ public class DatabaseProcessorTest {
         linglongdbProperties.setCheckpointDelayThreshold(60000);
         linglongdbProperties.setMaxCheckpointThreads(8);
         linglongdbProperties.setReplicaEnabled(false);
-        DatabaseProcessor databaseProcessor = new DatabaseProcessor(linglongdbProperties, replicationEventListener);
-        databaseProcessor.afterPropertiesSet();
+        DatabaseProcessor processor = new DatabaseProcessor(linglongdbProperties, replicationEventListener);
+        processor.afterPropertiesSet();
         final String indexName = "test";
-        DatabaseProcessor._Txn txn = databaseProcessor.new OpenTxn().process(null);
+        DatabaseProcessor._Txn txn = processor.new OpenTxn().process(null);
         for (int i = 0; i < 10; i++) {
-            databaseProcessor.new KeyValueInsert().process(new DatabaseProcessor._Options().txn(txn.txnId).indexName(indexName).key(String.valueOf(i).getBytes()).value(String.valueOf(i).getBytes()));
+            processor.new KeyValueInsert().process(processor.newOptions().txn(txn.txnId).indexName(indexName).key(String.valueOf(i).getBytes()).value(String.valueOf(i).getBytes()));
             System.out.println("数据库测试 步骤1 已写入 " + String.valueOf(i));
-            databaseProcessor.new IndexDelete().process(indexName);
+            processor.new IndexDelete().process(indexName);
             System.out.println("数据库测试 步骤2 删除索引(" + indexName + ")完成");
-            DatabaseProcessor._Options options = new DatabaseProcessor._Options().indexName(indexName);
-            databaseProcessor.new IndexCount().process(options);
+            DatabaseProcessor._Options options = processor.newOptions().indexName(indexName);
+            processor.new IndexCount().process(options);
             System.out.println("数据库测试 步骤3 索引数据大小(" + options.count + ")");
             Thread.sleep(1000L);
         }
-        databaseProcessor.new TxnCommitOrRollback().process(txn.commit());
-        databaseProcessor.destroy();
+        processor.new TxnCommitOrRollback().process(txn.commit());
+        processor.destroy();
     }
 }

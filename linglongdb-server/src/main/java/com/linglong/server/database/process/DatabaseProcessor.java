@@ -1,8 +1,6 @@
 package com.linglong.server.database.process;
 
-import com.linglong.base.concurrent.LatchCondition;
 import com.linglong.base.concurrent.RWLock;
-import com.linglong.base.io.OpenOption;
 import com.linglong.engine.config.DatabaseConfig;
 import com.linglong.engine.config.DurabilityMode;
 import com.linglong.engine.core.frame.Database;
@@ -41,8 +39,8 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     private DurabilityMode durabilityMode;
     private DatabaseConfig databaseConfig;
     private ReplicatorConfig replicatorConfig;
-    private DatabaseReplicator databaseReplicator;
     private LeaderCoordinator leaderCoordinator;
+    private DatabaseReplicator databaseReplicator;
     /* txnid ->  Transaction*/
     private final Map<Long, Transaction> transactionMap = new ConcurrentHashMap<>();
 
@@ -172,23 +170,28 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         return new _Txn().txnId(txnId).transaction(transactionMap.get(txnId));
     }
 
+    public _Options newOptions() {
+        return new _Options();
+    }
+
     public interface Processor<T, R> {
 
         R doProcess(T t) throws Exception;
 
         default R process(T t) throws Exception {
+            R r = null;
             try {
-                before();
-                return doProcess(t);
+                before(t);
+                return r = doProcess(t);
             } finally {
-                after();
+                after(r);
             }
         }
 
-        default void before() {
+        default void before(T t) {
         }
 
-        default void after() {
+        default void after(R r) {
         }
     }
 
@@ -301,8 +304,12 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     protected abstract class AbsIndexHandler implements Processor<_Options, Boolean> {
         @Override
         public Boolean doProcess(_Options options) throws Exception {
+            if (options == null) {
+                return Boolean.FALSE;
+            }
             final Index index = StringUtils.isBlank(options.indexName) ?
-                    null : (indexMap.containsKey(options.indexName) ? indexMap.get(options.indexName) : new OpenIndex().process(options));
+                    null : (indexMap.containsKey(options.indexName) ?
+                    indexMap.get(options.indexName) : new OpenIndex().process(options));
             if (index != null) {
                 Transaction txn;
                 if (options.newTxn) {
@@ -334,12 +341,12 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         }
 
         @Override
-        public void before() {
+        public void before(_Options options) {
             indexLock.acquireShared();
         }
 
         @Override
-        public void after() {
+        public void after(Boolean r) {
             indexLock.releaseShared();
         }
 
@@ -364,12 +371,12 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         }
 
         @Override
-        public void before() {
+        public void before(_IndexName indexName) {
             indexLock.upgrade();
         }
 
         @Override
-        public void after() {
+        public void after(Index index) {
             indexLock.downgrade();
         }
     }
@@ -391,12 +398,12 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         }
 
         @Override
-        public void before() {
+        public void before(_IndexName indexName) {
             indexLock.upgrade();
         }
 
         @Override
-        public void after() {
+        public void after(Index index) {
             indexLock.downgrade();
         }
     }
@@ -427,12 +434,12 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         }
 
         @Override
-        public void before() {
+        public void before(String[] names) {
             indexLock.acquireExclusive();
         }
 
         @Override
-        public void after() {
+        public void after(Void v) {
             indexLock.releaseExclusive();
         }
     }
@@ -476,8 +483,12 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
         @Override
         protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
-            index.store(txn, options.key, options.value);
-            return true;
+            if (options.key != null && options.value != null) {
+                index.store(txn, options.key, options.value);
+                return Boolean.TRUE;
+            } else {
+                return Boolean.FALSE;
+            }
         }
     }
 
@@ -488,7 +499,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
         @Override
         protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
-            return index.insert(txn, options.key, options.value);
+            return options.key != null && options.value != null ? index.insert(txn, options.key, options.value) : Boolean.FALSE;
         }
     }
 
@@ -499,7 +510,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
         @Override
         protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
-            return index.replace(txn, options.key, options.value);
+            return options.key != null ? index.replace(txn, options.key, options.value) : Boolean.FALSE;
         }
     }
 
@@ -510,7 +521,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
         @Override
         protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
-            return index.update(txn, options.key, options.oldValue, options.value);
+            return options.key != null ? index.update(txn, options.key, options.oldValue, options.value) : Boolean.FALSE;
         }
     }
 
@@ -521,7 +532,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
         @Override
         protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
-            return index.delete(txn, options.key);
+            return options.key != null ? index.delete(txn, options.key) : Boolean.FALSE;
         }
     }
 
@@ -532,7 +543,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
         @Override
         protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
-            return index.remove(txn, options.key, options.value);
+            return options.key != null && options.value != null ? index.remove(txn, options.key, options.value) : null;
         }
     }
 
@@ -543,8 +554,12 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
         @Override
         protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
-            options.oldValue(index.exchange(txn, options.key, options.value));
-            return true;
+            if (options.key != null && options.value != null) {
+                options.oldValue(index.exchange(txn, options.key, options.value));
+                return Boolean.TRUE;
+            } else {
+                return Boolean.FALSE;
+            }
         }
     }
 
@@ -555,7 +570,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
         @Override
         protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
-            return index.exists(txn, options.key);
+            return options.key != null ? index.exists(txn, options.key) : Boolean.FALSE;
         }
     }
 
@@ -566,8 +581,12 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
         @Override
         protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
-            options.value(index.load(txn, options.key));
-            return true;
+            if (options.key != null) {
+                options.value(index.load(txn, options.key));
+                return Boolean.TRUE;
+            } else {
+                return Boolean.FALSE;
+            }
         }
     }
 
@@ -606,12 +625,12 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         }
 
         @Override
-        public void before() {
+        public void before(String indexName) {
             indexLock.acquireShared();
         }
 
         @Override
-        public void after() {
+        public void after(Boolean r) {
             indexLock.releaseShared();
         }
     }
@@ -628,12 +647,12 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         }
 
         @Override
-        public void before() {
+        public void before(_Options options) {
             indexLock.acquireShared();
         }
 
         @Override
-        public void after() {
+        public void after(Index.Stats stats) {
             indexLock.releaseShared();
         }
     }
