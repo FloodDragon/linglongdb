@@ -50,7 +50,6 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     /* index name -> Index */
     private final Map<String, Index> indexMap = new HashMap<>();
 
-
     private LinglongdbProperties linglongdbProperties;
     private ReplicationEventListener replicationEventListener;
 
