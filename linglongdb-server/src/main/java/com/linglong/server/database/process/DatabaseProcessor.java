@@ -4,8 +4,8 @@ import com.linglong.base.concurrent.RWLock;
 import com.linglong.engine.config.DatabaseConfig;
 import com.linglong.engine.config.DurabilityMode;
 import com.linglong.engine.core.frame.Database;
-import com.linglong.engine.core.frame.Filter;
 import com.linglong.engine.core.frame.Index;
+import com.linglong.engine.core.frame.Scanner;
 import com.linglong.engine.core.tx.Transaction;
 import com.linglong.engine.event.ReplicationEventListener;
 import com.linglong.replication.DatabaseReplicator;
@@ -20,10 +20,12 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 
 import java.io.File;
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * 数据库处理器
@@ -157,13 +159,17 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         return durabilityMode;
     }
 
-    public Index findIndex(String indexName) throws Exception {
+    protected Index findIndex(String indexName) throws Exception {
         try {
             indexLock.acquireShared();
-            return StringUtils.isBlank(indexName) ? null : (indexMap.containsKey(indexName) ? indexMap.get(indexName) : new FindIndex().process(new _IndexName().indexName(indexName)));
+            return findIndex(new _IndexName().indexName(indexName));
         } finally {
             indexLock.releaseShared();
         }
+    }
+
+    private Index findIndex(_IndexName indexName) throws Exception {
+        return indexName == null || StringUtils.isBlank(indexName.idxName) ? null : (indexMap.containsKey(indexName.idxName) ? indexMap.get(indexName.idxName) : new FindIndex().process(indexName));
     }
 
     public _Txn findTxn(long txnId) throws Exception {
@@ -188,18 +194,24 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
             }
         }
 
-        default void before(T t) {
+        default void before(T t) throws Exception {
         }
 
-        default void after(R r) {
+        default void after(R r) throws Exception {
         }
     }
 
     public static class _IndexName {
-        String indexName;
+        String idxName;
+        String newName;
 
         public _IndexName indexName(String name) {
-            this.indexName = name;
+            this.idxName = name;
+            return this;
+        }
+
+        public _IndexName newName(String newName) {
+            this.newName = newName;
             return this;
         }
     }
@@ -238,13 +250,15 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         byte[] highKey;
         long count;
 
-        //新事务
+        //开启新事务
         boolean newTxn;
         //已开启事务
         Long openedTxnId;
         boolean openedTxn;
-        //驱逐
-        Filter filter;
+        //索引数据驱逐过滤
+        KeyValueEvictFilter evictFilter;
+        //索引数据扫描
+        Consumer<Map.Entry<byte[], byte[]>> scanConsumer;
 
         public _Options key(byte[] key) {
             this.key = key;
@@ -284,7 +298,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         }
 
         public _Options indexName(String name) {
-            super.indexName = name;
+            super.indexName(name);
             return this;
         }
 
@@ -295,21 +309,25 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
             return this;
         }
 
-        public _Options filter(Filter filter) {
-            this.filter = filter;
+        public _Options evict(KeyValueEvictFilter filter) {
+            this.evictFilter = filter;
+            return this;
+        }
+
+        public _Options scan(Consumer<Map.Entry<byte[], byte[]>> consumer) {
+            this.scanConsumer = consumer;
             return this;
         }
     }
 
     protected abstract class AbsIndexHandler implements Processor<_Options, Boolean> {
+
         @Override
         public Boolean doProcess(_Options options) throws Exception {
             if (options == null) {
                 return Boolean.FALSE;
             }
-            final Index index = StringUtils.isBlank(options.indexName) ?
-                    null : (indexMap.containsKey(options.indexName) ?
-                    indexMap.get(options.indexName) : new OpenIndex().process(options));
+            final Index index = getIndex(options);
             if (index != null) {
                 Transaction txn;
                 if (options.newTxn) {
@@ -341,13 +359,17 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         }
 
         @Override
-        public void before(_Options options) {
+        public void before(_Options options) throws Exception {
             indexLock.acquireShared();
         }
 
         @Override
-        public void after(Boolean r) {
+        public void after(Boolean r) throws Exception {
             indexLock.releaseShared();
+        }
+
+        protected Index getIndex(_IndexName indexName) throws Exception {
+            return findIndex(indexName);
         }
 
         protected abstract boolean doHandle(Index index, Transaction txn, _Options options) throws Exception;
@@ -359,12 +381,12 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     public class OpenIndex implements Processor<_IndexName, Index> {
         @Override
         public Index doProcess(_IndexName indexName) throws Exception {
-            if (StringUtils.isBlank(indexName.indexName)) {
+            if (indexName == null || StringUtils.isBlank(indexName.idxName)) {
                 return null;
             }
             Index idx;
-            if ((idx = indexMap.get(indexName.indexName)) == null) {
-                idx = database.openIndex(indexName.indexName);
+            if ((idx = indexMap.get(indexName.idxName)) == null) {
+                idx = database.openIndex(indexName.idxName);
                 indexMap.put(idx.getNameString(), idx);
             }
             return idx;
@@ -387,11 +409,11 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     public class FindIndex implements Processor<_IndexName, Index> {
         @Override
         public Index doProcess(_IndexName indexName) throws Exception {
-            if (StringUtils.isBlank(indexName.indexName)) {
+            if (indexName == null || StringUtils.isBlank(indexName.idxName)) {
                 return null;
             }
-            Index idx = indexMap.get(indexName.indexName);
-            if (idx == null && (idx = database.findIndex(indexName.indexName)) != null) {
+            Index idx = indexMap.get(indexName.idxName);
+            if (idx == null && (idx = database.findIndex(indexName.idxName)) != null) {
                 indexMap.put(idx.getNameString(), idx);
             }
             return idx;
@@ -490,12 +512,21 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
                 return Boolean.FALSE;
             }
         }
+
+        @Override
+        protected Index getIndex(_IndexName indexName) throws Exception {
+            Index index;
+            if ((index = super.getIndex(indexName)) == null) {
+                index = new OpenIndex().process(indexName);
+            }
+            return index;
+        }
     }
 
     /**
      * KV插入
      */
-    public class KeyValueInsert extends AbsIndexHandler {
+    public class KeyValueInsert extends KeyValueStore {
 
         @Override
         protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
@@ -605,11 +636,11 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     /**
      * 索引删除
      */
-    public class IndexDelete implements Processor<String, Boolean> {
+    public class IndexDelete implements Processor<_IndexName, Boolean> {
 
         @Override
-        public Boolean doProcess(String indexName) throws Exception {
-            Index index = StringUtils.isBlank(indexName) ? null : (indexMap.containsKey(indexName) ? indexMap.get(indexName) : new FindIndex().process(new _IndexName().indexName(indexName)));
+        public Boolean doProcess(_IndexName indexName) throws Exception {
+            final Index index = findIndex(indexName);
             if (index != null) {
                 try {
                     indexLock.upgrade();
@@ -625,7 +656,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         }
 
         @Override
-        public void before(String indexName) {
+        public void before(_IndexName indexName) {
             indexLock.acquireShared();
         }
 
@@ -642,7 +673,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
         @Override
         public Index.Stats doProcess(_Options options) throws Exception {
-            Index index = StringUtils.isBlank(options.indexName) ? null : (indexMap.containsKey(options.indexName) ? indexMap.get(options.indexName) : new FindIndex().process(options));
+            Index index = StringUtils.isBlank(options.idxName) ? null : (indexMap.containsKey(options.idxName) ? indexMap.get(options.idxName) : new FindIndex().process(options));
             return index != null ? index.analyze(options.lowKey, options.highKey) : null;
         }
 
@@ -664,7 +695,59 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
         @Override
         protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
-            options.count(index.evict(txn, options.lowKey, options.highKey, options.filter, true));
+            options.count(index.evict(txn, options.lowKey, options.highKey, options.evictFilter, true));
+            return Boolean.TRUE;
+        }
+    }
+
+    /**
+     * 索引重命名
+     */
+    public class IndexRename implements Processor<_IndexName, Boolean> {
+
+        @Override
+        public Boolean doProcess(_IndexName indexName) throws Exception {
+            final Index index = findIndex(indexName);
+            if (index != null && StringUtils.isNotBlank(indexName.newName)) {
+                try {
+                    indexLock.upgrade();
+                    indexMap.remove(indexName);
+                    database.renameIndex(index, indexName.newName);
+                    indexMap.put(indexName.newName, index);
+                } finally {
+                    indexLock.downgrade();
+                }
+                return Boolean.TRUE;
+            } else {
+                return Boolean.FALSE;
+            }
+        }
+
+        @Override
+        public void before(_IndexName indexName) {
+            indexLock.acquireShared();
+        }
+
+        @Override
+        public void after(Boolean r) {
+            indexLock.releaseShared();
+        }
+    }
+
+    /**
+     * 索引扫描
+     */
+    public class IndexKeyValueScan extends AbsIndexHandler {
+
+        @Override
+        protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
+            Scanner scanner = index.newScanner(txn);
+            scanner.scanAll((k, v) -> {
+                if (options.scanConsumer != null) {
+                    options.scanConsumer.accept(new AbstractMap.SimpleEntry<>(k, v));
+                }
+            });
+            scanner.close();
             return Boolean.TRUE;
         }
     }
