@@ -42,7 +42,7 @@ public class DatabaseProcessorTest {
         DatabaseProcessor processor = new DatabaseProcessor(linglongdbProperties, replicationEventListener);
         processor.afterPropertiesSet();
         final String indexName = "test";
-        DatabaseProcessor._Txn txn = processor.new OpenTxn().process(null);
+        _Txn txn = processor.new OpenTxn().process(null);
         for (int i = 0; i < 10000; i++) {
             processor.new KeyValueStore().process(processor.newOptions().txn(txn.txnId).indexName(indexName).key(toBytes(i)).value(String.valueOf(i).getBytes()));
             //Thread.sleep(1000L);
@@ -56,9 +56,9 @@ public class DatabaseProcessorTest {
             }
         }));
         System.out.println("数据库测试 步骤2 已扫描完成.");
-        processor.new IndexDelete().process(new DatabaseProcessor._IndexName().indexName(indexName));
+        processor.new IndexDelete().process(new _IndexName().indexName(indexName));
         System.out.println("数据库测试 步骤3 已删除索引(" + indexName + ")完成");
-        DatabaseProcessor._Options options = processor.newOptions().indexName(indexName);
+        _Options options = processor.newOptions().indexName(indexName);
         processor.new IndexCount().process(options);
         System.out.println("数据库测试 步骤4 索引数据长度大小(" + options.count + ")");
         processor.new TxnCommitOrRollback().process(txn.commit());
