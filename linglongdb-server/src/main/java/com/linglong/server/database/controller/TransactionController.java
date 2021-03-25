@@ -15,11 +15,11 @@ public class TransactionController extends AbsController implements TransactionP
     }
 
     @Override
-    public TxnResponse openTxn() {
+    public Response openTxn() {
         try {
             _Txn txn = databaseProcessor.new OpenTxn().process(null);
-            TxnResponse response = response(null, TxnResponse.class);
-            response.setTxnId(txn.getTxnId());
+            Response response = response(null, Response.class);
+            response.setXid(txn.getTxnId());
             return response;
         } catch (Exception ex) {
             LOGGER.error("open txn error", ex);

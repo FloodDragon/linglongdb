@@ -1,9 +1,6 @@
 package com.linglong.protocol;
 
-import com.linglong.protocol.message.TxnCommitResponse;
-import com.linglong.protocol.message.TxnRequest;
-import com.linglong.protocol.message.TxnResponse;
-import com.linglong.protocol.message.TxnRollbackResponse;
+import com.linglong.protocol.message.*;
 import com.linglong.rpc.common.service.IService;
 
 /**
@@ -11,7 +8,7 @@ import com.linglong.rpc.common.service.IService;
  */
 public interface TransactionProtocol extends IService {
 
-    TxnResponse openTxn();
+    Response openTxn();
 
     TxnCommitResponse commitTxn(TxnRequest request);
 

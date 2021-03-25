@@ -25,14 +25,14 @@ public class TestController {
 
         //执行数据库操作
         final String indexName = "index-test";
-        TxnResponse txnResponse = transactionProtocol.openTxn();
+        Response txnResponse = transactionProtocol.openTxn();
         for (int i = 0; i < 10; i++) {
             KeyValueRequest insertKeyValue = new KeyValueRequest();
             insertKeyValue.setId(new UUID(indexName).toString());
             insertKeyValue.setIndexName(indexName);
             insertKeyValue.setXid(txnResponse.getXid());
-            insertKeyValue.setKey(insertKeyValue.getKey());
-            insertKeyValue.setValue(insertKeyValue.getValue());
+            insertKeyValue.setKey(DatabaseProcessorTest.toBytes(i));
+            insertKeyValue.setValue(String.valueOf(i).getBytes());
             KeyValueResponse keyValueResponse = keyValueProtocol.insert(insertKeyValue);
             System.out.println("数据库测试 步骤0 写入" + i + (keyValueResponse.isSuccessful() ? "成功" : "失败"));
             Thread.sleep(1000L);
@@ -57,7 +57,7 @@ public class TestController {
 
         TxnRequest txnRequest = new TxnRequest();
         txnRequest.setId(new UUID(indexName).toString());
-        txnRequest.setTxnId(txnResponse.getTxnId());
+        txnRequest.setTxnId(txnResponse.getXid());
         TxnCommitResponse txnCommitResponse = transactionProtocol.commitTxn(txnRequest);
 
         System.out.println("数据库测试 步骤5 提交操作" + (txnCommitResponse.isCommited() ? "成功" : "失败"));

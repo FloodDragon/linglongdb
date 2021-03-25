@@ -1,9 +1,11 @@
 package com.linglong.protocol.message;
 
+import com.linglong.rpc.serialization.msgpack.BeanMessage;
+
 /**
  * @author Stereo on 2021/3/15.
  */
-public class KeyValueResponse extends Response {
+public class KeyValueResponse extends Response implements BeanMessage {
     /* 索引值 */
     private byte[] value;
     /* 是否成功 */

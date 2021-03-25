@@ -1,10 +1,12 @@
 package com.linglong.protocol.message;
 
 
+import com.linglong.rpc.serialization.msgpack.BeanMessage;
+
 /**
  * @author Stereo on 2021/3/15.
  */
-public class KeyValueRequest extends IndexRequest {
+public class KeyValueRequest extends IndexRequest implements BeanMessage {
     /* 索引键 */
     private byte[] key;
     /* 索引值 */

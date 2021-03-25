@@ -66,7 +66,7 @@ public class DatabaseProcessorTest {
         processor.destroy();
     }
 
-    private static byte[] toBytes(long num) {
+    public static byte[] toBytes(long num) {
         byte buf[] = new byte[8];
         buf[0] = (byte) (num >>> 56);
         buf[1] = (byte) (num >>> 48);
@@ -79,7 +79,7 @@ public class DatabaseProcessorTest {
         return buf;
     }
 
-    private static long toLong(byte[] bytes) {
+    public static long toLong(byte[] bytes) {
         return (((long) bytes[0] << 56) +
                 ((long) (bytes[1] & 255) << 48) +
                 ((long) (bytes[2] & 255) << 40) +
