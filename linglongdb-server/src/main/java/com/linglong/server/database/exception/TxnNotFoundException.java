@@ -3,7 +3,7 @@ package com.linglong.server.database.exception;
 /**
  * Created by liuj-ai on 2021/3/23.
  */
-public class TxnNotFoundException extends RuntimeException {
+public class TxnNotFoundException extends ProcessException {
 
     private Long txnId;
 

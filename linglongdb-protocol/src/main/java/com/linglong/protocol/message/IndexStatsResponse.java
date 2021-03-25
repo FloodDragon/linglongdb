@@ -1,9 +1,11 @@
 package com.linglong.protocol.message;
 
+import com.linglong.rpc.serialization.msgpack.BeanMessage;
+
 /**
  * @author Stereo on 2021/3/8.
  */
-public class IndexStatsResponse extends IndexRequest {
+public class IndexStatsResponse extends Response implements BeanMessage {
     private double entryCount;
     private double keyBytes;
     private double valueBytes;

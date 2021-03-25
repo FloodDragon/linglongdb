@@ -1,27 +1,18 @@
 package com.linglong.protocol.message;
 
-import com.linglong.protocol.Message;
+import com.linglong.rpc.serialization.msgpack.BeanMessage;
 
 /**
  * @author Stereo on 2021/3/8.
  */
-public class IndexRequest extends Message {
-    private long indexId;
-    private String name;
+public class IndexRequest extends Request implements BeanMessage {
+    private String indexName;
 
-    public long getIndexId() {
-        return indexId;
+    public String getIndexName() {
+        return indexName;
     }
 
-    public void setIndexId(long indexId) {
-        this.indexId = indexId;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    public void setIndexName(String indexName) {
+        this.indexName = indexName;
     }
 }

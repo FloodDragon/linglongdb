@@ -3,7 +3,7 @@ package com.linglong.server.database.exception;
 /**
  * Created by liuj-ai on 2021/3/22.
  */
-public class NotLeaderException extends RuntimeException {
+public class NotLeaderException extends ProcessException {
 
     public NotLeaderException() {
     }

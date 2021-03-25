@@ -1,11 +1,12 @@
 package com.linglong.server.utils;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
+import com.linglong.base.common.LocalHost;
+import com.linglong.rpc.common.utils.UUID;
+
+import java.io.*;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -15,8 +16,52 @@ import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
-
 public class MixAll {
+
+    private static String UUID_CODE;
+
+    static {
+        try {
+            UUID_CODE = LocalHost.getLocalHost().getHostName();
+        } catch (UnknownHostException e) {
+            UUID_CODE = null;
+        }
+    }
+
+    public static String getUUID() {
+        return new UUID(UUID_CODE).toString();
+    }
+
+    public static String parseThrowable(Throwable t) {
+        StringBuilder builder = new StringBuilder();
+        Writer writer = null;
+        PrintWriter printWriter = null;
+        try {
+            writer = new StringWriter();
+            printWriter = new PrintWriter(writer);
+            t.printStackTrace(printWriter);
+            printWriter.flush();
+            builder.append(writer.toString());
+            printWriter.close();
+            writer.close();
+        } catch (Exception e) {
+            return null;
+        } finally {
+            if (writer != null) {
+                try {
+                    writer.close();
+                } catch (Exception e) {
+                }
+            }
+            if (printWriter != null) {
+                try {
+                    printWriter.close();
+                } catch (Exception e) {
+                }
+            }
+        }
+        return builder.toString();
+    }
 
     public static boolean checkPowerOfTwo(long num) {
         if (num >= 2) {

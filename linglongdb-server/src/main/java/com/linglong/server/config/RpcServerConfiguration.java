@@ -1,16 +1,15 @@
 package com.linglong.server.config;
 
-import com.linglong.protocol.IndexProtocol;
-import com.linglong.protocol.TableProtocol;
 import com.linglong.rpc.common.config.Config;
 import com.linglong.rpc.common.service.IService;
 import com.linglong.rpc.server.RpcServiceServer;
+import com.linglong.server.database.controller.IndexController;
+import com.linglong.server.database.controller.KeyValueController;
+import com.linglong.server.database.controller.TransactionController;
 import com.linglong.server.database.process.DatabaseProcessor;
-import com.linglong.server.database.controller.TableControllerImpl;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import com.linglong.server.database.controller.IndexControllerImpl;
 
 import java.net.InetSocketAddress;
 
@@ -22,11 +21,12 @@ import java.net.InetSocketAddress;
 public class RpcServerConfiguration {
 
     @Bean
-    public IService[] services(DatabaseProcessor databaseProcessor) {
-        IndexProtocol indexProtocol = new IndexControllerImpl(databaseProcessor);
-        TableProtocol tableProtocol = new TableControllerImpl(databaseProcessor);
-        //TODO More
-        return new IService[]{tableProtocol, indexProtocol};
+    public IService[] services(DatabaseProcessor processor) {
+        return new IService[]{
+                new IndexController(processor),
+                new KeyValueController(processor),
+                new TransactionController(processor)
+        };
     }
 
     @Bean(initMethod = "start", destroyMethod = "stop")

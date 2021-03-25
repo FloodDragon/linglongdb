@@ -4,7 +4,8 @@ package com.linglong.server.database.exception;
  * Created by liuj-ai on 2021/3/22.
  */
 public enum ErrorCode {
-    INDEX_WRITE_PARAMETER_ERROR(90000, "write parameter error.");
+    SERVER_HANDLER_ERROR(90000, "server handler error."),
+    PARAMETER_ERROR(90001, "parameter error.");
 
     private int code;
     private String message;

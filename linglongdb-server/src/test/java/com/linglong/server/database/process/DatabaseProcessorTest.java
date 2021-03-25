@@ -28,7 +28,7 @@ public class DatabaseProcessorTest {
         });
 
         LinglongdbProperties linglongdbProperties = new LinglongdbProperties();
-        linglongdbProperties.setBaseDir("C:\\Users\\liuj-ai\\Desktop\\数据库开发\\node-0");
+        linglongdbProperties.setBaseDir("D:\\workspace\\linglongdb\\");
         linglongdbProperties.setPageSize(4096);
         linglongdbProperties.setMinCacheSize(100000000L);
         linglongdbProperties.setMaxCacheSize(100000000L);
@@ -43,9 +43,10 @@ public class DatabaseProcessorTest {
         processor.afterPropertiesSet();
         final String indexName = "test";
         _Txn txn = processor.new OpenTxn().process(null);
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 1000; i++) {
             processor.new KeyValueStore().process(processor.newOptions().txn(txn.txnId).indexName(indexName).key(toBytes(i)).value(String.valueOf(i).getBytes()));
-            //Thread.sleep(1000L);
+            System.out.println("数据库测试 步骤0 写入" + i);
+            Thread.sleep(1000L);
         }
         System.out.println("数据库测试 步骤1 已写入完成.");
 
@@ -65,7 +66,7 @@ public class DatabaseProcessorTest {
         processor.destroy();
     }
 
-    private static byte[] toBytes(long num) {
+    public static byte[] toBytes(long num) {
         byte buf[] = new byte[8];
         buf[0] = (byte) (num >>> 56);
         buf[1] = (byte) (num >>> 48);
@@ -78,7 +79,7 @@ public class DatabaseProcessorTest {
         return buf;
     }
 
-    private static long toLong(byte[] bytes) {
+    public static long toLong(byte[] bytes) {
         return (((long) bytes[0] << 56) +
                 ((long) (bytes[1] & 255) << 48) +
                 ((long) (bytes[2] & 255) << 40) +

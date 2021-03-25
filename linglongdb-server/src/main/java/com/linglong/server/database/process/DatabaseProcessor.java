@@ -167,6 +167,10 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         }
     }
 
+    public boolean existsIndex(String indexName) throws Exception {
+        return findIndex(indexName) != null;
+    }
+
     private Index findIndex(_IndexName indexName) throws Exception {
         return indexName == null || StringUtils.isBlank(indexName.idxName) ? null : (indexMap.containsKey(indexName.idxName) ? indexMap.get(indexName.idxName) : new FindIndex().process(indexName));
     }

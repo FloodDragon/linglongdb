@@ -1,11 +1,11 @@
 package com.linglong.protocol.message;
 
-import com.linglong.protocol.Message;
+import com.linglong.rpc.serialization.msgpack.BeanMessage;
 
 /**
  * @author Stereo on 2021/3/15.
  */
-public class WriteResponse extends Message {
+public class KeyValueResponse extends Response implements BeanMessage {
     /* 索引值 */
     private byte[] value;
     /* 是否成功 */
@@ -15,7 +15,7 @@ public class WriteResponse extends Message {
         return value;
     }
 
-    public WriteResponse setValue(byte[] value) {
+    public KeyValueResponse setValue(byte[] value) {
         this.value = value;
         return this;
     }
@@ -24,7 +24,7 @@ public class WriteResponse extends Message {
         return successful;
     }
 
-    public WriteResponse setSuccessful(boolean successful) {
+    public KeyValueResponse setSuccessful(boolean successful) {
         this.successful = successful;
         return this;
     }

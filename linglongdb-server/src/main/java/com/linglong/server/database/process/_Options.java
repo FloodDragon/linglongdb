@@ -89,4 +89,52 @@ public class _Options extends _IndexName {
         this.updater = updater;
         return this;
     }
+
+    public byte[] getKey() {
+        return key;
+    }
+
+    public byte[] getValue() {
+        return value;
+    }
+
+    public byte[] getOldValue() {
+        return oldValue;
+    }
+
+    public byte[] getLowKey() {
+        return lowKey;
+    }
+
+    public byte[] getHighKey() {
+        return highKey;
+    }
+
+    public long getCount() {
+        return count;
+    }
+
+    public boolean isNewTxn() {
+        return newTxn;
+    }
+
+    public Long getOpenedTxnId() {
+        return openedTxnId;
+    }
+
+    public boolean isOpenedTxn() {
+        return openedTxn;
+    }
+
+    public KeyValueUpdater getUpdater() {
+        return updater;
+    }
+
+    public KeyValueEvictFilter getEvictFilter() {
+        return evictFilter;
+    }
+
+    public Consumer<Map.Entry<byte[], byte[]>> getScanConsumer() {
+        return scanConsumer;
+    }
 }
