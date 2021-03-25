@@ -20,7 +20,8 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
             _Options options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .key(request.getKey())
-                    .value(request.getValue());
+                    .value(request.getValue())
+                    .txn(request.getXid());
             KeyValueResponse response = response(request, KeyValueResponse.class);
             response.setSuccessful(databaseProcessor.new KeyValueInsert().process(options));
             return response;
@@ -36,7 +37,8 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
             _Options options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .key(request.getKey())
-                    .value(request.getValue());
+                    .value(request.getValue())
+                    .txn(request.getXid());
             databaseProcessor.new KeyValueStore().process(options);
             return response(request, KeyValueResponse.class);
         } catch (Exception ex) {
@@ -51,7 +53,8 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
             _Options options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .key(request.getKey())
-                    .value(request.getValue());
+                    .value(request.getValue())
+                    .txn(request.getXid());
             KeyValueResponse response = response(request, KeyValueResponse.class);
             response.setSuccessful(databaseProcessor.new KeyValueReplace().process(options));
             return response;
@@ -68,7 +71,8 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
                     .indexName(request.getIndexName())
                     .key(request.getKey())
                     .value(request.getValue())
-                    .oldValue(request.getOldValue());
+                    .oldValue(request.getOldValue())
+                    .txn(request.getXid());
             KeyValueResponse response = response(request, KeyValueResponse.class);
             response.setSuccessful(databaseProcessor.new KeyValueUpdate().process(options));
             return response;
@@ -83,7 +87,8 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
         try {
             _Options options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
-                    .key(request.getKey());
+                    .key(request.getKey())
+                    .txn(request.getXid());
             KeyValueResponse response = response(request, KeyValueResponse.class);
             response.setSuccessful(databaseProcessor.new KeyValueDelete().process(options));
             return response;
@@ -99,7 +104,8 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
             _Options options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .key(request.getKey())
-                    .value(request.getValue());
+                    .value(request.getValue())
+                    .txn(request.getXid());
             KeyValueResponse response = response(request, KeyValueResponse.class);
             response.setSuccessful(databaseProcessor.new KeyValueRemove().process(options));
             return response;
@@ -115,7 +121,8 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
             _Options options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .key(request.getKey())
-                    .value(request.getValue());
+                    .value(request.getValue())
+                    .txn(request.getXid());
             KeyValueResponse response = response(request, KeyValueResponse.class);
             databaseProcessor.new KeyValueExchange().process(options);
             response.setValue(options.getOldValue());
@@ -131,7 +138,8 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
         try {
             _Options options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
-                    .key(request.getKey());
+                    .key(request.getKey())
+                    .txn(request.getXid());
             ExistsResponse response = response(request, ExistsResponse.class);
             response.setExists(databaseProcessor.new KeyValueExists().process(options));
             return response;
@@ -146,7 +154,8 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
         try {
             _Options options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
-                    .key(request.getKey());
+                    .key(request.getKey())
+                    .txn(request.getXid());
             KeyValueResponse response = response(request, KeyValueResponse.class);
             databaseProcessor.new KeyValueLoad().process(options);
             response.setValue(options.getValue());

@@ -87,7 +87,8 @@ public class IndexController extends AbsController implements IndexProtocol {
             _Options options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .lowKey(request.getLowKey())
-                    .highKey(request.getHighKey());
+                    .highKey(request.getHighKey())
+                    .txn(request.getXid());
             databaseProcessor.new IndexEvict().process(options);
             CountResponse response = response(request, CountResponse.class);
             response.setCount(options.getCount());

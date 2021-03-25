@@ -16,12 +16,7 @@ import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
-
 public class MixAll {
-
-    public static void main(String[] args) {
-        System.out.println(getUUID());
-    }
 
     private static String UUID_CODE;
 
