@@ -8,43 +8,15 @@ import com.linglong.rpc.common.service.IService;
  */
 public interface IndexProtocol extends IService {
 
-    /**
-     * 索引写操作
-     *
-     * @param request
-     * @return
-     */
-    WriteResponse write(WriteRequest request);
+    CountResponse count(KeyLowHighRequest request);
 
-    /**
-     * 索引读操作
-     *
-     * @param request
-     * @return
-     */
-    QueryResponse query(QueryRequest request);
+    IndexStatsResponse stats(KeyLowHighRequest request);
 
-    /**
-     * 索引销毁
-     *
-     * @param request
-     * @return
-     */
-    IndexDropResponse drop(IndexRequest request);
+    IndexDeleteResponse delete(IndexRequest request);
 
-    /**
-     * 索引修改名称
-     *
-     * @param request
-     * @return
-     */
+    ExistsResponse exists(IndexRequest request);
+
+    CountResponse evict(KeyLowHighRequest request);
+
     IndexRenameResponse rename(IndexRenameRequest request);
-
-    /**
-     * 索引状态
-     *
-     * @param request
-     * @return
-     */
-    IndexStatsResponse stats(IndexRequest request);
 }

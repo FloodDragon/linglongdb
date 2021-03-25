@@ -34,7 +34,7 @@ public class DatabaseProcessorTest {
         linglongdbProperties.setMaxCacheSize(100000000L);
         linglongdbProperties.setLockTimeout(10 * 1000L);
         linglongdbProperties.setCheckpointRate(1000);
-        linglongdbProperties.setDurabilityMode("NO_FLUSH");
+        linglongdbProperties.setDurabilityMode("SYNC");
         linglongdbProperties.setCheckpointSizeThreshold(1048576);
         linglongdbProperties.setCheckpointDelayThreshold(60000);
         linglongdbProperties.setMaxCheckpointThreads(8);
@@ -43,10 +43,10 @@ public class DatabaseProcessorTest {
         processor.afterPropertiesSet();
         final String indexName = "test";
         _Txn txn = processor.new OpenTxn().process(null);
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 1000; i++) {
             processor.new KeyValueStore().process(processor.newOptions().txn(txn.txnId).indexName(indexName).key(toBytes(i)).value(String.valueOf(i).getBytes()));
             System.out.println("数据库测试 步骤0 写入" + i);
-            //Thread.sleep(1000L);
+            Thread.sleep(1000L);
         }
         System.out.println("数据库测试 步骤1 已写入完成.");
 

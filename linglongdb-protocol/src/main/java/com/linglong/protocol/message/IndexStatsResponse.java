@@ -3,7 +3,7 @@ package com.linglong.protocol.message;
 /**
  * @author Stereo on 2021/3/8.
  */
-public class IndexStatsResponse extends IndexRequest {
+public class IndexStatsResponse extends Response {
     private double entryCount;
     private double keyBytes;
     private double valueBytes;

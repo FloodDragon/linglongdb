@@ -1,11 +1,9 @@
 package com.linglong.protocol.message;
 
-import com.linglong.protocol.Message;
-
 /**
  * @author Stereo on 2021/3/17.
  */
-public class IndexRenameResponse extends Message {
+public class IndexRenameResponse extends Response {
     private String newName;
     private boolean renamed;
 

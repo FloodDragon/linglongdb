@@ -1,4 +1,4 @@
-package com.linglong.protocol;
+package com.linglong.server.database.process;
 
 /**
  * @author Stereo on 2021/3/15.
@@ -24,7 +24,7 @@ public enum ProcessType {
     /* 加载值 */
     KV_LOAD((byte) 0x09),
     /* 统计总个数 */
-    KV_COUNT((byte) 0x10),
+    INDEX_COUNT((byte) 0x10),
     /* 索引销毁 */
     INDEX_DROP((byte) 0x11),
     /* 索引查找 */

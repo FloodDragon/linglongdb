@@ -29,4 +29,8 @@ public class _Txn {
         this.transaction = transaction;
         return this;
     }
+
+    public Long getTxnId() {
+        return txnId;
+    }
 }
