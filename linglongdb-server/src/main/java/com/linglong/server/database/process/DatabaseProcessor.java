@@ -43,10 +43,10 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     private ReplicatorConfig replicatorConfig;
     private LeaderCoordinator leaderCoordinator;
     private DatabaseReplicator databaseReplicator;
-    /* txnid ->  Transaction*/
-    private final Map<Long, Transaction> transactionMap = new ConcurrentHashMap<>();
-
+    private final RWLock txnLock = new RWLock();
     private final RWLock indexLock = new RWLock();
+    /* txnid ->  txn */
+    private final Map<Long, Transaction> txnMap = new HashMap<>();
     /* index name -> Index */
     private final Map<String, Index> indexMap = new HashMap<>();
 
@@ -176,7 +176,12 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     }
 
     public _Txn findTxn(long txnId) throws Exception {
-        return new _Txn().txnId(txnId).transaction(transactionMap.get(txnId));
+        try {
+            txnLock.acquireShared();
+            return new _Txn().txnId(txnId).transaction(txnMap.get(txnId));
+        } finally {
+            txnLock.releaseShared();
+        }
     }
 
     public _Options newOptions() {
@@ -357,8 +362,13 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         @Override
         public _Txn doProcess(DurabilityMode mode) throws Exception {
             Transaction transaction = mode == null ? database.newTransaction() : database.newTransaction(mode);
-            transactionMap.put(transaction.getId(), transaction);
-            return new _Txn().txnId(transaction.getId()).transaction(transaction);
+            try {
+                txnLock.acquireExclusive();
+                txnMap.put(transaction.getId(), transaction);
+                return new _Txn().txnId(transaction.getId()).transaction(transaction);
+            } finally {
+                txnLock.releaseExclusive();
+            }
         }
     }
 
@@ -368,7 +378,13 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     public class TxnCommitOrRollback implements Processor<_Txn, Boolean> {
         @Override
         public Boolean doProcess(_Txn txn) throws Exception {
-            Transaction transaction = transactionMap.remove(txn.txnId);
+            Transaction transaction;
+            try {
+                txnLock.acquireExclusive();
+                transaction = txnMap.remove(txn.txnId);
+            } finally {
+                txnLock.releaseExclusive();
+            }
             if (transaction != null) {
                 if (txn.willCommit) {
                     transaction.commit();
@@ -377,7 +393,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
                 }
                 return Boolean.TRUE;
             } else {
-                return Boolean.FALSE;
+                throw new TxnNotFoundException(txn.getTxnId());
             }
         }
     }
@@ -528,8 +544,9 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
             if (index != null) {
                 try {
                     indexLock.upgrade();
-                    database.deleteIndex(index);
-                    indexMap.remove(indexName);
+                    database.deleteIndex(index).run();
+                    indexMap.remove(indexName.idxName);
+                    database.openIndex(indexName.idxName).drop();
                 } finally {
                     indexLock.downgrade();
                 }
@@ -595,7 +612,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
             if (index != null && StringUtils.isNotBlank(indexName.newName)) {
                 try {
                     indexLock.upgrade();
-                    indexMap.remove(indexName);
+                    indexMap.remove(indexName.idxName);
                     database.renameIndex(index, indexName.newName);
                     indexMap.put(indexName.newName, index);
                 } finally {
