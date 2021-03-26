@@ -15,6 +15,7 @@ import com.linglong.replication.confg.ReplicatorConfig;
 import com.linglong.server.config.LinglongdbProperties;
 import com.linglong.server.database.exception.TxnNotFoundException;
 import com.linglong.server.utils.MixAll;
+import com.linglong.server.utils.WaitNotifyObject;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.DisposableBean;
@@ -22,7 +23,8 @@ import org.springframework.beans.factory.InitializingBean;
 
 import java.io.File;
 import java.util.AbstractMap;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -35,20 +37,28 @@ import java.util.concurrent.TimeUnit;
 public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
     private final static String LINGLONGDB_DATA = "data";
+    /* 数据库角色 */
     private Role role;
+    /* 数据库基础文件目录 */
     private File baseFile;
     private Database database;
+    /* 持久模式 */
     private DurabilityMode durabilityMode;
     private DatabaseConfig databaseConfig;
     private ReplicatorConfig replicatorConfig;
+    /* 领导节点协调器 */
     private LeaderCoordinator leaderCoordinator;
+    /* 数据库复制器 */
     private DatabaseReplicator databaseReplicator;
+    /* 事务、索引锁 */
     private final RWLock txnLock = new RWLock();
     private final RWLock indexLock = new RWLock();
-    /* txnid ->  txn */
-    private final Map<Long, Transaction> txnMap = new HashMap<>();
-    /* index name -> Index */
-    private final Map<String, Index> indexMap = new HashMap<>();
+    /* idxname -> Index */
+    private final Map<String, Index> indexMap = new LinkedHashMap<>();
+    /* txnid ->  Transaction */
+    private final Map<Long, Transaction> txnMap = new LinkedHashMap<>();
+    /* pid -> ProcessIterator */
+    private final Map<String, ProcessIterator<Map.Entry<byte[], byte[]>>> processIteratorMap = new ConcurrentHashMap<>();
 
     private LinglongdbProperties linglongdbProperties;
     private ReplicationEventListener replicationEventListener;
@@ -186,27 +196,6 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
     public _Options newOptions() {
         return new _Options();
-    }
-
-    public interface Processor<T, R> {
-
-        R doProcess(T t) throws Exception;
-
-        default R process(T t) throws Exception {
-            R r = null;
-            try {
-                before(t);
-                return r = doProcess(t);
-            } finally {
-                after(r);
-            }
-        }
-
-        default void before(T t) throws Exception {
-        }
-
-        default void after(R r) throws Exception {
-        }
     }
 
     protected abstract class AbsIndexHandler implements Processor<_Options, Boolean> {
@@ -642,13 +631,30 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
         @Override
         protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
-            Scanner scanner = index.newScanner(txn);
-            scanner.scanAll((k, v) -> {
-                if (options.scanConsumer != null) {
-                    options.scanConsumer.accept(new AbstractMap.SimpleEntry<>(k, v));
-                }
-            });
-            scanner.close();
+            if (StringUtils.isNotBlank(options.pid)) {
+                processIteratorMap.get(options.pid);
+            } else {
+                ProcessIterator<Map.Entry<byte[], byte[]>> processIterator = new ProcessIterator<>(new ProcessFuture<Map.Entry<byte[], byte[]>>() {
+                    @Override
+                    boolean isDone() {
+                        return false;
+                    }
+
+                    @Override
+                    Map.Entry<byte[], byte[]> get() {
+                        return null;
+                    }
+
+                    @Override
+                    public Map.Entry<byte[], byte[]> doProcess(Void aVoid) throws Exception {
+                        Scanner scanner = index.newScanner(txn);
+                        scanner.scanAll((k, v) -> {
+                            waitForRunning(100);
+                        });
+                        return null;
+                    }
+                });
+            }
             return Boolean.TRUE;
         }
     }

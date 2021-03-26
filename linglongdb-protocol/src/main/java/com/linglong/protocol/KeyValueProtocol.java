@@ -79,4 +79,12 @@ public interface KeyValueProtocol extends IService {
      * @return
      */
     KeyValueResponse load(KeyValueRequest request);
+
+
+    /**
+     * kv索引扫描
+     *
+     * @param request
+     */
+    IndexScanResponse scan(IndexScanRequest request);
 }

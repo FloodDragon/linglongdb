@@ -165,4 +165,9 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
             return response(request, KeyValueResponse.class, ex);
         }
     }
+
+    @Override
+    public IndexScanResponse scan(IndexScanRequest request) {
+        return null;
+    }
 }

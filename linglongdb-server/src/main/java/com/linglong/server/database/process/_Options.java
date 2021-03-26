@@ -13,6 +13,7 @@ public class _Options extends _IndexName {
     byte[] lowKey;
     byte[] highKey;
     long count;
+    String pid;
 
     //开启新事务
     boolean newTxn;
@@ -87,6 +88,11 @@ public class _Options extends _IndexName {
 
     public _Options updater(KeyValueUpdater updater) {
         this.updater = updater;
+        return this;
+    }
+
+    public _Options pid(String pid) {
+        this.pid = pid;
         return this;
     }
 
