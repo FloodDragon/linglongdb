@@ -1,5 +1,6 @@
 package com.linglong.server.database.process;
 
+import com.linglong.base.common.EntryConsumer;
 import com.linglong.base.concurrent.RWLock;
 import com.linglong.engine.config.DatabaseConfig;
 import com.linglong.engine.config.DurabilityMode;
@@ -15,16 +16,15 @@ import com.linglong.replication.confg.ReplicatorConfig;
 import com.linglong.server.config.LinglongdbProperties;
 import com.linglong.server.database.exception.TxnNotFoundException;
 import com.linglong.server.utils.MixAll;
-import com.linglong.server.utils.WaitNotifyObject;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -634,26 +634,21 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
             if (StringUtils.isNotBlank(options.pid)) {
                 processIteratorMap.get(options.pid);
             } else {
-                ProcessIterator<Map.Entry<byte[], byte[]>> processIterator = new ProcessIterator<>(new ProcessFuture<Map.Entry<byte[], byte[]>>() {
+//                Scanner scanner = index.newScanner(txn);
+//                scanner.scanAll((k, v) -> {waitForRunning(100);});
+                ProcessIterator<Map.Entry<byte[], byte[]>> processIterator = new ProcessIterator<Map.Entry<byte[], byte[]>>() {
                     @Override
-                    boolean isDone() {
-                        return false;
-                    }
-
-                    @Override
-                    Map.Entry<byte[], byte[]> get() {
-                        return null;
-                    }
-
-                    @Override
-                    public Map.Entry<byte[], byte[]> doProcess(Void aVoid) throws Exception {
+                    protected void done() throws Exception {
                         Scanner scanner = index.newScanner(txn);
-                        scanner.scanAll((k, v) -> {
-                            waitForRunning(100);
-                        });
-                        return null;
+                        scanner.scanAll((k, v) -> apply(k, v));
                     }
-                });
+
+                    @Override
+                    protected Map.Entry<byte[], byte[]> apply(byte[] key, byte[] value) {
+                        return new AbstractMap.SimpleEntry<>(key, value);
+                    }
+                };
+
             }
             return Boolean.TRUE;
         }

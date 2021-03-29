@@ -1,52 +1,40 @@
 package com.linglong.server.database.process;
 
 import com.linglong.server.utils.Actor;
-import com.linglong.server.utils.Daemon;
-import com.linglong.server.utils.WaitNotifyObject;
 
+import java.util.AbstractMap;
 import java.util.Iterator;
+import java.util.Map;
 
 /**
  * 迭代处理器
  * <p>
  * Created by liuj-ai on 2021/3/26.
  */
-public class ProcessIterator<R> extends Actor implements Iterator<R> {
+public abstract class ProcessIterator<R> extends Actor implements Iterator<R> {
 
-    private ProcessFuture<R> future;
     private Exception exception;
 
-    public ProcessIterator(ProcessFuture<R> future) {
-        this.future = future;
-        new Daemon(this).start();
+    public ProcessIterator() {
     }
 
     @Override
     protected void doAct() throws InterruptedException {
-        try {
-            future.process(null);
-        } catch (Exception ex) {
-            this.exception = ex;
-        } finally {
-            stop();
-        }
+
     }
 
     @Override
     public boolean hasNext() {
-        return !future.isDone();
+        return false;
     }
+
+    protected abstract void done() throws Exception;
+
+    protected abstract R apply(byte[] key, byte[] value);
 
     @Override
     public R next() {
-        return future.get();
-    }
 
-    public ProcessFuture<R> getFuture() {
-        return future;
-    }
-
-    public Exception getException() {
-        return exception;
+        return null;
     }
 }
