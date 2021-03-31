@@ -1,6 +1,5 @@
 package com.linglong.server.database.process;
 
-import com.linglong.base.common.EntryConsumer;
 import com.linglong.base.concurrent.RWLock;
 import com.linglong.engine.config.DatabaseConfig;
 import com.linglong.engine.config.DurabilityMode;
@@ -28,6 +27,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * 数据库处理器
@@ -58,7 +59,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     /* txnid ->  Transaction */
     private final Map<Long, Transaction> txnMap = new LinkedHashMap<>();
     /* pid -> ProcessIterator */
-    private final Map<String, ProcessIterator<Map.Entry<byte[], byte[]>>> processIteratorMap = new ConcurrentHashMap<>();
+    private final Map<String, ProcessIterator> processIteratorMap = new ConcurrentHashMap<>();
 
     private LinglongdbProperties linglongdbProperties;
     private ReplicationEventListener replicationEventListener;
@@ -625,32 +626,42 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     }
 
     /**
-     * 索引扫描
+     * 索引扫描(返回是否还有可扫描数据)
      */
     public class IndexKeyValueScan extends AbsIndexHandler {
 
         @Override
         protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
+            ProcessIterator iterator;
+            Function<Map.Entry<byte[], byte[]>, Boolean> scanFunc = options.getScanFunc();
             if (StringUtils.isNotBlank(options.pid)) {
-                processIteratorMap.get(options.pid);
+                iterator = processIteratorMap.get(options.pid);
             } else {
-//                Scanner scanner = index.newScanner(txn);
-//                scanner.scanAll((k, v) -> {waitForRunning(100);});
-                ProcessIterator<Map.Entry<byte[], byte[]>> processIterator = new ProcessIterator<Map.Entry<byte[], byte[]>>() {
+                final Scanner scanner = index.newScanner(txn);
+                iterator = new ProcessIterator() {
                     @Override
-                    protected void done() throws Exception {
-                        Scanner scanner = index.newScanner(txn);
-                        scanner.scanAll((k, v) -> apply(k, v));
-                    }
-
-                    @Override
-                    protected Map.Entry<byte[], byte[]> apply(byte[] key, byte[] value) {
-                        return new AbstractMap.SimpleEntry<>(key, value);
+                    protected void done(ProcessIteratorFunction function) throws Exception {
+                        scanner.scanAll((k, v) -> function.apply(k, v));
                     }
                 };
-
+                processIteratorMap.put(iterator.getId(), iterator);
+                options.pid(iterator.getId());
             }
-            return Boolean.TRUE;
+            //进行数据库扫描
+            if (iterator != null && scanFunc != null) {
+                while (iterator.hasNext()) {
+                    Map.Entry<byte[], byte[]> entry = iterator.next();
+                    Boolean continued = scanFunc.apply(entry);
+                    if (continued) {
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
+                return iterator.hasNext();
+            } else {
+                return false;
+            }
         }
     }
 
