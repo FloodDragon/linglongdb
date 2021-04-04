@@ -43,12 +43,12 @@ public class DatabaseProcessorTest {
         DatabaseProcessor processor = new DatabaseProcessor(linglongdbProperties, replicationEventListener);
         processor.afterPropertiesSet();
         final String indexName = "test";
-        for (int j = 0; j < 5; j++) {
+        for (int j = 0; j < 1000; j++) {
             _Txn txn = processor.new OpenTxn().process(null);
             for (int i = 0; i < 5; i++) {
                 processor.new KeyValueStore().process(processor.newOptions().txn(txn.txnId).indexName(indexName).key(toBytes(i)).value(String.valueOf(i).getBytes()));
                 System.out.println("数据库测试 步骤0 写入" + i);
-                Thread.sleep(1000L);
+                Thread.sleep(100L);
             }
             System.out.println("数据库测试 步骤1 已写入完成.");
 
@@ -66,7 +66,6 @@ public class DatabaseProcessorTest {
             processor.new IndexCount().process(options);
             System.out.println("数据库测试 步骤4 索引数据长度大小(" + options.count + ")");
             processor.new TxnCommitOrRollback().process(txn.commit());
-
         }
         processor.destroy();
     }

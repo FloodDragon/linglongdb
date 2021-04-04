@@ -22,7 +22,7 @@ public abstract class ProcessIterator extends Actor implements Iterator<Map.Entr
     }
 
     private String id;
-    private volatile boolean hasNext;
+    private volatile boolean isDone;
     protected final RWLock rwLock = new RWLock();
     private final Queue<Map.Entry<byte[], byte[]>> queue;
     private final LatchCondition notEmpty = new LatchCondition();
@@ -54,15 +54,15 @@ public abstract class ProcessIterator extends Actor implements Iterator<Map.Entr
         try {
             rwLock.acquireExclusive();
             this.started.signal();
-            this.hasNext = true;
+            this.isDone = true;
             done((k, v) -> apply(k, v));
-            while (queue.size() != 0) {
+            this.isDone = false;
+            while (!queue.isEmpty()) {
                 notFull.await(rwLock);
             }
         } catch (Exception e) {
             LOGGER.error("do act error.", e);
         } finally {
-            this.hasNext = false;
             super.stop();
             rwLock.releaseExclusive();
         }
@@ -88,7 +88,7 @@ public abstract class ProcessIterator extends Actor implements Iterator<Map.Entr
     public boolean hasNext() {
         try {
             rwLock.acquireShared();
-            return this.hasNext;
+            return !this.isDone && !queue.isEmpty();
         } finally {
             rwLock.releaseShared();
         }
@@ -118,23 +118,5 @@ public abstract class ProcessIterator extends Actor implements Iterator<Map.Entr
 
     public String getId() {
         return id;
-    }
-
-    public static void main(String[] args) throws InterruptedException {
-        ProcessIterator iterator = new ProcessIterator() {
-            @Override
-            protected void done(ProcessIteratorFunction function) throws Exception {
-                for (int i = 0; i < 100; i++) {
-                    byte[] bytes = String.valueOf(i).getBytes();
-                    function.apply(bytes, bytes);
-                    System.out.println("生产 " + i);
-                }
-            }
-        };
-        while (iterator.hasNext()) {
-            Map.Entry<byte[], byte[]> entry = iterator.next();
-            System.out.println("消费 -> key=" + new String(entry.getKey()) + " value=" + new String(entry.getValue()));
-        }
-        System.out.println("测试执行结束");
     }
 }
