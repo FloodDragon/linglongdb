@@ -17,18 +17,26 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * 远程调用代理
+ *
  * @author Stereo on 2019/12/10.
  */
 public final class RemoteProxy implements InvocationHandler {
 
     private static Logger LOG = LoggerFactory.getLogger(RemoteProxy.class);
-    private ClientProxy clientProxy;
     private Class<?> _type;
+    private ClientProxy clientProxy;
+    private DataStreamListener dataStreamListener;
     private WeakHashMap<Method, String> _mangleMap = new WeakHashMap<Method, String>();
 
+
     public RemoteProxy(ClientProxy proxy, Class<?> type) {
+        this(proxy, type, null);
+    }
+
+    public RemoteProxy(ClientProxy proxy, Class<?> type, DataStreamListener dataStreamListener) {
         this.clientProxy = proxy;
         this._type = type;
+        this.dataStreamListener = dataStreamListener;
     }
 
     @Override
@@ -63,20 +71,21 @@ public final class RemoteProxy implements InvocationHandler {
                     _mangleMap.put(method, mangleName);
                 }
             }
-            //build packet
+            //构建消息体
             final Packet packet = Packet.packetRequest(_type.getName(), method.getName(), method.getReturnType(), args);
             //发送请求
-            AsyncFuture<Packet> future = clientProxy.sendPacket(packet);
+            AsyncFuture<Packet> future = clientProxy.sendPacket(packet, dataStreamListener);
             try {
-                Object resultPacket = future.get(getClientProxy().getConfig().getReadTimeout(), TimeUnit.MILLISECONDS);
+                Object resultPacket = dataStreamListener == null ? future.get(getClientProxy().getConfig().getReadTimeout(), TimeUnit.MILLISECONDS) : future.get();
                 //响应结果
                 return receiveResponse((Packet) resultPacket);
             } catch (InterruptedException | TimeoutException ex) {
                 future.done(null);
                 throw new RpcException("ClientProxy >>> read packet timeout " + "packet : " + packet);
             }
-        } else
+        } else {
             throw new RpcException("ClientProxy >>> state is not started");
+        }
     }
 
     private Object receiveResponse(Packet response) throws RpcException {

@@ -1,6 +1,8 @@
 package com.linglong.rpc.test;
 
+import com.linglong.rpc.server.skeleton.service.DataStreamTransfer;
 import com.linglong.rpc.server.skeleton.service.Service;
+import com.linglong.rpc.server.skeleton.service.ServiceContext;
 import com.linglong.rpc.test.protocol.Test;
 import com.linglong.rpc.test.protocol.TestService;
 
@@ -16,6 +18,16 @@ public class TestServiceImpl extends Service implements TestService {
 
     @Override
     public Test test(Test test) {
+        DataStreamTransfer dataStreamTransfer = ServiceContext.getDataStreamTransfer();
+        for (int i = 0; i < 10; i++) {
+            try {
+                dataStreamTransfer.transferTo(String.valueOf(i));
+                Thread.sleep(100);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println("DataStreamTransfer = " + dataStreamTransfer);
         System.out.println(" 处理次数 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  " + counter.incrementAndGet());
         test.setCode(1);
         test.setMsg("返回=1");

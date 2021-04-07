@@ -4,6 +4,7 @@ package com.linglong.rpc.client;
 import com.linglong.rpc.common.codec.MsgPackDecoder;
 import com.linglong.rpc.common.codec.MsgPackEncoder;
 import com.linglong.rpc.common.config.Config;
+import com.linglong.rpc.common.config.Constants;
 import com.linglong.rpc.exception.RpcException;
 import com.linglong.rpc.common.life.AbstractService;
 import com.linglong.rpc.common.protocol.Packet;
@@ -28,6 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -288,7 +291,11 @@ public abstract class AbstractClient extends AbstractService implements Client, 
     }
 
     protected <T extends Packet> AsyncFuture<T> sendPacket(T packet) throws RpcException {
-        AsyncFuture<T> future = buildFuture(packet);
+        return sendPacket(packet, null);
+    }
+
+    protected <T extends Packet> AsyncFuture<T> sendPacket(T packet, DataStreamListener dataStreamListener) throws RpcException {
+        AsyncFuture<T> future = buildFuture(packet, dataStreamListener);
         try {
             if (!isClosed()) {
                 send(packet, true);
@@ -302,7 +309,7 @@ public abstract class AbstractClient extends AbstractService implements Client, 
         }
     }
 
-    protected <T extends Packet> AsyncFuture<T> buildFuture(final T packet) throws RpcException {
+    protected <T extends Packet> AsyncFuture<T> buildFuture(final T packet, DataStreamListener dataStreamListener) throws RpcException {
         if (packet != null && removeCallBack(packet.getId()) == null) {
             final String id = packet.getId();
             final Class<?> clz = packet.getClass();
@@ -316,7 +323,11 @@ public abstract class AbstractClient extends AbstractService implements Client, 
 
                 @Override
                 public void call(T value) {
-                    future.done(value);
+                    if (dataStreamListener != null && Constants.TYPE_DATA_STREAM == value.getType()) {
+                        dataStreamListener.streaming(value.getResult());
+                    } else {
+                        future.done(value);
+                    }
                 }
             };
             setCallback(id, callback);

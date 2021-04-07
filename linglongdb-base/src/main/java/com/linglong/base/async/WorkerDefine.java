@@ -42,20 +42,17 @@ public class WorkerDefine<T, V> {
         forParamUseDefines.put(id, this);
         long now = SystemClock.now();
         if (remainTime <= 0) {
-            System.out.println("WorkerDefine.work 1");
             fastFail(INIT, null);
             beginNext(executorService, now, remainTime);
             return;
         }
         if (getState() == FINISH || getState() == ERROR) {
-            System.out.println("WorkerDefine.work 2");
             beginNext(executorService, now, remainTime);
             return;
         }
 
         if (needCheckNextDefineResult) {
             if (!checkNextDefineResult()) {
-                System.out.println("WorkerDefine.work 3");
                 fastFail(INIT, new SkippedException());
                 beginNext(executorService, now, remainTime);
                 return;
@@ -63,18 +60,15 @@ public class WorkerDefine<T, V> {
         }
 
         if (workerDepends == null || workerDepends.size() == 0) {
-            System.out.println("WorkerDefine.work 4");
             fire();
             beginNext(executorService, now, remainTime);
             return;
         }
 
         if (workerDepends.size() == 1) {
-            System.out.println("WorkerDefine.work 5");
             doDependsOneJob(fromDefine);
             beginNext(executorService, now, remainTime);
         } else {
-            System.out.println("WorkerDefine.work 6");
             doDependsJobs(executorService, workerDepends, fromDefine, now, remainTime);
         }
     }

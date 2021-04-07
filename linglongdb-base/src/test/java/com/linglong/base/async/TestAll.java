@@ -22,7 +22,7 @@ public class TestAll {
         //test_8();
         //test_9();
         //test_10();
-        test_11();
+        test_7();
 //        testMultiReverse();
 //        testMultiError2();
 //        testMulti3();
@@ -327,9 +327,15 @@ public class TestAll {
 
         Worker2 w2 = new Worker2();
         w2.setSleepTime(2000);
-
         Worker3 w3 = new Worker3();
+
         //0执行完,同时1和2, 1和2都完成后执行3，2耗时2秒，1耗时1秒。3会等待2完成
+        WorkerDefine<String, String> WorkerDefine_11 = new WorkerDefine.Builder<String, String>()
+                .worker(w)
+                .callback(w)
+                .param("11")
+                .build();
+
         WorkerDefine<String, String> WorkerDefine = new WorkerDefine.Builder<String, String>()
                 .worker(w)
                 .callback(w)
@@ -362,7 +368,7 @@ public class TestAll {
         System.out.println("begin-" + now);
 
         //正常完毕
-        Async.submitWork(4100, WorkerDefine);
+        Async.submitWork(60 * 1000, WorkerDefine);
         //3会超时
 //        Async.submitWork(3100, WorkerDefine);
         //2,3会超时

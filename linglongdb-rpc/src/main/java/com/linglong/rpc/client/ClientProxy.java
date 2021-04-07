@@ -1,7 +1,6 @@
 package com.linglong.rpc.client;
 
 
-
 import com.linglong.rpc.common.bytecode.Proxy;
 import com.linglong.rpc.common.config.Config;
 
@@ -10,6 +9,7 @@ import java.lang.reflect.InvocationHandler;
 /**
  * RPC客户端代理
  * <p>
+ *
  * @author Stereo on 2019/12/10.
  */
 public class ClientProxy extends AbstractClient {
@@ -34,7 +34,15 @@ public class ClientProxy extends AbstractClient {
     }
 
     public <T> T create(Class<T> api, ClassLoader classLoader) {
-        InvocationHandler invocationHandler = new RemoteProxy(this, api);
+        return create(api, classLoader, null);
+    }
+
+    public <T> T create(final Class<T> api, DataStreamListener dataStreamListener) {
+        return create(api, loader, dataStreamListener);
+    }
+
+    public <T> T create(Class<T> api, ClassLoader classLoader, DataStreamListener dataStreamListener) {
+        InvocationHandler invocationHandler = new RemoteProxy(this, api, dataStreamListener);
         return (T) Proxy.getProxy(classLoader, new Class[]{api}).newInstance(invocationHandler);
     }
 }

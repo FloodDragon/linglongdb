@@ -3,6 +3,7 @@ package com.linglong.rpc.server.skeleton.service;
 import com.linglong.rpc.common.config.Config;
 import com.linglong.rpc.common.config.Constants;
 import com.linglong.rpc.common.event.Event;
+import com.linglong.rpc.common.protocol.Packet;
 import com.linglong.rpc.exception.RpcException;
 import com.linglong.rpc.common.life.AbstractService;
 import com.linglong.rpc.common.remoting.Channel;
@@ -83,21 +84,30 @@ public class ServiceHandler extends AbstractService implements ServiceEventHandl
 
     @Override
     public void handleRequest(RequestEvent request) throws Exception {
-        handlerPool.execute(() -> {
-            ServiceContext.begin(request.getTarget(), request.getChannel());
-            try {
-                //创建服务调用
-                ServiceCall call = new ServiceCall(request.getTarget());
-                //执行调用
-                serviceInvoker.invoke(call);
-                //清理调用入参数据
-                call.cleanArguments();
-                //响应结果
-                replyResponse(new ResponseEvent(request.getTarget(), request.getChannel()));
-            } catch (Exception ex) {
-                LOG.error("service handler request handle failed, request packet:{} ", request.getTarget(), ex);
-            } finally {
-                ServiceContext.end();
+        handlerPool.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    final DataStreamTransfer dataStreamTransfer = new DataStreamTransfer() {
+                        @Override
+                        public void transferTo(Object data) throws Exception {
+                            replyResponse(new ResponseEvent(Packet.packetAsyncMessage(request.getTarget(), data), request.getChannel()));
+                        }
+                    };
+                    ServiceContext.begin(request.getTarget(), request.getChannel(), dataStreamTransfer);
+                    //创建服务调用
+                    ServiceCall call = new ServiceCall(request.getTarget());
+                    //执行调用
+                    serviceInvoker.invoke(call);
+                    //清理调用入参数据
+                    call.cleanArguments();
+                    //响应结果
+                    replyResponse(new ResponseEvent(request.getTarget(), request.getChannel()));
+                } catch (Exception ex) {
+                    LOG.error("service handler request handle failed, request packet:{} ", request.getTarget(), ex);
+                } finally {
+                    ServiceContext.end();
+                }
             }
         });
     }

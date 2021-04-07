@@ -185,4 +185,18 @@ public final class Packet implements BeanMessage {
         UUID uuid = new UUID(heartbeat.getClient_id());
         return new Packet(uuid.toString(), type, Constants.STATUS_PENDING, heartbeat);
     }
+
+    public static Packet packetAsyncMessage(Packet request, Object result) {
+        Packet newPacket = new Packet();
+        newPacket.id = request.id;
+        newPacket.type = Constants.TYPE_DATA_STREAM;
+        newPacket.state = Constants.STATUS_SUCCESS_ASYNC_MESSAGE;
+        newPacket.interfaceName = request.interfaceName;
+        newPacket.method = request.method;
+        newPacket.result = result;
+        if (result != null) {
+            newPacket.returnType = result.getClass();
+        }
+        return newPacket;
+    }
 }

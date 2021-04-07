@@ -124,12 +124,13 @@ public class RpcServiceHandler extends ChannelInboundHandlerAdapter implements C
                 switch (type) {
                     case Constants.TYPE_REQUEST:
                         serviceHandler.handleRequest(new RequestEvent(packet, channel));
-                        //dispatcher.getEventHandler().handle(new RequestEvent(packet, ctx));
                         break;
                     case Constants.TYPE_RESPONSE:
-                        // 不支持
-                        // dispatcher.getEventHandler().handle(new ResponseEvent(packet, ctx));
-                        throw new RpcException("this operation is not supported");
+                        //不支持
+                        throw new RpcException("rpc server received <RESPONSE> operation is not supported");
+                    case Constants.TYPE_DATA_STREAM:
+                        //不支持
+                        throw new RpcException("rpc server received <TYPE_ASYNC_MESSAGE> operation is not supported");
                     case Constants.TYPE_HEARTBEAT_REQUEST_REGISTER:
                         dispatcher.getEventHandler().handle(new HeartbeatEvent(HeartbeatEnum.REGISTER, channel, packet));
                         break;
@@ -143,7 +144,7 @@ public class RpcServiceHandler extends ChannelInboundHandlerAdapter implements C
                         LOG.error("RpcServiceHandler received error message:{} ", message);
                 }
             } else
-                LOG.error("RpcServiceHandler.channelRead error message:{}", message);
+                LOG.error("RpcServiceHandler channelRead error message:{}", message);
         } catch (Exception e) {
             LOG.error("RpcServiceHandler handle packet:{} error", message, e);
         }
