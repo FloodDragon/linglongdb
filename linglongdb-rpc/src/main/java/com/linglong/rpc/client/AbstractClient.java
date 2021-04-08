@@ -323,8 +323,10 @@ public abstract class AbstractClient extends AbstractService implements Client, 
 
                 @Override
                 public void call(T value) {
-                    if (dataStream != null && Constants.TYPE_DATA_STREAM == value.getType()) {
-                        dataStream.onStream(value);
+                    if (Constants.TYPE_DATA_STREAM == value.getType()) {
+                        if (dataStream != null) {
+                            dataStream.onStream(value);
+                        }
                     } else {
                         future.done(value);
                     }

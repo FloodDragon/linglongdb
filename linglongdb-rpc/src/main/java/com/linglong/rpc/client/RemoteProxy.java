@@ -1,8 +1,6 @@
 package com.linglong.rpc.client;
 
 import com.linglong.rpc.client.ds.DataStream;
-import com.linglong.rpc.client.ds.DataStreamExecutor;
-import com.linglong.rpc.client.ds.DataStreamHandler;
 import com.linglong.rpc.common.config.Constants;
 import com.linglong.rpc.common.life.LifeService;
 import com.linglong.rpc.common.protocol.Packet;
@@ -16,7 +14,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Map;
 import java.util.WeakHashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -26,21 +23,16 @@ import java.util.concurrent.TimeoutException;
  *
  * @author Stereo on 2019/12/10.
  */
-public final class RemoteProxy<S extends IService> implements InvocationHandler {
+public class RemoteProxy<S extends IService> implements InvocationHandler {
 
     private static Logger LOG = LoggerFactory.getLogger(RemoteProxy.class);
-    private S service;
     private Class<S> _type;
     private ClientProxy _clientProxy;
-    private DataStream<S> _dataStream;
     private final WeakHashMap<Method, String> _mangleMap = new WeakHashMap<>();
-    private final Map<String, DataStreamHandler> dataStreamHandlerMap = new ConcurrentHashMap<>();
-    private final ThreadLocal<DataStreamHandler> dataStreamHandlerThreadLocal = new ThreadLocal<>();
 
     protected RemoteProxy(ClientProxy proxy, Class<S> type) {
         this._clientProxy = proxy;
         this._type = type;
-        this._dataStream = new DataStreamImpl();
     }
 
     @Override
@@ -63,19 +55,18 @@ public final class RemoteProxy<S extends IService> implements InvocationHandler 
                     if (!(proxyHandler instanceof RemoteProxy))
                         return Boolean.FALSE;
                     RemoteProxy handler = (RemoteProxy) proxyHandler;
-                    return new Boolean(_clientProxy.equals(handler.getClientProxy()));
+                    return new Boolean(_clientProxy.equals(handler._clientProxy));
                 } else if (methodName.equals("hashCode") && params.length == 0)
                     return new Integer(_clientProxy.hashCode());
                 else if (methodName.equals("getType"))
                     return proxy.getClass().getInterfaces()[0].getName();
                 else if (methodName.equals("toString") && params.length == 0)
-                    return "Proxy[" + _clientProxy.toString() + "]";
+                    return "ClientProxy[" + _clientProxy.toString() + "]";
                 mangleName = method.getName();
                 synchronized (_mangleMap) {
                     _mangleMap.put(method, mangleName);
                 }
             }
-
             //构建消息体
             final Packet packet = Packet.packetRequest(_type.getName(), method.getName(), method.getReturnType(), args);
             //发送请求
@@ -85,74 +76,73 @@ public final class RemoteProxy<S extends IService> implements InvocationHandler 
         }
     }
 
-    protected Object sendRequest(Packet packet) throws RpcException {
-        DataStreamHandler dataStreamHandler = dataStreamHandlerThreadLocal.get();
-        if (dataStreamHandler != null) {
-            dataStreamHandlerMap.put(packet.getId(), dataStreamHandler);
-        }
-        try {
-            //发送请求体
-            AsyncFuture<Packet> future = _clientProxy.sendPacket(packet, this._dataStream);
-            //接收响应体
-            return receiveResponse(future);
-        } finally {
-            if (dataStreamHandler != null) {
-                dataStreamHandlerMap.remove(packet.getId());
-            }
-        }
-    }
-
-    protected Packet waitResponse(AsyncFuture<Packet> future) throws InterruptedException, ExecutionException, TimeoutException {
-        return future.get(getClientProxy().getConfig().getReadTimeout(), TimeUnit.MILLISECONDS);
-    }
-
-    protected Object receiveResponse(AsyncFuture<Packet> future) throws RpcException {
+    /**
+     * 发送请求数据
+     *
+     * @param packet
+     * @return
+     * @throws RpcException
+     */
+    protected Object sendRequest(Packet packet) throws RpcException, InterruptedException, ExecutionException, TimeoutException {
         Packet response = null;
+        //发送请求体
+        AsyncFuture<Packet> future = send(packet);
         try {
-            //等待响应结果
-            response = waitResponse(future);
-            //返回结果
-            Object result = response.getResult();
-            byte state = response.getState();
-            String exc = null;
-            switch (state) {
-                case Constants.STATUS_PENDING:
-                    exc = "ClientProxy >>> request is not processed";
-                    break;
-                case Constants.STATUS_SUCCESS_RESULT:
-                    if (isReturnType(response.getReturnType(), result.getClass())) {
-                        return result;
-                    } else
-                        exc = "ClientProxy >>> result type error";
-                    break;
-                case Constants.STATUS_SUCCESS_NULL:
-                    return null;
-                case Constants.STATUS_SUCCESS_VOID:
-                    return null;
-                case Constants.STATUS_SERVICE_NOT_FOUND:
-                    exc = "ClientProxy >>> request Service is not found";
-                    throw new ServiceNotFoundException(exc);
-                case Constants.STATUS_METHOD_NOT_FOUND:
-                    exc = "ClientProxy >>> request action method is not found";
-                    throw new MethodNotFoundException(exc);
-                case Constants.STATUS_ACCESS_DENIED:
-                    exc = "ClientProxy >>> request action access denied";
-                    throw new NotAllowedException(exc);
-                case Constants.STATUS_INVOCATION_EXCEPTION:
-                    exc = "ClientProxy >>> request action method invocation failed";
-                    throw new InvocationException(exc);
-                case Constants.STATUS_GENERAL_EXCEPTION:
-                    exc = response.getException();
-                    break;
-            }
-            if (exc != null) {
-                throw new RpcException(exc);
-            } else {
-                return null;
-            }
+            response = future.get(_clientProxy.getConfig().getReadTimeout(), TimeUnit.MILLISECONDS);
+            //接收响应体
+            return receiveResponse(response);
         } catch (InterruptedException | TimeoutException | ExecutionException ex) {
             future.done(null);
             throw new RpcException("ClientProxy >>> read packet timeout " + "packet : " + response);
+        }
+    }
+
+    /**
+     * 接收响应数据
+     *
+     * @param response
+     * @return
+     * @throws RpcException
+     */
+    protected Object receiveResponse(Packet response) throws RpcException {
+        //返回结果
+        Object result = response.getResult();
+        byte state = response.getState();
+        String exc = null;
+        switch (state) {
+            case Constants.STATUS_PENDING:
+                exc = "ClientProxy >>> request is not processed";
+                break;
+            case Constants.STATUS_SUCCESS_RESULT:
+                if (isReturnType(response.getReturnType(), result.getClass())) {
+                    return result;
+                } else
+                    exc = "ClientProxy >>> result type error";
+                break;
+            case Constants.STATUS_SUCCESS_NULL:
+                return null;
+            case Constants.STATUS_SUCCESS_VOID:
+                return null;
+            case Constants.STATUS_SERVICE_NOT_FOUND:
+                exc = "ClientProxy >>> request Service is not found";
+                throw new ServiceNotFoundException(exc);
+            case Constants.STATUS_METHOD_NOT_FOUND:
+                exc = "ClientProxy >>> request action method is not found";
+                throw new MethodNotFoundException(exc);
+            case Constants.STATUS_ACCESS_DENIED:
+                exc = "ClientProxy >>> request action access denied";
+                throw new NotAllowedException(exc);
+            case Constants.STATUS_INVOCATION_EXCEPTION:
+                exc = "ClientProxy >>> request action method invocation failed";
+                throw new InvocationException(exc);
+            case Constants.STATUS_GENERAL_EXCEPTION:
+                exc = response.getException();
+                break;
+        }
+        if (exc != null) {
+            throw new RpcException(exc);
+        } else {
+            return null;
         }
     }
 
@@ -165,35 +155,15 @@ public final class RemoteProxy<S extends IService> implements InvocationHandler 
         }
     }
 
-    private ClientProxy getClientProxy() {
+    protected AsyncFuture<Packet> send(Packet packet) throws RpcException {
+        return _clientProxy.sendPacket(packet);
+    }
+
+    protected AsyncFuture<Packet> send(Packet packet, DataStream<?> dataStream) throws RpcException {
+        return _clientProxy.sendPacket(packet, dataStream);
+    }
+
+    protected ClientProxy getClientProxy() {
         return _clientProxy;
-    }
-
-    final DataStream<S> getDataStream() {
-        return _dataStream;
-    }
-
-    final void setService(S service) {
-        this.service = service;
-    }
-
-    public class DataStreamImpl implements DataStream<S> {
-        @Override
-        public void onStream(Packet packet) {
-            DataStreamHandler handler;
-            if (null != (handler = dataStreamHandlerMap.get(packet.getId()))) {
-                handler.handle(packet.getResult());
-            }
-        }
-
-        @Override
-        public void call(DataStreamExecutor<S> executor, DataStreamHandler handler) {
-            try {
-                dataStreamHandlerThreadLocal.set(handler);
-                executor.execute(RemoteProxy.this.service);
-            } finally {
-                dataStreamHandlerThreadLocal.remove();
-            }
-        }
     }
 }

@@ -2,6 +2,7 @@ package com.linglong.rpc.client;
 
 
 import com.linglong.rpc.client.ds.DataStream;
+import com.linglong.rpc.client.ds.DataStreamRemoteProxy;
 import com.linglong.rpc.common.bytecode.Proxy;
 import com.linglong.rpc.common.config.Config;
 import com.linglong.rpc.common.service.IService;
@@ -45,7 +46,7 @@ public final class ClientProxy extends AbstractClient {
     }
 
     public <S extends IService> DataStream<S> createDataStream(final Class<S> api, ClassLoader classLoader) {
-        RemoteProxy proxy = new RemoteProxy(this, api);
+        DataStreamRemoteProxy proxy = new DataStreamRemoteProxy(this, api);
         proxy.setService((S) Proxy.getProxy(classLoader, new Class[]{api}).newInstance(proxy));
         return proxy.getDataStream();
     }

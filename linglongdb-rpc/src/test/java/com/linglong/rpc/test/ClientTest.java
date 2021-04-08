@@ -17,7 +17,7 @@ public class ClientTest {
         //测试RPC访问
         test_1();
         //测试RPC数据流访问
-        test_2();
+        //test_2();
     }
 
 
