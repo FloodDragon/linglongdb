@@ -1,6 +1,8 @@
 package com.linglong.rpc.client;
 
 
+import com.linglong.rpc.client.ds.DataStream;
+import com.linglong.rpc.client.ds.DataStreamHandler;
 import com.linglong.rpc.common.codec.MsgPackDecoder;
 import com.linglong.rpc.common.codec.MsgPackEncoder;
 import com.linglong.rpc.common.config.Config;
@@ -29,8 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLException;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -294,8 +294,8 @@ public abstract class AbstractClient extends AbstractService implements Client, 
         return sendPacket(packet, null);
     }
 
-    protected <T extends Packet> AsyncFuture<T> sendPacket(T packet, DataStreamListener dataStreamListener) throws RpcException {
-        AsyncFuture<T> future = buildFuture(packet, dataStreamListener);
+    protected <T extends Packet> AsyncFuture<T> sendPacket(T packet, DataStream<?> dataStream) throws RpcException {
+        AsyncFuture<T> future = buildFuture(packet, dataStream);
         try {
             if (!isClosed()) {
                 send(packet, true);
@@ -309,7 +309,7 @@ public abstract class AbstractClient extends AbstractService implements Client, 
         }
     }
 
-    protected <T extends Packet> AsyncFuture<T> buildFuture(final T packet, DataStreamListener dataStreamListener) throws RpcException {
+    protected <T extends Packet> AsyncFuture<T> buildFuture(final T packet, DataStream<?> dataStream) throws RpcException {
         if (packet != null && removeCallBack(packet.getId()) == null) {
             final String id = packet.getId();
             final Class<?> clz = packet.getClass();
@@ -323,8 +323,8 @@ public abstract class AbstractClient extends AbstractService implements Client, 
 
                 @Override
                 public void call(T value) {
-                    if (dataStreamListener != null && Constants.TYPE_DATA_STREAM == value.getType()) {
-                        dataStreamListener.streaming(value.getResult());
+                    if (dataStream != null && Constants.TYPE_DATA_STREAM == value.getType()) {
+                        dataStream.onStream(value);
                     } else {
                         future.done(value);
                     }

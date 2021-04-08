@@ -1,8 +1,10 @@
 package com.linglong.rpc.client;
 
 
+import com.linglong.rpc.client.ds.DataStream;
 import com.linglong.rpc.common.bytecode.Proxy;
 import com.linglong.rpc.common.config.Config;
+import com.linglong.rpc.common.service.IService;
 
 import java.lang.reflect.InvocationHandler;
 
@@ -12,7 +14,7 @@ import java.lang.reflect.InvocationHandler;
  *
  * @author Stereo on 2019/12/10.
  */
-public class ClientProxy extends AbstractClient {
+public final class ClientProxy extends AbstractClient {
 
     private final ClassLoader loader;
 
@@ -29,20 +31,22 @@ public class ClientProxy extends AbstractClient {
         this.loader = loader;
     }
 
-    public <T> T create(final Class<T> api) {
+    public <S extends IService> S create(final Class<S> api) {
         return create(api, loader);
     }
 
-    public <T> T create(Class<T> api, ClassLoader classLoader) {
-        return create(api, classLoader, null);
+    public <S extends IService> S create(Class<S> api, ClassLoader classLoader) {
+        RemoteProxy proxy = new RemoteProxy(this, api);
+        return (S) Proxy.getProxy(classLoader, new Class[]{api}).newInstance(proxy);
     }
 
-    public <T> T create(final Class<T> api, DataStreamListener dataStreamListener) {
-        return create(api, loader, dataStreamListener);
+    public <S extends IService> DataStream<S> createDataStream(final Class<S> api) {
+        return createDataStream(api, loader);
     }
 
-    public <T> T create(Class<T> api, ClassLoader classLoader, DataStreamListener dataStreamListener) {
-        InvocationHandler invocationHandler = new RemoteProxy(this, api, dataStreamListener);
-        return (T) Proxy.getProxy(classLoader, new Class[]{api}).newInstance(invocationHandler);
+    public <S extends IService> DataStream<S> createDataStream(final Class<S> api, ClassLoader classLoader) {
+        RemoteProxy proxy = new RemoteProxy(this, api);
+        proxy.setService((S) Proxy.getProxy(classLoader, new Class[]{api}).newInstance(proxy));
+        return proxy.getDataStream();
     }
 }
