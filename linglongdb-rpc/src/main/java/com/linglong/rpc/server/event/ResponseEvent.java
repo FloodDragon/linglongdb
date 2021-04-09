@@ -1,6 +1,7 @@
 package com.linglong.rpc.server.event;
 
 
+import com.linglong.rpc.common.config.Constants;
 import com.linglong.rpc.common.protocol.Packet;
 import com.linglong.rpc.common.remoting.Channel;
 import com.linglong.rpc.server.event.enums.ServiceEnum;
@@ -11,5 +12,6 @@ import com.linglong.rpc.server.event.enums.ServiceEnum;
 public class ResponseEvent extends ServiceEvent<Packet> {
     public ResponseEvent(Packet target, Channel channel) {
         super(target, ServiceEnum.RESPONSE, channel);
+        target.setType(Constants.TYPE_RESPONSE);
     }
 }

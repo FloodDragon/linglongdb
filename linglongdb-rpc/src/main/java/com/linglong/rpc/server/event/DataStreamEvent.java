@@ -8,15 +8,15 @@ import com.linglong.rpc.server.event.enums.ServiceEnum;
 /**
  * Created by liuj-ai on 2021/4/9.
  */
-public class DataStreamResponseEvent extends ResponseEvent {
+public class DataStreamEvent extends ResponseEvent {
 
-    public DataStreamResponseEvent(Packet target, Channel channel) {
+    public DataStreamEvent(Packet target, Channel channel) {
         super(target, channel);
-        target.setType(Constants.TYPE_DATA_STREAM_RESPONSE);
+        target.setType(Constants.TYPE_DATA_STREAM);
     }
 
     @Override
     public ServiceEnum getType() {
-        return ServiceEnum.DATA_STREAM_RESPONSE;
+        return ServiceEnum.DATA_STREAM;
     }
 }

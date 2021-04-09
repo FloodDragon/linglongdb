@@ -10,6 +10,7 @@ import com.linglong.rpc.common.remoting.Channel;
 import com.linglong.rpc.common.service.IServiceContext;
 import com.linglong.rpc.common.utils.Daemon;
 import com.linglong.rpc.common.utils.ThreadPoolUtils;
+import com.linglong.rpc.server.event.DataStreamEvent;
 import com.linglong.rpc.server.event.DataStreamResponseEvent;
 import com.linglong.rpc.server.event.RequestEvent;
 import com.linglong.rpc.server.event.ResponseEvent;
@@ -85,7 +86,6 @@ public class ServiceHandler extends AbstractService implements ServiceEventHandl
 
     @Override
     public void handleRequest(RequestEvent request) throws Exception {
-        System.out.println("ServiceHandler.handleRequest");
         switch (request.getType()) {
             case REQUEST:
                 handlerPool.execute(() -> doRequest(request));
@@ -119,7 +119,7 @@ public class ServiceHandler extends AbstractService implements ServiceEventHandl
             final DataStreamTransfer dataStreamTransfer = new DataStreamTransfer() {
                 @Override
                 public void transferTo(Object data) throws Exception {
-                    replyResponse(new ResponseEvent(Packet.packetDataStream(request.getTarget(), data), request.getChannel()));
+                    replyResponse(new DataStreamEvent(Packet.packetDataStream(request.getTarget(), data), request.getChannel()));
                 }
             };
             ServiceContext.begin(request.getTarget(), request.getChannel(), dataStreamTransfer);

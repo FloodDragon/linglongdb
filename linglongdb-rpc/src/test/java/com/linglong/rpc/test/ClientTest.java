@@ -10,9 +10,9 @@ import java.util.concurrent.Executors;
 public class ClientTest {
     public static void main(String[] args) throws InterruptedException {
         //测试RPC访问
-        test_1();
+        //test_1();
         //测试RPC数据流访问
-        //test_2();
+        test_2();
     }
 
     private final static void test_1() {
@@ -74,7 +74,7 @@ public class ClientTest {
         test.getMap().put("test", 11L);
         test.getList().add("test");
         ExecutorService executorService = Executors.newFixedThreadPool(10);
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 1; i++) {
             executorService.submit(new Runnable() {
                 @Override
                 public void run() {

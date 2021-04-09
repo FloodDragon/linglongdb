@@ -12,8 +12,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.LockSupport;
 
 /**
+ * TODO 数据流代理需要优化
+ * <p>
  * Created by liuj-ai on 2021/4/8.
  */
 public class DataStreamRemoteProxy<S extends IService> extends RemoteProxy<S> {
@@ -43,6 +46,7 @@ public class DataStreamRemoteProxy<S extends IService> extends RemoteProxy<S> {
         private DataStreamHandler handler;
         private AsyncFuture<Packet> future;
         private volatile long lastActiveTime;
+        private volatile boolean completed;
 
         private DataStreamProcessor(String id, DataStreamHandler handler, AsyncFuture<Packet> future) {
             this.id = id;
@@ -61,17 +65,21 @@ public class DataStreamRemoteProxy<S extends IService> extends RemoteProxy<S> {
                     handler.handle(packet.getResult());
                 }
             } else {
+                completed = true;
                 future.done(packet);
             }
         }
 
         private boolean isActive() {
-            return SystemClock.now() - lastActiveTime < readTimeout;
+            return SystemClock.now() - lastActiveTime < readTimeout && !completed;
         }
 
         private void holdOn() throws InterruptedException, ExecutionException, TimeoutException {
             while (isActive()) {
-
+                LockSupport.parkNanos(1000000000L);
+            }
+            if (!completed) {
+                throw new TimeoutException();
             }
             response = future.get(readTimeout, TimeUnit.MILLISECONDS);
         }
