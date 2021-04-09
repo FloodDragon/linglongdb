@@ -20,8 +20,8 @@ public class DataStreamRemoteProxy<S extends IService> extends RemoteProxy<S> {
 
     protected S service;
     private DataStream<S> _dataStream;
-    private final Map<String, DataStreamProcessor> dataStreamProcessorMap = new ConcurrentHashMap<>();
     private final ThreadLocal<DataStreamHandler> dataStreamHandlerThreadLocal = new ThreadLocal<>();
+    private final Map<String, DataStreamProcessor> dataStreamProcessorMap = new ConcurrentHashMap<>();
 
     protected DataStreamRemoteProxy(ClientProxy proxy, Class<S> type) {
         super(proxy, type);
@@ -39,13 +39,17 @@ public class DataStreamRemoteProxy<S extends IService> extends RemoteProxy<S> {
     private final class DataStreamProcessor {
         private String id;
         private Packet response;
+        private final int readTimeout;
         private DataStreamHandler handler;
         private AsyncFuture<Packet> future;
-        private volatile long lastActiveTime = SystemClock.now();
+        private volatile long lastActiveTime;
 
         private DataStreamProcessor(String id, DataStreamHandler handler, AsyncFuture<Packet> future) {
             this.id = id;
+            this.future = future;
             this.handler = handler;
+            this.lastActiveTime = SystemClock.now();
+            this.readTimeout = getClientProxy().getConfig().getReadTimeout();
             DataStreamRemoteProxy.this.dataStreamProcessorMap.put(id, this);
         }
 
@@ -61,13 +65,15 @@ public class DataStreamRemoteProxy<S extends IService> extends RemoteProxy<S> {
             }
         }
 
+        private boolean isActive() {
+            return SystemClock.now() - lastActiveTime < readTimeout;
+        }
+
         private void holdOn() throws InterruptedException, ExecutionException, TimeoutException {
-            int readTimeout = getClientProxy().getConfig().getReadTimeout();
-            while (SystemClock.now() - lastActiveTime < readTimeout) {
+            while (isActive()) {
 
             }
-
-            response = future.get(getClientProxy().getConfig().getReadTimeout(), TimeUnit.MILLISECONDS);
+            response = future.get(readTimeout, TimeUnit.MILLISECONDS);
         }
 
         private void clear() {
