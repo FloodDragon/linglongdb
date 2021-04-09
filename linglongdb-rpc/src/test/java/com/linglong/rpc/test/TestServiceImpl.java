@@ -19,12 +19,14 @@ public class TestServiceImpl extends Service implements TestService {
     @Override
     public Test test(Test test) {
         DataStreamTransfer dataStreamTransfer = ServiceContext.getDataStreamTransfer();
-        for (int i = 0; i < 10; i++) {
-            try {
-                dataStreamTransfer.transferTo(String.valueOf(i));
-                Thread.sleep(100);
-            } catch (Exception e) {
-                e.printStackTrace();
+        if (dataStreamTransfer != null) {
+            for (int i = 0; i < 10; i++) {
+                try {
+                    dataStreamTransfer.transferTo(String.valueOf(i));
+                    Thread.sleep(100);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
         System.out.println("DataStreamTransfer = " + dataStreamTransfer);

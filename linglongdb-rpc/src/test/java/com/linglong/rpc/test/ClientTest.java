@@ -1,11 +1,6 @@
 package com.linglong.rpc.test;
 
-import com.linglong.rpc.client.Client;
-import com.linglong.rpc.client.ClientProxy;
-import com.linglong.rpc.client.FailoverHandler;
-import com.linglong.rpc.client.ds.DataStream;
-import com.linglong.rpc.client.ds.DataStreamExecutor;
-import com.linglong.rpc.client.ds.DataStreamHandler;
+import com.linglong.rpc.client.*;
 import com.linglong.rpc.test.protocol.Test;
 import com.linglong.rpc.test.protocol.TestService;
 
@@ -17,9 +12,8 @@ public class ClientTest {
         //测试RPC访问
         test_1();
         //测试RPC数据流访问
-        test_2();
+        //test_2();
     }
-
 
     private final static void test_1() {
         ClientProxy clientProxy = new ClientProxy();
@@ -85,23 +79,15 @@ public class ClientTest {
                 @Override
                 public void run() {
                     while (true) {
-                        dataStream.call(new DataStreamExecutor<TestService>() {
-                            @Override
-                            public void execute(TestService testService) {
-                                //执行调用接口
-                                Test rt = testService.test(test);
-                                System.out.println("数据流测试1结束 ---------------------> code = " + rt.getCode() + " msg = " + rt.getMsg());
-                                rt = testService.test(test);
-                                System.out.println("数据流测试2结束 ---------------------> code = " + rt.getCode() + " msg = " + rt.getMsg());
-                            }
-                        }, new DataStreamHandler() {
-                            @Override
-                            public void handle(Object data) {
-                                //数据流
-                                System.out.println("===============>  数据流 " + data);
-                            }
-                        });
-                        System.out.println("===============>  数据流测试执行结束  <===============");
+                        dataStream.call((testService) -> {
+                            //执行调用接口
+                            Test rt = testService.test(test);
+                            System.out.println("数据流测试1结束 ---------------------> code = " + rt.getCode() + " msg = " + rt.getMsg());
+                            rt = testService.test(test);
+                            System.out.println("数据流测试2结束 ---------------------> code = " + rt.getCode() + " msg = " + rt.getMsg());
+
+                        }, (data) -> System.out.println("===============>  数据流 " + data));
+                        System.out.println("===============>  测试数据流线程执行结束  <===============");
                         try {
                             Thread.sleep(1000);
                         } catch (InterruptedException e) {

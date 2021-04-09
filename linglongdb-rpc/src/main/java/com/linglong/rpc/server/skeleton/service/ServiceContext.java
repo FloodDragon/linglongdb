@@ -14,7 +14,7 @@ public class ServiceContext {
     private static final ThreadLocal<ServiceContext> _localContext = new ThreadLocal<ServiceContext>();
 
     protected static void begin(Packet request, Channel channel) {
-        begin(request, channel);
+        begin(request, channel, null);
     }
 
     protected static void begin(Packet request, Channel channel, DataStreamTransfer dataStreamTransfer) {

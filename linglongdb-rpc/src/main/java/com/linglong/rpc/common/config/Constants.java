@@ -30,7 +30,7 @@ public final class Constants {
     public static final byte STATUS_GENERAL_EXCEPTION = 0x14; // 一般异常
     public static final byte STATUS_APP_SHUTTING_DOWN = 0x15; // 应用程序关闭
     public static final byte STATUS_NOT_CONNECTED = 0x20; // 未连接
-    public static final byte STATUS_SUCCESS_ASYNC_MESSAGE = 0x21;//调用成功并返回异步消息
+    public static final byte STATUS_SUCCESS_DATA_SRREAM_CONTENT = 0x21;//调用成功并返回异步消息
 
     /**
      * packet type
@@ -45,7 +45,9 @@ public final class Constants {
     public static final byte TYPE_HEARTBEAT_REQUEST_UNREGISTER = 0x04;//心跳注销
     public static final byte TYPE_HEARTBEAT = 0x05; //心跳请求类型
 
-    public static final byte TYPE_DATA_STREAM = 0x07;//异步响应内容
+    public static final byte TYPE_DATA_STREAM_REQUEST = 0x06;   //数据流请求
+    public static final byte TYPE_DATA_STREAM = 0x07;           //数据流推送
+    public static final byte TYPE_DATA_STREAM_RESPONSE = 0x08;  //数据流响应
 
     public static final Map<Class, String> primitiveClassMap = new HashMap<Class, String>();
 

@@ -1,8 +1,6 @@
 package com.linglong.rpc.client;
 
 
-import com.linglong.rpc.client.ds.DataStream;
-import com.linglong.rpc.client.ds.DataStreamHandler;
 import com.linglong.rpc.common.codec.MsgPackDecoder;
 import com.linglong.rpc.common.codec.MsgPackEncoder;
 import com.linglong.rpc.common.config.Config;
@@ -323,12 +321,17 @@ public abstract class AbstractClient extends AbstractService implements Client, 
 
                 @Override
                 public void call(T value) {
-                    if (Constants.TYPE_DATA_STREAM == value.getType()) {
-                        if (dataStream != null) {
-                            dataStream.onStream(value);
+                    if (value != null) {
+                        switch (value.getType()) {
+                            case Constants.TYPE_DATA_STREAM:
+                            case Constants.TYPE_DATA_STREAM_RESPONSE:
+                                if (dataStream != null)
+                                    dataStream.onStream(value);
+                                break;
+                            default:
+                                future.done(value);
+                                break;
                         }
-                    } else {
-                        future.done(value);
                     }
                 }
             };

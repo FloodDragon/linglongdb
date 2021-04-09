@@ -1,6 +1,5 @@
 package com.linglong.rpc.client;
 
-import com.linglong.rpc.client.ds.DataStream;
 import com.linglong.rpc.common.config.Constants;
 import com.linglong.rpc.common.life.LifeService;
 import com.linglong.rpc.common.protocol.Packet;
@@ -25,7 +24,7 @@ import java.util.concurrent.TimeoutException;
  */
 public class RemoteProxy<S extends IService> implements InvocationHandler {
 
-    private static Logger LOG = LoggerFactory.getLogger(RemoteProxy.class);
+    protected static Logger LOG = LoggerFactory.getLogger(RemoteProxy.class);
     private Class<S> _type;
     private ClientProxy _clientProxy;
     private final WeakHashMap<Method, String> _mangleMap = new WeakHashMap<>();
@@ -68,12 +67,25 @@ public class RemoteProxy<S extends IService> implements InvocationHandler {
                 }
             }
             //构建消息体
-            final Packet packet = Packet.packetRequest(_type.getName(), method.getName(), method.getReturnType(), args);
+            final Packet packet = packetRequest(_type.getName(), method, args);
             //发送请求
             return sendRequest(packet);
         } else {
             throw new RpcException("ClientProxy >>> state is not started");
         }
+    }
+
+
+    /**
+     * 封装请求数据包
+     *
+     * @param serviceName
+     * @param method
+     * @param args
+     * @return
+     */
+    protected Packet packetRequest(String serviceName, Method method, Object[] args) {
+        return Packet.packetRequest(serviceName, method.getName(), method.getReturnType(), args);
     }
 
     /**
@@ -157,10 +169,6 @@ public class RemoteProxy<S extends IService> implements InvocationHandler {
 
     protected AsyncFuture<Packet> send(Packet packet) throws RpcException {
         return _clientProxy.sendPacket(packet);
-    }
-
-    protected AsyncFuture<Packet> send(Packet packet, DataStream<?> dataStream) throws RpcException {
-        return _clientProxy.sendPacket(packet, dataStream);
     }
 
     protected ClientProxy getClientProxy() {

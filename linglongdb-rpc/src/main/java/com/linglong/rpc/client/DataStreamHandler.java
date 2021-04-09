@@ -1,4 +1,4 @@
-package com.linglong.rpc.client.ds;
+package com.linglong.rpc.client;
 
 
 /**

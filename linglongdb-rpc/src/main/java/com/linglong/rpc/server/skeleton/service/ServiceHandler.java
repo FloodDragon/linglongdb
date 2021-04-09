@@ -10,6 +10,7 @@ import com.linglong.rpc.common.remoting.Channel;
 import com.linglong.rpc.common.service.IServiceContext;
 import com.linglong.rpc.common.utils.Daemon;
 import com.linglong.rpc.common.utils.ThreadPoolUtils;
+import com.linglong.rpc.server.event.DataStreamResponseEvent;
 import com.linglong.rpc.server.event.RequestEvent;
 import com.linglong.rpc.server.event.ResponseEvent;
 import com.linglong.rpc.server.event.enums.ServiceEnum;
@@ -84,32 +85,58 @@ public class ServiceHandler extends AbstractService implements ServiceEventHandl
 
     @Override
     public void handleRequest(RequestEvent request) throws Exception {
-        handlerPool.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    final DataStreamTransfer dataStreamTransfer = new DataStreamTransfer() {
-                        @Override
-                        public void transferTo(Object data) throws Exception {
-                            replyResponse(new ResponseEvent(Packet.packetAsyncMessage(request.getTarget(), data), request.getChannel()));
-                        }
-                    };
-                    ServiceContext.begin(request.getTarget(), request.getChannel(), dataStreamTransfer);
-                    //创建服务调用
-                    ServiceCall call = new ServiceCall(request.getTarget());
-                    //执行调用
-                    serviceInvoker.invoke(call);
-                    //清理调用入参数据
-                    call.cleanArguments();
-                    //响应结果
-                    replyResponse(new ResponseEvent(request.getTarget(), request.getChannel()));
-                } catch (Exception ex) {
-                    LOG.error("service handler request handle failed, request packet:{} ", request.getTarget(), ex);
-                } finally {
-                    ServiceContext.end();
+        System.out.println("ServiceHandler.handleRequest");
+        switch (request.getType()) {
+            case REQUEST:
+                handlerPool.execute(() -> doRequest(request));
+                break;
+            case DATA_STREAM_REQUEST:
+                handlerPool.execute(() -> doDataStreamRequest(request));
+                break;
+        }
+    }
+
+    protected void doRequest(RequestEvent request) {
+        try {
+            ServiceContext.begin(request.getTarget(), request.getChannel());
+            //创建服务调用
+            ServiceCall call = new ServiceCall(request.getTarget());
+            //执行调用
+            serviceInvoker.invoke(call);
+            //清理调用入参数据
+            call.cleanArguments();
+            //响应结果
+            replyResponse(new ResponseEvent(request.getTarget(), request.getChannel()));
+        } catch (Exception ex) {
+            LOG.error("service handler request handle failed, request packet:{} ", request.getTarget(), ex);
+        } finally {
+            ServiceContext.end();
+        }
+    }
+
+    protected void doDataStreamRequest(RequestEvent request) {
+        try {
+            final DataStreamTransfer dataStreamTransfer = new DataStreamTransfer() {
+                @Override
+                public void transferTo(Object data) throws Exception {
+                    replyResponse(new ResponseEvent(Packet.packetDataStream(request.getTarget(), data), request.getChannel()));
                 }
-            }
-        });
+            };
+            ServiceContext.begin(request.getTarget(), request.getChannel(), dataStreamTransfer);
+            //创建服务调用
+            ServiceCall call = new ServiceCall(request.getTarget());
+            //执行调用
+            serviceInvoker.invoke(call);
+            //清理调用入参数据
+            call.cleanArguments();
+            //响应结果
+            replyResponse(new DataStreamResponseEvent(request.getTarget(), request.getChannel()));
+        } catch (Exception ex) {
+            LOG.error("service handler data stream request handle failed, request packet:{} ", request.getTarget(), ex);
+        } finally {
+            ServiceContext.end();
+        }
+
     }
 
     @Override
