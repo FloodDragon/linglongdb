@@ -3,6 +3,7 @@ package com.linglong.rpc.client;
 import com.linglong.rpc.common.config.Constants;
 import com.linglong.rpc.common.life.LifeService;
 import com.linglong.rpc.common.protocol.Packet;
+import com.linglong.rpc.common.service.IService;
 import com.linglong.rpc.exception.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,28 +13,30 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
  * 远程调用代理
+ *
  * @author Stereo on 2019/12/10.
  */
-public final class RemoteProxy implements InvocationHandler {
+public class RemoteProxy<S extends IService> implements InvocationHandler {
 
-    private static Logger LOG = LoggerFactory.getLogger(RemoteProxy.class);
-    private ClientProxy clientProxy;
-    private Class<?> _type;
-    private WeakHashMap<Method, String> _mangleMap = new WeakHashMap<Method, String>();
+    protected static Logger LOG = LoggerFactory.getLogger(RemoteProxy.class);
+    private Class<S> _type;
+    private ClientProxy _clientProxy;
+    private final WeakHashMap<Method, String> _mangleMap = new WeakHashMap<>();
 
-    public RemoteProxy(ClientProxy proxy, Class<?> type) {
-        this.clientProxy = proxy;
+    protected RemoteProxy(ClientProxy proxy, Class<S> type) {
+        this._clientProxy = proxy;
         this._type = type;
     }
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        if (clientProxy.getServiceState().equals(LifeService.STATE.STARTED)) {
+        if (_clientProxy.getServiceState().equals(LifeService.STATE.STARTED)) {
             String mangleName;
             synchronized (_mangleMap) {
                 mangleName = _mangleMap.get(method);
@@ -51,35 +54,69 @@ public final class RemoteProxy implements InvocationHandler {
                     if (!(proxyHandler instanceof RemoteProxy))
                         return Boolean.FALSE;
                     RemoteProxy handler = (RemoteProxy) proxyHandler;
-                    return new Boolean(clientProxy.equals(handler.getClientProxy()));
+                    return new Boolean(_clientProxy.equals(handler._clientProxy));
                 } else if (methodName.equals("hashCode") && params.length == 0)
-                    return new Integer(clientProxy.hashCode());
+                    return new Integer(_clientProxy.hashCode());
                 else if (methodName.equals("getType"))
                     return proxy.getClass().getInterfaces()[0].getName();
                 else if (methodName.equals("toString") && params.length == 0)
-                    return "Proxy[" + clientProxy.toString() + "]";
+                    return "ClientProxy[" + _clientProxy.toString() + "]";
                 mangleName = method.getName();
                 synchronized (_mangleMap) {
                     _mangleMap.put(method, mangleName);
                 }
             }
-            //build packet
-            final Packet packet = Packet.packetRequest(_type.getName(), method.getName(), method.getReturnType(), args);
+            //构建消息体
+            final Packet packet = packetRequest(_type.getName(), method, args);
             //发送请求
-            AsyncFuture<Packet> future = clientProxy.sendPacket(packet);
-            try {
-                Object resultPacket = future.get(getClientProxy().getConfig().getReadTimeout(), TimeUnit.MILLISECONDS);
-                //响应结果
-                return receiveResponse((Packet) resultPacket);
-            } catch (InterruptedException | TimeoutException ex) {
-                future.done(null);
-                throw new RpcException("ClientProxy >>> read packet timeout " + "packet : " + packet);
-            }
-        } else
+            return sendRequest(packet);
+        } else {
             throw new RpcException("ClientProxy >>> state is not started");
+        }
     }
 
-    private Object receiveResponse(Packet response) throws RpcException {
+    /**
+     * 封装请求数据包
+     *
+     * @param serviceName
+     * @param method
+     * @param args
+     * @return
+     */
+    protected Packet packetRequest(String serviceName, Method method, Object[] args) {
+        return Packet.packetRequest(serviceName, method.getName(), method.getReturnType(), args);
+    }
+
+    /**
+     * 发送请求数据
+     *
+     * @param packet
+     * @return
+     * @throws RpcException
+     */
+    protected Object sendRequest(Packet packet) throws RpcException, InterruptedException, ExecutionException, TimeoutException {
+        Packet response = null;
+        //发送请求体
+        AsyncFuture<Packet> future = send(packet);
+        try {
+            response = future.get(_clientProxy.getConfig().getReadTimeout(), TimeUnit.MILLISECONDS);
+            //接收响应体
+            return receiveResponse(response);
+        } catch (InterruptedException | TimeoutException | ExecutionException ex) {
+            future.done(null);
+            throw new RpcException("ClientProxy >>> read packet timeout " + "packet : " + response);
+        }
+    }
+
+    /**
+     * 接收响应数据
+     *
+     * @param response
+     * @return
+     * @throws RpcException
+     */
+    protected Object receiveResponse(Packet response) throws RpcException {
+        //返回结果
         Object result = response.getResult();
         byte state = response.getState();
         String exc = null;
@@ -113,21 +150,27 @@ public final class RemoteProxy implements InvocationHandler {
                 exc = response.getException();
                 break;
         }
-        if (exc != null)
+        if (exc != null) {
             throw new RpcException(exc);
-        else
+        } else {
             return null;
+        }
     }
 
     private boolean isReturnType(Class<?> original, Class<?> current) {
         Map<Class, String> primitiveClassMap = Constants.primitiveClassMap;
-        if (primitiveClassMap.get(original) != null)
+        if (primitiveClassMap.get(original) != null) {
             return primitiveClassMap.get(original).equals(primitiveClassMap.get(current));
-        else
+        } else {
             return original.isAssignableFrom(current);
+        }
     }
 
-    private ClientProxy getClientProxy() {
-        return clientProxy;
+    protected AsyncFuture<Packet> send(Packet packet) throws RpcException {
+        return _clientProxy.sendPacket(packet);
+    }
+
+    protected ClientProxy getClientProxy() {
+        return _clientProxy;
     }
 }

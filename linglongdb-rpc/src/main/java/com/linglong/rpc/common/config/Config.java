@@ -23,7 +23,7 @@ public final class Config {
     private int sendBufferSize = 65535;
     private int receiveBufferSize = 65535;
     private boolean useEpoll = false;
-    private int childNioEventThreads = 6; //cpu+1
+    private int childNioEventThreads = Runtime.getRuntime().availableProcessors() + 1; //cpu+1
     private int payload = 16 * 1024 * 1024;//16M
     private InetSocketAddress remoteAddress = new InetSocketAddress(
             "0.0.0.0", 8099);

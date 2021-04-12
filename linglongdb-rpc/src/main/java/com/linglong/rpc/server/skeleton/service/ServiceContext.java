@@ -10,16 +10,22 @@ import com.linglong.rpc.common.remoting.Channel;
 public class ServiceContext {
     private Packet _request;
     private Channel _channel;
+    private DataStreamTransfer _dataStreamTransfer;
     private static final ThreadLocal<ServiceContext> _localContext = new ThreadLocal<ServiceContext>();
 
-    protected static void begin(Packet _request, Channel _channel) {
+    protected static void begin(Packet request, Channel channel) {
+        begin(request, channel, null);
+    }
+
+    protected static void begin(Packet request, Channel channel, DataStreamTransfer dataStreamTransfer) {
         ServiceContext context = (ServiceContext) _localContext.get();
         if (context == null) {
             context = new ServiceContext();
             _localContext.set(context);
         }
-        context._request = _request;
-        context._channel = _channel;
+        context._request = request;
+        context._channel = channel;
+        context._dataStreamTransfer = dataStreamTransfer;
     }
 
     protected static void end() {
@@ -27,6 +33,7 @@ public class ServiceContext {
         if (context != null) {
             context._request = null;
             context._channel = null;
+            context._dataStreamTransfer = null;
             _localContext.set(null);
         }
     }
@@ -50,9 +57,16 @@ public class ServiceContext {
 
     public static Channel getChannel() {
         ServiceContext context = (ServiceContext) _localContext.get();
-
         if (context != null)
             return context._channel;
+        else
+            return null;
+    }
+
+    public static DataStreamTransfer getDataStreamTransfer() {
+        ServiceContext context = (ServiceContext) _localContext.get();
+        if (context != null)
+            return context._dataStreamTransfer;
         else
             return null;
     }

@@ -368,7 +368,7 @@ public final class LockManager {
                     return LockResult.ACQUIRED;
                 }
 
-                // Result of shared/upgradable attempt for existing Lock.
+                // WorkResult of shared/upgradable attempt for existing Lock.
 
                 if (result == LockResult.ACQUIRED) {
                     locker.push(lock);
@@ -377,7 +377,7 @@ public final class LockManager {
                 return result;
             }
 
-            // Result of exclusive attempt for existing Lock.
+            // WorkResult of exclusive attempt for existing Lock.
 
             if (result == LockResult.ACQUIRED) {
                 locker.push(lock);

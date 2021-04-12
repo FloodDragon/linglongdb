@@ -13,8 +13,12 @@ public abstract class Actor implements Runnable {
     volatile boolean stopped = false;
 
     public void stop() throws InterruptedException {
+        stop(false);
+    }
+
+    public void stop(boolean waited) throws InterruptedException {
         stopped = true;
-        if (thread != null) {
+        if (waited && thread != null) {
             thread.interrupt();
             thread.join();
         }
@@ -33,6 +37,10 @@ public abstract class Actor implements Runnable {
                 return;
             }
         }
+    }
+
+    public boolean isStopped() {
+        return this.stopped;
     }
 
     protected abstract void doAct() throws InterruptedException;

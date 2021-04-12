@@ -4,6 +4,7 @@ package com.linglong.rpc.client;
 import com.linglong.rpc.common.codec.MsgPackDecoder;
 import com.linglong.rpc.common.codec.MsgPackEncoder;
 import com.linglong.rpc.common.config.Config;
+import com.linglong.rpc.common.config.Constants;
 import com.linglong.rpc.exception.RpcException;
 import com.linglong.rpc.common.life.AbstractService;
 import com.linglong.rpc.common.protocol.Packet;
@@ -287,8 +288,12 @@ public abstract class AbstractClient extends AbstractService implements Client, 
         return callbackMap.get(messageId);
     }
 
-    protected <T extends Packet> AsyncFuture<T> sendPacket(T packet) throws RpcException {
-        AsyncFuture<T> future = buildFuture(packet);
+    protected AsyncFuture<Packet> sendPacket(Packet packet) throws RpcException {
+        return sendPacket(packet, null);
+    }
+
+    protected AsyncFuture<Packet> sendPacket(Packet packet, DataStream<?> dataStream) throws RpcException {
+        AsyncFuture<Packet> future = buildFuture(packet, dataStream);
         try {
             if (!isClosed()) {
                 send(packet, true);
@@ -302,12 +307,12 @@ public abstract class AbstractClient extends AbstractService implements Client, 
         }
     }
 
-    protected <T extends Packet> AsyncFuture<T> buildFuture(final T packet) throws RpcException {
+    protected AsyncFuture<Packet> buildFuture(final Packet packet, DataStream<?> dataStream) throws RpcException {
         if (packet != null && removeCallBack(packet.getId()) == null) {
             final String id = packet.getId();
             final Class<?> clz = packet.getClass();
-            final AsyncFuture<T> future = new AsyncFuture<T>();
-            Callback<T> callback = new Callback<T>() {
+            final AsyncFuture<Packet> future = new AsyncFuture<>();
+            Callback<Packet> callback = new Callback<Packet>() {
 
                 @Override
                 public Class<?> getAcceptValueType() {
@@ -315,14 +320,25 @@ public abstract class AbstractClient extends AbstractService implements Client, 
                 }
 
                 @Override
-                public void call(T value) {
-                    future.done(value);
+                public void call(Packet value) {
+                    if (value != null) {
+                        switch (value.getType()) {
+                            case Constants.TYPE_DATA_STREAM:
+                            case Constants.TYPE_DATA_STREAM_RESPONSE:
+                                if (dataStream != null)
+                                    dataStream.onStream(value, future);
+                                break;
+                            default:
+                                future.done(value);
+                                break;
+                        }
+                    }
                 }
             };
             setCallback(id, callback);
-            future.addAsyncListener(new AsyncListener<T>() {
+            future.addAsyncListener(new AsyncListener<Packet>() {
                 @Override
-                public void asyncReturn(T returnValue) {
+                public void asyncReturn(Packet returnValue) {
                     removeCallBack(id);
                 }
             });

@@ -12,6 +12,7 @@ import com.linglong.rpc.common.remoting.ChannelHandler;
 import com.linglong.rpc.common.remoting.RpcChannel;
 import com.linglong.rpc.common.utils.NetUtil;
 import com.linglong.rpc.server.event.ChannelInboundEvent;
+import com.linglong.rpc.server.event.DataStreamRequestEvent;
 import com.linglong.rpc.server.event.HeartbeatEvent;
 import com.linglong.rpc.server.event.RequestEvent;
 import com.linglong.rpc.server.event.enums.ChannelInboundEnum;
@@ -124,12 +125,19 @@ public class RpcServiceHandler extends ChannelInboundHandlerAdapter implements C
                 switch (type) {
                     case Constants.TYPE_REQUEST:
                         serviceHandler.handleRequest(new RequestEvent(packet, channel));
-                        //dispatcher.getEventHandler().handle(new RequestEvent(packet, ctx));
                         break;
                     case Constants.TYPE_RESPONSE:
-                        // 不支持
-                        // dispatcher.getEventHandler().handle(new ResponseEvent(packet, ctx));
-                        throw new RpcException("this operation is not supported");
+                        //不支持
+                        throw new RpcException("rpc server received <RESPONSE> operation is not supported");
+                    case Constants.TYPE_DATA_STREAM_REQUEST:
+                        serviceHandler.handleRequest(new DataStreamRequestEvent(packet, channel));
+                        break;
+                    case Constants.TYPE_DATA_STREAM:
+                        //不支持
+                        throw new RpcException("rpc server received <TYPE_DATA_STREAM> operation is not supported");
+                    case Constants.TYPE_DATA_STREAM_RESPONSE:
+                        //不支持
+                        throw new RpcException("rpc server received <TYPE_DATA_STREAM_RESPONSE> operation is not supported");
                     case Constants.TYPE_HEARTBEAT_REQUEST_REGISTER:
                         dispatcher.getEventHandler().handle(new HeartbeatEvent(HeartbeatEnum.REGISTER, channel, packet));
                         break;
@@ -143,7 +151,7 @@ public class RpcServiceHandler extends ChannelInboundHandlerAdapter implements C
                         LOG.error("RpcServiceHandler received error message:{} ", message);
                 }
             } else
-                LOG.error("RpcServiceHandler.channelRead error message:{}", message);
+                LOG.error("RpcServiceHandler channelRead error message:{}", message);
         } catch (Exception e) {
             LOG.error("RpcServiceHandler handle packet:{} error", message, e);
         }

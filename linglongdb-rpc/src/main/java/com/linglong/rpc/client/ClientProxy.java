@@ -1,18 +1,17 @@
 package com.linglong.rpc.client;
 
 
-
 import com.linglong.rpc.common.bytecode.Proxy;
 import com.linglong.rpc.common.config.Config;
-
-import java.lang.reflect.InvocationHandler;
+import com.linglong.rpc.common.service.IService;
 
 /**
  * RPC客户端代理
  * <p>
+ *
  * @author Stereo on 2019/12/10.
  */
-public class ClientProxy extends AbstractClient {
+public final class ClientProxy extends AbstractClient {
 
     private final ClassLoader loader;
 
@@ -29,12 +28,22 @@ public class ClientProxy extends AbstractClient {
         this.loader = loader;
     }
 
-    public <T> T create(final Class<T> api) {
+    public <S extends IService> S create(final Class<S> api) {
         return create(api, loader);
     }
 
-    public <T> T create(Class<T> api, ClassLoader classLoader) {
-        InvocationHandler invocationHandler = new RemoteProxy(this, api);
-        return (T) Proxy.getProxy(classLoader, new Class[]{api}).newInstance(invocationHandler);
+    public <S extends IService> S create(Class<S> api, ClassLoader classLoader) {
+        RemoteProxy proxy = new RemoteProxy(this, api);
+        return (S) Proxy.getProxy(classLoader, new Class[]{api}).newInstance(proxy);
+    }
+
+    public <S extends IService> DataStream<S> createDataStream(final Class<S> api) {
+        return createDataStream(api, loader);
+    }
+
+    public <S extends IService> DataStream<S> createDataStream(final Class<S> api, ClassLoader classLoader) {
+        DataStreamRemoteProxy proxy = new DataStreamRemoteProxy(this, api);
+        proxy.setService((S) Proxy.getProxy(classLoader, new Class[]{api}).newInstance(proxy));
+        return proxy.getDataStream();
     }
 }

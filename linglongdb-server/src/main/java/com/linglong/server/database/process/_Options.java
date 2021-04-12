@@ -2,6 +2,7 @@ package com.linglong.server.database.process;
 
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Created by liuj-ai on 2021/3/24.
@@ -13,6 +14,7 @@ public class _Options extends _IndexName {
     byte[] lowKey;
     byte[] highKey;
     long count;
+    String pid;
 
     //开启新事务
     boolean newTxn;
@@ -23,8 +25,8 @@ public class _Options extends _IndexName {
     KeyValueUpdater updater;
     //索引数据驱逐过滤
     KeyValueEvictFilter evictFilter;
-    //索引数据扫描
-    Consumer<Map.Entry<byte[], byte[]>> scanConsumer;
+    //索引数据扫描<扫描数据,是否继续扫描>
+    Function<Map.Entry<byte[], byte[]>, Boolean> scanFunc;
 
     public _Options key(byte[] key) {
         this.key = key;
@@ -80,13 +82,18 @@ public class _Options extends _IndexName {
         return this;
     }
 
-    public _Options scan(Consumer<Map.Entry<byte[], byte[]>> consumer) {
-        this.scanConsumer = consumer;
+    public _Options scanFunc(Function<Map.Entry<byte[], byte[]>, Boolean> scanFunc) {
+        this.scanFunc = scanFunc;
         return this;
     }
 
     public _Options updater(KeyValueUpdater updater) {
         this.updater = updater;
+        return this;
+    }
+
+    public _Options pid(String pid) {
+        this.pid = pid;
         return this;
     }
 
@@ -134,7 +141,7 @@ public class _Options extends _IndexName {
         return evictFilter;
     }
 
-    public Consumer<Map.Entry<byte[], byte[]>> getScanConsumer() {
-        return scanConsumer;
+    public Function<Map.Entry<byte[], byte[]>, Boolean> getScanFunc() {
+        return scanFunc;
     }
 }

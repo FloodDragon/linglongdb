@@ -21,11 +21,14 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.AbstractMap;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * 数据库处理器
@@ -35,20 +38,28 @@ import java.util.concurrent.TimeUnit;
 public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
     private final static String LINGLONGDB_DATA = "data";
+    /* 数据库角色 */
     private Role role;
+    /* 数据库基础文件目录 */
     private File baseFile;
     private Database database;
+    /* 持久模式 */
     private DurabilityMode durabilityMode;
     private DatabaseConfig databaseConfig;
     private ReplicatorConfig replicatorConfig;
+    /* 领导节点协调器 */
     private LeaderCoordinator leaderCoordinator;
+    /* 数据库复制器 */
     private DatabaseReplicator databaseReplicator;
+    /* 事务、索引锁 */
     private final RWLock txnLock = new RWLock();
     private final RWLock indexLock = new RWLock();
-    /* txnid ->  txn */
-    private final Map<Long, Transaction> txnMap = new HashMap<>();
-    /* index name -> Index */
-    private final Map<String, Index> indexMap = new HashMap<>();
+    /* idxname -> Index */
+    private final Map<String, Index> indexMap = new LinkedHashMap<>();
+    /* txnid ->  Transaction */
+    private final Map<Long, Transaction> txnMap = new LinkedHashMap<>();
+    /* pid -> ProcessIterator */
+    private final Map<String, ProcessIterator> processIteratorMap = new ConcurrentHashMap<>();
 
     private LinglongdbProperties linglongdbProperties;
     private ReplicationEventListener replicationEventListener;
@@ -186,27 +197,6 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
     public _Options newOptions() {
         return new _Options();
-    }
-
-    public interface Processor<T, R> {
-
-        R doProcess(T t) throws Exception;
-
-        default R process(T t) throws Exception {
-            R r = null;
-            try {
-                before(t);
-                return r = doProcess(t);
-            } finally {
-                after(r);
-            }
-        }
-
-        default void before(T t) throws Exception {
-        }
-
-        default void after(R r) throws Exception {
-        }
     }
 
     protected abstract class AbsIndexHandler implements Processor<_Options, Boolean> {
@@ -636,20 +626,42 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     }
 
     /**
-     * 索引扫描
+     * 索引扫描(返回是否还有可扫描数据)
      */
     public class IndexKeyValueScan extends AbsIndexHandler {
 
         @Override
         protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
-            Scanner scanner = index.newScanner(txn);
-            scanner.scanAll((k, v) -> {
-                if (options.scanConsumer != null) {
-                    options.scanConsumer.accept(new AbstractMap.SimpleEntry<>(k, v));
+            ProcessIterator iterator;
+            Function<Map.Entry<byte[], byte[]>, Boolean> scanFunc = options.getScanFunc();
+            if (StringUtils.isNotBlank(options.pid)) {
+                iterator = processIteratorMap.get(options.pid);
+            } else {
+                final Scanner scanner = index.newScanner(txn);
+                iterator = new ProcessIterator() {
+                    @Override
+                    protected void done(ProcessIteratorFunction function) throws Exception {
+                        scanner.scanAll((k, v) -> function.apply(k, v));
+                    }
+                };
+                processIteratorMap.put(iterator.getId(), iterator);
+                options.pid(iterator.getId());
+            }
+            //进行数据库扫描
+            if (iterator != null && scanFunc != null) {
+                while (iterator.hasNext()) {
+                    Map.Entry<byte[], byte[]> entry = iterator.next();
+                    Boolean continued = scanFunc.apply(entry);
+                    if (continued) {
+                        continue;
+                    } else {
+                        break;
+                    }
                 }
-            });
-            scanner.close();
-            return Boolean.TRUE;
+                return iterator.hasNext();
+            } else {
+                return false;
+            }
         }
     }
 

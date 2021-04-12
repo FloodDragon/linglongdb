@@ -181,8 +181,28 @@ public final class Packet implements BeanMessage {
         return new Packet(uuid.toString(), Constants.TYPE_REQUEST, Constants.STATUS_PENDING, serviceName, method, params, returnType);
     }
 
+    public static Packet packetDataStreamRequest(String serviceName, String method,
+                                                 Class<?> returnType, Object[] params) {
+        UUID uuid = new UUID(serviceName + "-" + method);
+        return new Packet(uuid.toString(), Constants.TYPE_DATA_STREAM_REQUEST, Constants.STATUS_PENDING, serviceName, method, params, returnType);
+    }
+
     public static Packet packetHeartBeat(Heartbeat heartbeat, byte type) {
         UUID uuid = new UUID(heartbeat.getClient_id());
         return new Packet(uuid.toString(), type, Constants.STATUS_PENDING, heartbeat);
+    }
+
+    public static Packet packetDataStream(Packet request, Object result) {
+        Packet newPacket = new Packet();
+        newPacket.id = request.id;
+        newPacket.type = Constants.TYPE_DATA_STREAM;
+        newPacket.state = Constants.STATUS_SUCCESS_DATA_SRREAM_CONTENT;
+        newPacket.interfaceName = request.interfaceName;
+        newPacket.method = request.method;
+        if (result != null) {
+            newPacket.result = result;
+            newPacket.returnType = result.getClass();
+        }
+        return newPacket;
     }
 }
