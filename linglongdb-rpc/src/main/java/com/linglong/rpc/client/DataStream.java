@@ -10,9 +10,9 @@ import com.linglong.rpc.common.service.IService;
  */
 public interface DataStream<S extends IService> {
 
-    void onStream(Packet packet);
+    void onStream(Packet packet, AsyncFuture<Packet> asyncFuture);
 
-    void call(DataStreamExecutor<S> executor, DataStreamHandler handler);
+    void call(DataStreamExecutor<S> executor, DataStreamHandler handler) throws Exception;
 }
 
 

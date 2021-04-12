@@ -1,6 +1,7 @@
 package com.linglong.rpc.test;
 
 import com.linglong.rpc.client.*;
+import com.linglong.rpc.common.config.Config;
 import com.linglong.rpc.test.protocol.Test;
 import com.linglong.rpc.test.protocol.TestService;
 
@@ -46,7 +47,7 @@ public class ClientTest {
                         } catch (Exception ex) {
                             ex.printStackTrace();
                             try {
-                                Thread.sleep(1000L);
+                                Thread.sleep(1000000000L);
                             } catch (InterruptedException e) {
                             }
                         }
@@ -57,7 +58,9 @@ public class ClientTest {
     }
 
     private final static void test_2() {
-        ClientProxy clientProxy = new ClientProxy();
+        Config config = new Config();
+        //config.setReadTimeout(1000);
+        ClientProxy clientProxy = new ClientProxy(config);
         clientProxy.setFailoverHandler(new FailoverHandler() {
             @Override
             public void failover(Client client) {
@@ -79,18 +82,23 @@ public class ClientTest {
                 @Override
                 public void run() {
                     while (true) {
-                        dataStream.call((testService) -> {
-                            //执行调用接口
-                            Test rt = testService.test(test);
-                            System.out.println("数据流测试1结束 ---------------------> code = " + rt.getCode() + " msg = " + rt.getMsg());
-                            rt = testService.test(test);
-                            System.out.println("数据流测试2结束 ---------------------> code = " + rt.getCode() + " msg = " + rt.getMsg());
-
-                        }, (data) -> System.out.println("===============>  数据流 " + data));
-                        System.out.println("===============>  测试数据流线程执行结束  <===============");
                         try {
-                            Thread.sleep(1000);
-                        } catch (InterruptedException e) {
+                            dataStream.call((testService) -> {
+                                //执行调用接口
+                                Test rt = testService.test(test);
+                                System.out.println("数据流测试1结束 ---------------------> code = " + rt.getCode() + " msg = " + rt.getMsg());
+                                rt = testService.test(test);
+                                System.out.println("数据流测试2结束 ---------------------> code = " + rt.getCode() + " msg = " + rt.getMsg());
+
+                            }, (data) -> System.out.println("===============>  数据流 " + data));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        } finally {
+                            System.out.println("===============>  测试数据流线程执行结束  <===============");
+                            try {
+                                Thread.sleep(100000000L);
+                            } catch (InterruptedException e) {
+                            }
                         }
                     }
                 }

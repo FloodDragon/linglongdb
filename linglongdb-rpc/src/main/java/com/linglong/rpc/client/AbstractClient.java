@@ -288,12 +288,12 @@ public abstract class AbstractClient extends AbstractService implements Client, 
         return callbackMap.get(messageId);
     }
 
-    protected <T extends Packet> AsyncFuture<T> sendPacket(T packet) throws RpcException {
+    protected AsyncFuture<Packet> sendPacket(Packet packet) throws RpcException {
         return sendPacket(packet, null);
     }
 
-    protected <T extends Packet> AsyncFuture<T> sendPacket(T packet, DataStream<?> dataStream) throws RpcException {
-        AsyncFuture<T> future = buildFuture(packet, dataStream);
+    protected AsyncFuture<Packet> sendPacket(Packet packet, DataStream<?> dataStream) throws RpcException {
+        AsyncFuture<Packet> future = buildFuture(packet, dataStream);
         try {
             if (!isClosed()) {
                 send(packet, true);
@@ -307,12 +307,12 @@ public abstract class AbstractClient extends AbstractService implements Client, 
         }
     }
 
-    protected <T extends Packet> AsyncFuture<T> buildFuture(final T packet, DataStream<?> dataStream) throws RpcException {
+    protected AsyncFuture<Packet> buildFuture(final Packet packet, DataStream<?> dataStream) throws RpcException {
         if (packet != null && removeCallBack(packet.getId()) == null) {
             final String id = packet.getId();
             final Class<?> clz = packet.getClass();
-            final AsyncFuture<T> future = new AsyncFuture<T>();
-            Callback<T> callback = new Callback<T>() {
+            final AsyncFuture<Packet> future = new AsyncFuture<>();
+            Callback<Packet> callback = new Callback<Packet>() {
 
                 @Override
                 public Class<?> getAcceptValueType() {
@@ -320,13 +320,13 @@ public abstract class AbstractClient extends AbstractService implements Client, 
                 }
 
                 @Override
-                public void call(T value) {
+                public void call(Packet value) {
                     if (value != null) {
                         switch (value.getType()) {
                             case Constants.TYPE_DATA_STREAM:
                             case Constants.TYPE_DATA_STREAM_RESPONSE:
                                 if (dataStream != null)
-                                    dataStream.onStream(value);
+                                    dataStream.onStream(value, future);
                                 break;
                             default:
                                 future.done(value);
@@ -336,9 +336,9 @@ public abstract class AbstractClient extends AbstractService implements Client, 
                 }
             };
             setCallback(id, callback);
-            future.addAsyncListener(new AsyncListener<T>() {
+            future.addAsyncListener(new AsyncListener<Packet>() {
                 @Override
-                public void asyncReturn(T returnValue) {
+                public void asyncReturn(Packet returnValue) {
                     removeCallBack(id);
                 }
             });

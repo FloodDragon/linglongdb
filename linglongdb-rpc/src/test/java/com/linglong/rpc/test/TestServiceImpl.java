@@ -23,7 +23,7 @@ public class TestServiceImpl extends Service implements TestService {
             for (int i = 0; i < 10; i++) {
                 try {
                     dataStreamTransfer.transferTo(String.valueOf(i));
-                    Thread.sleep(100);
+                    Thread.sleep(2 * 1000);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

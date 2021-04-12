@@ -27,7 +27,7 @@ import static org.junit.Assert.*;
 /**
  * @author Stereo on 2021/3/17.
  */
-public class TestAllAll {
+public class TestAll {
     protected Database mDb;
 
     @Before

@@ -3,19 +3,14 @@ package com.linglong.rpc.client;
 import com.linglong.rpc.common.config.Constants;
 import com.linglong.rpc.common.protocol.Packet;
 import com.linglong.rpc.common.service.IService;
-import com.linglong.rpc.common.utils.SystemClock;
 import com.linglong.rpc.exception.RpcException;
 
 import java.lang.reflect.Method;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.locks.LockSupport;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
- * TODO 数据流代理需要优化
+ * 数据流远程代理
  * <p>
  * Created by liuj-ai on 2021/4/8.
  */
@@ -43,66 +38,117 @@ public class DataStreamRemoteProxy<S extends IService> extends RemoteProxy<S> {
         private String id;
         private Packet response;
         private final int readTimeout;
+        private final int maxCapacity;
         private DataStreamHandler handler;
-        private AsyncFuture<Packet> future;
-        private volatile long lastActiveTime;
-        private volatile boolean completed;
+        private volatile long pollSize = 0;
+        private final ArrayDeque<Object> dataQueue;
+        private volatile boolean completed = false;
 
-        private DataStreamProcessor(String id, DataStreamHandler handler, AsyncFuture<Packet> future) {
+        private DataStreamProcessor(String id,
+                                    DataStreamHandler handler) {
             this.id = id;
-            this.future = future;
             this.handler = handler;
-            this.lastActiveTime = SystemClock.now();
+            this.maxCapacity = handler.getQueueMaxCapacity();
+            this.dataQueue = new ArrayDeque<>(maxCapacity);
             this.readTimeout = getClientProxy().getConfig().getReadTimeout();
             DataStreamRemoteProxy.this.dataStreamProcessorMap.put(id, this);
         }
 
-        private void process(Packet packet) {
+        private void process(Packet packet, AsyncFuture<Packet> returnFuture) {
             byte type = packet.getType();
             if (type == Constants.TYPE_DATA_STREAM) {
-                lastActiveTime = SystemClock.now();
-                if (handler != null) {
-                    handler.handle(packet.getResult());
+                synchronized (this) {
+                    while (this.maxCapacity <= dataQueue.size()) {
+                        try {
+                            wait();
+                        } catch (InterruptedException e) {
+                            //ignore
+                        }
+                    }
+                    if (!completed) {
+                        dataQueue.offer(packet.getResult());
+                        notifyAll();
+                    }
                 }
+            } else if (type == Constants.TYPE_DATA_STREAM_RESPONSE) {
+                returnFuture.done(packet);
+                completed();
             } else {
-                completed = true;
-                future.done(packet);
+                //ignore
             }
         }
 
-        private boolean isActive() {
-            return SystemClock.now() - lastActiveTime < readTimeout && !completed;
+        private void holdOn(AsyncFuture<Packet> returnFuture) throws InterruptedException, ExecutionException, TimeoutException {
+            try {
+                loop:
+                while (!completed) {
+                    Object data;
+                    synchronized (this) {
+                        inner:
+                        while (dataQueue.size() == 0) {
+                            long pollSize = this.pollSize;
+                            wait(readTimeout);
+                            if (completed) {
+                                break inner;
+                            }
+                            if (this.pollSize == pollSize && dataQueue.size() == 0) {
+                                throw new TimeoutException();
+                            }
+                        }
+                        if (!completed) {
+                            pollSize++;
+                            data = dataQueue.poll();
+                        } else {
+                            break loop;
+                        }
+                    }
+                    if (handler != null) {
+                        handler.handle(data);
+                    }
+                }
+                if (dataQueue.size() > 0) {
+                    Iterator<Object> it = dataQueue.iterator();
+                    while (it.hasNext()) {
+                        if (handler != null) {
+                            handler.handle(it.next());
+                        }
+                    }
+                }
+                response = returnFuture.get(readTimeout, TimeUnit.MILLISECONDS);
+            } finally {
+                completed();
+                this.handler = null;
+                returnFuture.done(null);
+                DataStreamRemoteProxy.this.dataStreamProcessorMap.remove(id);
+                dataQueue.clear();
+            }
         }
 
-        private void holdOn() throws InterruptedException, ExecutionException, TimeoutException {
-            while (isActive()) {
-                LockSupport.parkNanos(1000000000L);
-            }
+        private void completed() {
             if (!completed) {
-                throw new TimeoutException();
+                synchronized (this) {
+                    if (!completed) {
+                        completed = true;
+                        notifyAll();
+                    }
+                }
             }
-            response = future.get(readTimeout, TimeUnit.MILLISECONDS);
-        }
-
-        private void clear() {
-            DataStreamRemoteProxy.this.dataStreamProcessorMap.remove(id);
-            this.handler = null;
         }
     }
 
     public class DataStreamImpl implements DataStream<S> {
         @Override
-        public void onStream(Packet packet) {
+        public void onStream(Packet packet, AsyncFuture<Packet> future) {
             DataStreamProcessor processor;
             if (null != (processor = dataStreamProcessorMap.get(packet.getId()))) {
-                processor.process(packet);
+                processor.process(packet, future);
             } else {
                 LOG.error("not found data stream processor.");
             }
         }
 
         @Override
-        public void call(DataStreamExecutor<S> executor, DataStreamHandler handler) {
+        public void call(DataStreamExecutor<S> executor, DataStreamHandler handler) throws Exception {
             if (executor != null) {
                 try {
                     dataStreamHandlerThreadLocal.set(handler);
@@ -125,16 +171,13 @@ public class DataStreamRemoteProxy<S extends IService> extends RemoteProxy<S> {
 
     @Override
     protected Object sendRequest(Packet packet) throws RpcException {
-        AsyncFuture<Packet> future = send(packet, _dataStream);
-        DataStreamProcessor processor = new DataStreamProcessor(packet.getId(), dataStreamHandlerThreadLocal.get(), future);
+        DataStreamProcessor processor = new DataStreamProcessor(packet.getId(), dataStreamHandlerThreadLocal.get());
+        AsyncFuture<Packet> returnFuture = send(packet, _dataStream);
         try {
-            processor.holdOn();
+            processor.holdOn(returnFuture);
             return receiveResponse(processor.response);
         } catch (InterruptedException | TimeoutException | ExecutionException ex) {
-            future.done(null);
             throw new RpcException("ClientProxy >>> read packet timeout " + "packet : " + processor.response);
-        } finally {
-            processor.clear();
         }
     }
 }

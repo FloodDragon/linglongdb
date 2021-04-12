@@ -9,4 +9,8 @@ package com.linglong.rpc.client;
 public interface DataStreamHandler {
 
     void handle(Object data);
+
+    default int getQueueMaxCapacity() {
+        return 1024;
+    }
 }
