@@ -20,16 +20,16 @@ public class TestServiceImpl extends Service implements TestService {
     public Test test(Test test) {
         DataStreamTransfer dataStreamTransfer = ServiceContext.getDataStreamTransfer();
         if (dataStreamTransfer != null) {
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 1000; i++) {
                 try {
                     dataStreamTransfer.transferTo(String.valueOf(i));
-                    Thread.sleep(2 * 1000);
+                    //Thread.sleep(50);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }
-        System.out.println("DataStreamTransfer = " + dataStreamTransfer);
+        //System.out.println("DataStreamTransfer = " + dataStreamTransfer);
         System.out.println(" 处理次数 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  " + counter.incrementAndGet());
         test.setCode(1);
         test.setMsg("返回=1");

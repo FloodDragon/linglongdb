@@ -7,11 +7,12 @@ import com.linglong.rpc.test.protocol.TestService;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class ClientTest {
     public static void main(String[] args) throws InterruptedException {
         //测试RPC访问
-        //test_1();
+        test_1();
         //测试RPC数据流访问
         test_2();
     }
@@ -42,7 +43,7 @@ public class ClientTest {
                         try {
                             //访问远程服务
                             Test rt = testService.test(test);
-                            System.out.println("---------------------> code = " + rt.getCode() + " msg = " + rt.getMsg());
+                            System.out.println("RPC 测试 ---------------------> code = " + rt.getCode() + " msg = " + rt.getMsg());
                             Thread.sleep(1000L);
                         } catch (Exception ex) {
                             ex.printStackTrace();
@@ -57,7 +58,7 @@ public class ClientTest {
         }
     }
 
-    private final static void test_2() {
+    private final static void test_2() throws InterruptedException {
         Config config = new Config();
         //config.setReadTimeout(1000);
         ClientProxy clientProxy = new ClientProxy(config);
@@ -77,7 +78,7 @@ public class ClientTest {
         test.getMap().put("test", 11L);
         test.getList().add("test");
         ExecutorService executorService = Executors.newFixedThreadPool(10);
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 10; i++) {
             executorService.submit(new Runnable() {
                 @Override
                 public void run() {
@@ -95,14 +96,16 @@ public class ClientTest {
                             e.printStackTrace();
                         } finally {
                             System.out.println("===============>  测试数据流线程执行结束  <===============");
-                            try {
-                                Thread.sleep(100000000L);
-                            } catch (InterruptedException e) {
-                            }
+                            break;
                         }
                     }
                 }
             });
         }
+
+        executorService.shutdown();
+        while (!executorService.awaitTermination(100L, TimeUnit.MILLISECONDS))
+            ;
+        System.out.println("<RPC>数据流测试结束...");
     }
 }
