@@ -148,7 +148,7 @@ public class DataStreamRemoteProxy<S extends IService> extends RemoteProxy<S> {
         }
 
         @Override
-        public void call(DataStreamExecutor<S> executor, DataStreamHandler handler) throws Exception {
+        public void call(DataStreamExecutor<S> executor, DataStreamHandler handler) {
             if (executor != null) {
                 try {
                     dataStreamHandlerThreadLocal.set(handler);

@@ -26,7 +26,7 @@ public class _Options extends _IndexName {
     //索引数据驱逐过滤
     KeyValueEvictFilter evictFilter;
     //索引数据扫描<扫描数据,是否继续扫描>
-    Function<Map.Entry<byte[], byte[]>, Boolean> scanFunc;
+    Consumer<Map.Entry<byte[], byte[]>> scanFunc;
 
     public _Options key(byte[] key) {
         this.key = key;
@@ -82,7 +82,7 @@ public class _Options extends _IndexName {
         return this;
     }
 
-    public _Options scanFunc(Function<Map.Entry<byte[], byte[]>, Boolean> scanFunc) {
+    public _Options scanFunc(Consumer<Map.Entry<byte[], byte[]>> scanFunc) {
         this.scanFunc = scanFunc;
         return this;
     }
@@ -141,7 +141,7 @@ public class _Options extends _IndexName {
         return evictFilter;
     }
 
-    public Function<Map.Entry<byte[], byte[]>, Boolean> getScanFunc() {
+    public Consumer<Map.Entry<byte[], byte[]>> getScanFunc() {
         return scanFunc;
     }
 }
