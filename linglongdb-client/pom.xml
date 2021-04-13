@@ -9,7 +9,21 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
+    <packaging>jar</packaging>
+    <name>linglongdb-client</name>
     <artifactId>linglongdb-client</artifactId>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.linglong</groupId>
+            <artifactId>linglongdb-rpc</artifactId>
+            <version>${parent.version}</version>
+        </dependency>
 
+        <dependency>
+            <groupId>com.linglong</groupId>
+            <artifactId>linglongdb-protocol</artifactId>
+            <version>${parent.version}</version>
+        </dependency>
+    </dependencies>
 </project>
