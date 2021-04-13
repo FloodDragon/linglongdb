@@ -634,12 +634,16 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
             Consumer<Map.Entry<byte[], byte[]>> consumer = options.getScanFunc();
             Scanner scanner = index.newScanner(txn);
-            if (consumer != null) {
-                scanner.scanAll(((key, value) ->
-                        consumer.accept(new AbstractMap.SimpleEntry<byte[], byte[]>(key, value))
-                ));
+            try {
+                if (consumer != null) {
+                    scanner.scanAll(((key, value) ->
+                            consumer.accept(new AbstractMap.SimpleEntry<byte[], byte[]>(key, value))
+                    ));
+                }
+                return true;
+            } finally {
+                scanner.close();
             }
-            return true;
         }
     }
 
