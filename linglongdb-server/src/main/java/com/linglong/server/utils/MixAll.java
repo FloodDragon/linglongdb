@@ -188,7 +188,6 @@ public class MixAll {
         }
     }
 
-
     public static String getSHAString(String input) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
         return toHexString(md.digest(input.getBytes(StandardCharsets.UTF_8)));
@@ -206,5 +205,40 @@ public class MixAll {
             hexString.insert(0, '0');
         }
         return hexString.toString();
+    }
+
+    public static class Counter {
+        private final long countResetTimePeriodMs;
+        private long count = 0L;
+        private long timestamp = now();
+
+        private Counter(long countResetTimePeriodMs) {
+            this.countResetTimePeriodMs = countResetTimePeriodMs;
+        }
+
+        public synchronized long getCount() {
+            return count;
+        }
+
+        public synchronized long increment() {
+            final long now = now();
+            if (now - timestamp > countResetTimePeriodMs) {
+                count = 0;
+            }
+            timestamp = now;
+            return ++count;
+        }
+
+        private static long now() {
+            return System.nanoTime() / 1000000;
+        }
+    }
+
+    public static Counter getCounter(long countResetTimePeriodMs) {
+        return new Counter(countResetTimePeriodMs);
+    }
+
+    public static Counter getCounter() {
+        return new Counter(Long.MAX_VALUE);
     }
 }

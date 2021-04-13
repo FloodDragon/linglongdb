@@ -86,5 +86,5 @@ public interface KeyValueProtocol extends IService {
      *
      * @param request
      */
-    IndexScanResponse scan(IndexScanRequest request);
+    IndexScanResponse scan(IndexRequest request);
 }

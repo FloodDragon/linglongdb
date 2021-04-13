@@ -12,7 +12,7 @@ public interface DataStream<S extends IService> {
 
     void onStream(Packet packet, AsyncFuture<Packet> asyncFuture);
 
-    void call(DataStreamExecutor<S> executor, DataStreamHandler handler) throws Exception;
+    void call(DataStreamExecutor<S> executor, DataStreamHandler handler);
 }
 
 

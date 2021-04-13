@@ -632,36 +632,14 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
 
         @Override
         protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
-            ProcessIterator iterator;
-            Function<Map.Entry<byte[], byte[]>, Boolean> scanFunc = options.getScanFunc();
-            if (StringUtils.isNotBlank(options.pid)) {
-                iterator = processIteratorMap.get(options.pid);
-            } else {
-                final Scanner scanner = index.newScanner(txn);
-                iterator = new ProcessIterator() {
-                    @Override
-                    protected void done(ProcessIteratorFunction function) throws Exception {
-                        scanner.scanAll((k, v) -> function.apply(k, v));
-                    }
-                };
-                processIteratorMap.put(iterator.getId(), iterator);
-                options.pid(iterator.getId());
+            Consumer<Map.Entry<byte[], byte[]>> consumer = options.getScanFunc();
+            Scanner scanner = index.newScanner(txn);
+            if (consumer != null) {
+                scanner.scanAll(((key, value) ->
+                        consumer.accept(new AbstractMap.SimpleEntry<byte[], byte[]>(key, value))
+                ));
             }
-            //进行数据库扫描
-            if (iterator != null && scanFunc != null) {
-                while (iterator.hasNext()) {
-                    Map.Entry<byte[], byte[]> entry = iterator.next();
-                    Boolean continued = scanFunc.apply(entry);
-                    if (continued) {
-                        continue;
-                    } else {
-                        break;
-                    }
-                }
-                return iterator.hasNext();
-            } else {
-                return false;
-            }
+            return true;
         }
     }
 
@@ -669,7 +647,6 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
      * 索引批量更新
      */
     public class IndexKeyValueUpdater extends AbsIndexHandler {
-
         @Override
         protected boolean doHandle(Index index, Transaction txn, _Options options) throws Exception {
             Updater updater = index.newUpdater(txn);

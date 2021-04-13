@@ -5,6 +5,9 @@ import com.linglong.protocol.KeyValueProtocol;
 import com.linglong.protocol.TransactionProtocol;
 import com.linglong.protocol.message.*;
 import com.linglong.rpc.client.ClientProxy;
+import com.linglong.rpc.client.DataStream;
+import com.linglong.rpc.client.DataStreamExecutor;
+import com.linglong.rpc.client.DataStreamHandler;
 import com.linglong.rpc.common.config.Config;
 import com.linglong.rpc.common.utils.UUID;
 
@@ -13,7 +16,7 @@ import com.linglong.rpc.common.utils.UUID;
  */
 public class TestController {
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         //客户端开启
         ClientProxy clientProxy = new ClientProxy(new Config("0.0.0.0", 7002));
         clientProxy.start();
@@ -22,13 +25,14 @@ public class TestController {
         IndexProtocol indexProtocol = clientProxy.create(IndexProtocol.class);
         KeyValueProtocol keyValueProtocol = clientProxy.create(KeyValueProtocol.class);
         TransactionProtocol transactionProtocol = clientProxy.create(TransactionProtocol.class);
+        DataStream<KeyValueProtocol> dataStream = clientProxy.createDataStream(KeyValueProtocol.class);
 
         //执行数据库操作
         final String indexName = "index-test";
 
-        for (int j = 0; j < 10; j++) {
+        for (int j = 0; j < 1; j++) {
             Response txnResponse = transactionProtocol.openTxn();
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 1000; i++) {
                 try {
                     KeyValueRequest insertKeyValue = new KeyValueRequest();
                     insertKeyValue.setId(new UUID(indexName).toString());
@@ -52,22 +56,41 @@ public class TestController {
             CountResponse countResponse = indexProtocol.count(keyLowHighRequest);
             System.out.println("数据库测试 步骤2 获取索引数据长度大小(" + countResponse.getCount() + ")");
 
+            dataStream.call(new DataStreamExecutor<KeyValueProtocol>() {
+                @Override
+                public void execute(KeyValueProtocol keyValueProtocol) {
+                    IndexRequest indexRequest = new IndexRequest();
+                    indexRequest.setId(new UUID(indexName).toString());
+                    indexRequest.setIndexName(indexName);
+                    indexRequest.setXid(txnResponse.getXid());
+                    IndexScanResponse indexScanResponse = keyValueProtocol.scan(indexRequest);
+                    System.out.println("数据库测试 步骤3 扫描数据长度(" + indexScanResponse.getScanTotal() + ")");
+                }
+            }, new DataStreamHandler() {
+                @Override
+                public void handle(Object data) {
+                    if (data instanceof IndexScanItemResponse) {
+                        IndexScanItemResponse response = (IndexScanItemResponse) data;
+                        System.out.println("数据库测试 步骤3 扫描数据(key = " + DatabaseProcessorTest.toLong(response.getKey()) + "  value = " + new String(response.getValue()) + ")");
+                    }
+                }
+            });
+
             IndexRequest indexRequest = new IndexRequest();
             indexRequest.setId(new UUID(indexName).toString());
             indexRequest.setIndexName(indexName);
             IndexDeleteResponse deleteResponse = indexProtocol.delete(indexRequest);
-            System.out.println("数据库测试 步骤3 删除索引" + (deleteResponse.isDeleted() ? "成功" : "失败"));
+            System.out.println("数据库测试 步骤4 删除索引" + (deleteResponse.isDeleted() ? "成功" : "失败"));
 
             countResponse = indexProtocol.count(keyLowHighRequest);
-            System.out.println("数据库测试 步骤4 获取索引数据长度大小(" + countResponse.getCount() + ")");
+            System.out.println("数据库测试 步骤5 获取索引数据长度大小(" + countResponse.getCount() + ")");
 
             TxnRequest txnRequest = new TxnRequest();
             txnRequest.setId(new UUID(indexName).toString());
             txnRequest.setTxnId(txnResponse.getXid());
             TxnCommitResponse txnCommitResponse = transactionProtocol.commitTxn(txnRequest);
 
-            System.out.println("数据库测试 步骤5 提交操作" + (txnCommitResponse.isCommited() ? "成功" : "失败"));
-
+            System.out.println("数据库测试 步骤6 提交操作" + (txnCommitResponse.isCommited() ? "成功" : "失败"));
         }
 
         //客户端关闭

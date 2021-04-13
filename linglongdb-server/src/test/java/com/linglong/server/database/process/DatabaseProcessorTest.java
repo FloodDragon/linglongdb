@@ -52,11 +52,10 @@ public class DatabaseProcessorTest {
             }
             System.out.println("数据库测试 步骤1 已写入完成.");
 
-            processor.new IndexKeyValueScan().process(processor.newOptions().txn(txn.txnId).indexName(indexName).scanFunc(new Function<Map.Entry<byte[], byte[]>, Boolean>() {
+            processor.new IndexKeyValueScan().process(processor.newOptions().txn(txn.txnId).indexName(indexName).scanFunc(new Consumer<Map.Entry<byte[], byte[]>>() {
                 @Override
-                public Boolean apply(Map.Entry<byte[], byte[]> entry) {
+                public void accept(Map.Entry<byte[], byte[]> entry) {
                     System.out.println("entry: " + toLong(entry.getKey()) + " " + new String(entry.getValue()));
-                    return true;
                 }
             }));
             System.out.println("数据库测试 步骤2 已扫描完成.");

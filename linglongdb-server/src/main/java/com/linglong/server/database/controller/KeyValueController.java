@@ -2,8 +2,11 @@ package com.linglong.server.database.controller;
 
 import com.linglong.protocol.KeyValueProtocol;
 import com.linglong.protocol.message.*;
+import com.linglong.rpc.server.skeleton.service.DataStreamTransfer;
+import com.linglong.rpc.server.skeleton.service.ServiceContext;
 import com.linglong.server.database.process.DatabaseProcessor;
 import com.linglong.server.database.process._Options;
+import com.linglong.server.utils.MixAll;
 
 /**
  * Created by liuj-ai on 2021/3/25.
@@ -167,7 +170,33 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
     }
 
     @Override
-    public IndexScanResponse scan(IndexScanRequest request) {
-        return null;
+    public IndexScanResponse scan(IndexRequest request) {
+        try {
+            DataStreamTransfer transfer = ServiceContext.getDataStreamTransfer();
+            _Options options = databaseProcessor.newOptions()
+                    .indexName(request.getIndexName())
+                    .txn(request.getXid());
+            MixAll.Counter counter = MixAll.getCounter();
+            if (transfer != null) {
+                options.scanFunc((entry) -> {
+                    try {
+                        IndexScanItemResponse response = new IndexScanItemResponse();
+                        response.setKey(entry.getKey());
+                        response.setValue(entry.getValue());
+                        transfer.transferTo(response);
+                        counter.increment();
+                    } catch (Exception ex) {
+                        LOGGER.error("key value scan func execute error", ex);
+                    }
+                });
+            }
+            databaseProcessor.new IndexKeyValueScan().process(options);
+            IndexScanResponse response = response(request, IndexScanResponse.class);
+            response.setScanTotal(counter.getCount());
+            return response;
+        } catch (Exception ex) {
+            LOGGER.error("key value scan error", ex);
+            return response(request, IndexScanResponse.class, ex);
+        }
     }
 }
