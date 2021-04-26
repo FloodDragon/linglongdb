@@ -21,14 +21,12 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * 数据库处理器
@@ -54,6 +52,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     /* 事务、索引锁 */
     private final RWLock txnLock = new RWLock();
     private final RWLock indexLock = new RWLock();
+    private final IndexCache indexCache = new IndexCache();
     /* idxname -> Index */
     private final Map<String, Index> indexMap = new LinkedHashMap<>();
     /* txnid ->  Transaction */
