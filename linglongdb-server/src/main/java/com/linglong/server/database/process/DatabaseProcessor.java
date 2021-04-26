@@ -52,7 +52,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     /* 事务、索引锁 */
     private final RWLock txnLock = new RWLock();
     private final RWLock indexLock = new RWLock();
-    private final IndexCache indexCache = new IndexCache();
+    private final _IndexCache indexCache = new _IndexCache();
     /* idxname -> Index */
     private final Map<String, Index> indexMap = new LinkedHashMap<>();
     /* txnid ->  Transaction */

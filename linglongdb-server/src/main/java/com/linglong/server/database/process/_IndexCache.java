@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * Created by liuj-ai on 2021/4/26.
  */
-public final class IndexCache {
+public class _IndexCache {
 
     private final RWLock indexLock = new RWLock();
     private final Map<String, Index> indexMap = new LinkedHashMap<>();
