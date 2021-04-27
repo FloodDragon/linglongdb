@@ -38,7 +38,7 @@ public class _Options extends _IndexName {
         return this;
     }
 
-    public _Options oldValue(byte[] value) {
+    public _Options oldValue(byte[] oldValue) {
         this.oldValue = oldValue;
         return this;
     }

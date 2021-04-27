@@ -127,8 +127,9 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
                     .value(request.getValue())
                     .txn(request.getXid());
             KeyValueResponse response = response(request, KeyValueResponse.class);
-            databaseProcessor.new KeyValueExchange().process(options);
+            boolean succeed = databaseProcessor.new KeyValueExchange().process(options);
             response.setValue(options.getOldValue());
+            response.setSuccessful(succeed);
             return response;
         } catch (Exception ex) {
             LOGGER.error("key value exchange error", ex);
@@ -162,6 +163,7 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
             KeyValueResponse response = response(request, KeyValueResponse.class);
             databaseProcessor.new KeyValueLoad().process(options);
             response.setValue(options.getValue());
+            response.setSuccessful(true);
             return response;
         } catch (Exception ex) {
             LOGGER.error("key value load error", ex);
