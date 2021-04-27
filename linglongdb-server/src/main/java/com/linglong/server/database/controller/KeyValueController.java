@@ -5,7 +5,7 @@ import com.linglong.protocol.message.*;
 import com.linglong.rpc.server.skeleton.service.DataStreamTransfer;
 import com.linglong.rpc.server.skeleton.service.ServiceContext;
 import com.linglong.server.database.process.DatabaseProcessor;
-import com.linglong.server.database.process._Options;
+import com.linglong.server.database.process._KeyValueOptions;
 import com.linglong.server.utils.MixAll;
 
 /**
@@ -20,7 +20,7 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
     @Override
     public KeyValueResponse insert(KeyValueRequest request) {
         try {
-            _Options options = databaseProcessor.newOptions()
+            _KeyValueOptions options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .key(request.getKey())
                     .value(request.getValue())
@@ -37,7 +37,7 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
     @Override
     public Response store(KeyValueRequest request) {
         try {
-            _Options options = databaseProcessor.newOptions()
+            _KeyValueOptions options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .key(request.getKey())
                     .value(request.getValue())
@@ -53,7 +53,7 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
     @Override
     public KeyValueResponse replace(KeyValueRequest request) {
         try {
-            _Options options = databaseProcessor.newOptions()
+            _KeyValueOptions options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .key(request.getKey())
                     .value(request.getValue())
@@ -70,7 +70,7 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
     @Override
     public KeyValueResponse update(KeyValueRequest request) {
         try {
-            _Options options = databaseProcessor.newOptions()
+            _KeyValueOptions options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .key(request.getKey())
                     .value(request.getValue())
@@ -88,7 +88,7 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
     @Override
     public KeyValueResponse delete(KeyValueRequest request) {
         try {
-            _Options options = databaseProcessor.newOptions()
+            _KeyValueOptions options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .key(request.getKey())
                     .txn(request.getXid());
@@ -104,7 +104,7 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
     @Override
     public KeyValueResponse remove(KeyValueRequest request) {
         try {
-            _Options options = databaseProcessor.newOptions()
+            _KeyValueOptions options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .key(request.getKey())
                     .value(request.getValue())
@@ -121,7 +121,7 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
     @Override
     public KeyValueResponse exchange(KeyValueRequest request) {
         try {
-            _Options options = databaseProcessor.newOptions()
+            _KeyValueOptions options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .key(request.getKey())
                     .value(request.getValue())
@@ -140,7 +140,7 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
     @Override
     public ExistsResponse exists(KeyValueRequest request) {
         try {
-            _Options options = databaseProcessor.newOptions()
+            _KeyValueOptions options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .key(request.getKey())
                     .txn(request.getXid());
@@ -156,7 +156,7 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
     @Override
     public KeyValueResponse load(KeyValueRequest request) {
         try {
-            _Options options = databaseProcessor.newOptions()
+            _KeyValueOptions options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .key(request.getKey())
                     .txn(request.getXid());
@@ -175,7 +175,7 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
     public IndexScanResponse scan(IndexRequest request) {
         try {
             DataStreamTransfer transfer = ServiceContext.getDataStreamTransfer();
-            _Options options = databaseProcessor.newOptions()
+            _KeyValueOptions options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .txn(request.getXid());
             MixAll.Counter counter = MixAll.getCounter();
