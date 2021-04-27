@@ -51,7 +51,6 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     private DatabaseReplicator databaseReplicator;
     /* 事务、索引锁 */
     private final RWLock txnLock = new RWLock();
-    private final RWLock indexLock = new RWLock();
     private final _IndexMap indexMap = new _IndexMap();
     /* txnid ->  Transaction */
     private final Map<Long, Transaction> txnMap = new LinkedHashMap<>();
