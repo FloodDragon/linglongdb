@@ -5,7 +5,7 @@ import com.linglong.protocol.IndexProtocol;
 import com.linglong.protocol.message.*;
 import com.linglong.server.database.process.DatabaseProcessor;
 import com.linglong.server.database.process._IndexName;
-import com.linglong.server.database.process._Options;
+import com.linglong.server.database.process._KeyValueOptions;
 
 /**
  * 数据库索引控制器
@@ -21,7 +21,7 @@ public class IndexController extends AbsController implements IndexProtocol {
     @Override
     public CountResponse count(KeyLowHighRequest request) {
         try {
-            _Options options = databaseProcessor.newOptions()
+            _KeyValueOptions options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .lowKey(request.getLowKey())
                     .highKey(request.getHighKey());
@@ -38,7 +38,7 @@ public class IndexController extends AbsController implements IndexProtocol {
     @Override
     public IndexStatsResponse stats(KeyLowHighRequest request) {
         try {
-            _Options options = databaseProcessor.newOptions()
+            _KeyValueOptions options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .lowKey(request.getLowKey())
                     .highKey(request.getHighKey());
@@ -84,7 +84,7 @@ public class IndexController extends AbsController implements IndexProtocol {
     @Override
     public CountResponse evict(KeyLowHighRequest request) {
         try {
-            _Options options = databaseProcessor.newOptions()
+            _KeyValueOptions options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .lowKey(request.getLowKey())
                     .highKey(request.getHighKey())
