@@ -17,4 +17,22 @@ public class _IndexName {
         this.newName = newName;
         return this;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        _IndexName indexName = (_IndexName) o;
+
+        if (!idxName.equals(indexName.idxName)) return false;
+        return newName.equals(indexName.newName);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = idxName.hashCode();
+        result = 31 * result + newName.hashCode();
+        return result;
+    }
 }
