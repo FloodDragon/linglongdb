@@ -5,27 +5,27 @@ import com.linglong.engine.core.tx.Transaction;
 /**
  * Created by liuj-ai on 2021/3/24.
  */
-public class _TxnOptions {
+public class TxnOptions {
     Long txnId;
     boolean willCommit;
     Transaction transaction;
 
-    public _TxnOptions txnId(Long txnId) {
+    public TxnOptions txnId(Long txnId) {
         this.txnId = txnId;
         return this;
     }
 
-    public _TxnOptions commit() {
+    public TxnOptions commit() {
         this.willCommit = true;
         return this;
     }
 
-    public _TxnOptions rollback() {
+    public TxnOptions rollback() {
         this.willCommit = false;
         return this;
     }
 
-    public _TxnOptions transaction(Transaction transaction) {
+    public TxnOptions transaction(Transaction transaction) {
         this.transaction = transaction;
         return this;
     }

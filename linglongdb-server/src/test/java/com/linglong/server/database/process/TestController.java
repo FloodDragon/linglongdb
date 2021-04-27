@@ -40,7 +40,7 @@ public class TestController {
                 @Override
                 public void run() {
                     try {
-                        for (int j = 0; j < 5; j++) {
+                        for (int j = 0; j < 1; j++) {
                             //打开事务
                             Response txnResponse = transactionProtocol.openTxn();
                             //写入数据
@@ -54,14 +54,14 @@ public class TestController {
                                     insertKeyValue.setKey(DatabaseProcessorTest.toBytes(i));
                                     insertKeyValue.setValue(String.valueOf(i).getBytes());
                                     KeyValueResponse keyValueResponse = keyValueProtocol.insert(insertKeyValue);
-                                    System.out.println("数据库测试 步骤0 写入" + i + (keyValueResponse.isSuccessful() ? "成功" : "失败"));
+                                    System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤0 写入" + i + (keyValueResponse.isSuccessful() ? "成功" : "失败"));
                                     //Thread.sleep(1000L);
                                 } catch (Exception ex) {
                                     ex.printStackTrace();
-                                    System.out.println("数据库测试 步骤0 写入" + i + "失败");
+                                    System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤0 写入" + i + "失败");
                                 }
                             }
-                            System.out.println("数据库测试 步骤1 已写入完成.");
+                            System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤1 已写入完成.");
 
                             //获取索引数据长度
                             KeyLowHighRequest keyLowHighRequest = new KeyLowHighRequest();
@@ -69,7 +69,7 @@ public class TestController {
                             keyLowHighRequest.setIndexName(indexName);
                             keyLowHighRequest.setXid(txnResponse.getXid());
                             CountResponse countResponse = indexProtocol.count(keyLowHighRequest);
-                            System.out.println("数据库测试 步骤2 获取索引数据长度大小(" + countResponse.getCount() + ")");
+                            System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤2 获取索引数据长度大小(" + countResponse.getCount() + ")");
 
                             //全索引扫描数据
                             dataStream.call(new DataStreamExecutor<KeyValueProtocol>() {
@@ -80,14 +80,14 @@ public class TestController {
                                     indexRequest.setIndexName(indexName);
                                     indexRequest.setXid(txnResponse.getXid());
                                     IndexScanResponse indexScanResponse = keyValueProtocol.scan(indexRequest);
-                                    System.out.println("数据库测试 步骤3 扫描数据长度(" + indexScanResponse.getScanTotal() + ")");
+                                    System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤3 扫描数据长度(" + indexScanResponse.getScanTotal() + ")");
                                 }
                             }, new DataStreamHandler() {
                                 @Override
                                 public void handle(Object data) {
                                     if (data instanceof IndexScanItemResponse) {
                                         IndexScanItemResponse response = (IndexScanItemResponse) data;
-                                        System.out.println("数据库测试 步骤3 扫描数据(key = " + DatabaseProcessorTest.toLong(response.getKey()) + "  value = " + new String(response.getValue()) + ")");
+                                        System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤3 扫描数据(key = " + DatabaseProcessorTest.toLong(response.getKey()) + "  value = " + new String(response.getValue()) + ")");
                                     }
                                 }
                             });
@@ -100,7 +100,7 @@ public class TestController {
                             keyValueRequest.setXid(txnResponse.getXid());
                             keyValueRequest.setKey(key);
                             ExistsResponse existsResponse = keyValueProtocol.exists(keyValueRequest);
-                            System.out.println("数据库测试 步骤4 判断Key=" + (size - 1) + "是否存在, 结果: " + (existsResponse.isExists() ? "存在" : "不存在"));
+                            System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤4 判断Key=" + (size - 1) + "是否存在, 结果: " + (existsResponse.isExists() ? "存在" : "不存在"));
 
                             //索引替换Value
                             final byte[] value = "Hi 我是玲珑数据库.".getBytes();
@@ -111,7 +111,7 @@ public class TestController {
                             keyValueRequest.setKey(key);
                             keyValueRequest.setValue(value);
                             KeyValueResponse keyValueResponse = keyValueProtocol.replace(keyValueRequest);
-                            System.out.println("数据库测试 步骤5 替换Value数据" + (keyValueResponse.isSuccessful() ? "替换成功" : "替换失败"));
+                            System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤5 替换Value数据" + (keyValueResponse.isSuccessful() ? "替换成功" : "替换失败"));
 
                             //获取替换后的Value
                             keyValueRequest = new KeyValueRequest();
@@ -120,7 +120,7 @@ public class TestController {
                             keyValueRequest.setXid(txnResponse.getXid());
                             keyValueRequest.setKey(DatabaseProcessorTest.toBytes((size - 1)));
                             keyValueResponse = keyValueProtocol.load(keyValueRequest);
-                            System.out.println("数据库测试 步骤6 获取替换Value后数据 " + (keyValueResponse.isSuccessful() ? new String(keyValueResponse.getValue()) : "获取失败"));
+                            System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤6 获取替换Value后数据 " + (keyValueResponse.isSuccessful() ? new String(keyValueResponse.getValue()) : "获取失败"));
 
                             //索引更新Value
                             final byte[] newValue = "Hi 我是玲珑数据库, 我正在努力研发中...".getBytes();
@@ -132,7 +132,7 @@ public class TestController {
                             keyValueRequest.setValue(newValue);
                             keyValueRequest.setOldValue(value);
                             keyValueResponse = keyValueProtocol.update(keyValueRequest);
-                            System.out.println("数据库测试 步骤7 更新Value数据" + (keyValueResponse.isSuccessful() ? "更新成功" : "更新失败"));
+                            System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤7 更新Value数据" + (keyValueResponse.isSuccessful() ? "更新成功" : "更新失败"));
 
                             //获取更新后的KeyValue
                             keyValueRequest = new KeyValueRequest();
@@ -141,7 +141,7 @@ public class TestController {
                             keyValueRequest.setXid(txnResponse.getXid());
                             keyValueRequest.setKey(key);
                             keyValueResponse = keyValueProtocol.load(keyValueRequest);
-                            System.out.println("数据库测试 步骤8 获取更新Value后数据 " + (keyValueResponse.isSuccessful() ? new String(keyValueResponse.getValue()) : "获取失败"));
+                            System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤8 获取更新Value后数据 " + (keyValueResponse.isSuccessful() ? new String(keyValueResponse.getValue()) : "获取失败"));
 
                             //进行交换KeyValue
                             final byte[] newValue1 = "Hi 我是玲珑数据库, 我正在努力研发中...加油...奥利给...".getBytes();
@@ -152,7 +152,7 @@ public class TestController {
                             keyValueRequest.setKey(key);
                             keyValueRequest.setValue(newValue1);
                             keyValueResponse = keyValueProtocol.exchange(keyValueRequest);
-                            System.out.println("数据库测试 步骤9 交换Value数据 " + (keyValueResponse.isSuccessful() ? new String(keyValueResponse.getValue()) : "交换失败"));
+                            System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤9 交换Value数据 " + (keyValueResponse.isSuccessful() ? new String(keyValueResponse.getValue()) : "交换失败"));
 
                             //加载交换后的KeyValue
                             keyValueRequest = new KeyValueRequest();
@@ -161,7 +161,7 @@ public class TestController {
                             keyValueRequest.setXid(txnResponse.getXid());
                             keyValueRequest.setKey(key);
                             keyValueResponse = keyValueProtocol.load(keyValueRequest);
-                            System.out.println("数据库测试 步骤10 获取交换Value后数据 " + (keyValueResponse.isSuccessful() ? new String(keyValueResponse.getValue()) : "获取失败"));
+                            System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤10 获取交换Value后数据 " + (keyValueResponse.isSuccessful() ? new String(keyValueResponse.getValue()) : "获取失败"));
 
                             //删除KeyValue
                             keyValueRequest = new KeyValueRequest();
@@ -170,7 +170,7 @@ public class TestController {
                             keyValueRequest.setXid(txnResponse.getXid());
                             keyValueRequest.setKey(key);
                             keyValueResponse = keyValueProtocol.delete(keyValueRequest);
-                            System.out.println("数据库测试 步骤11 删除Value后数据 " + (keyValueResponse.isSuccessful() ? "删除成功" : "删除失败"));
+                            System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤11 删除Value后数据 " + (keyValueResponse.isSuccessful() ? "删除成功" : "删除失败"));
 
                             //获取删除后的KeyValue
                             keyValueRequest = new KeyValueRequest();
@@ -180,7 +180,7 @@ public class TestController {
                             keyValueRequest.setKey(key);
                             keyValueResponse = keyValueProtocol.load(keyValueRequest);
                             existsResponse = keyValueProtocol.exists(keyValueRequest);
-                            System.out.println("数据库测试 步骤12 " + (existsResponse.isExists() ? "存在" : "不存在") + ", 获取删除后数据 " + (keyValueResponse.isSuccessful() ? (keyValueResponse.getValue() != null ? new String(keyValueResponse.getValue()) : "NULL") : "获取失败"));
+                            System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤12 " + (existsResponse.isExists() ? "存在" : "不存在") + ", 获取删除后数据 " + (keyValueResponse.isSuccessful() ? (keyValueResponse.getValue() != null ? new String(keyValueResponse.getValue()) : "NULL") : "获取失败"));
 
                             //更新索引名称
                             String newIndexName = "new-" + indexName;
@@ -189,32 +189,32 @@ public class TestController {
                             indexRenameRequest.setIndexName(indexName);
                             indexRenameRequest.setNewName(newIndexName);
                             IndexRenameResponse indexRenameResponse = indexProtocol.rename(indexRenameRequest);
-                            System.out.println("数据库测试 步骤13 更新索引名 " + (indexRenameResponse.isRenamed() ? "更新成功" : "更新失败") + " 新名称 => " + indexRenameResponse.getNewName());
+                            System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤13 更新索引名 " + (indexRenameResponse.isRenamed() ? "更新成功" : "更新失败") + " 新名称 => " + indexRenameResponse.getNewName());
 
                             //删除索引
                             IndexRequest indexRequest = new IndexRequest();
                             indexRequest.setId(new UUID(newIndexName).toString());
                             indexRequest.setIndexName(newIndexName);
                             IndexDeleteResponse deleteResponse = indexProtocol.delete(indexRequest);
-                            System.out.println("数据库测试 步骤14 删除索引" + (deleteResponse.isDeleted() ? "成功" : "失败"));
+                            System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤14 删除索引" + (deleteResponse.isDeleted() ? "成功" : "失败"));
 
                             //获取旧索引数据长度
                             countResponse = indexProtocol.count(keyLowHighRequest);
-                            System.out.println("数据库测试 步骤15 获取旧索引数据长度大小(" + countResponse.getCount() + ")");
+                            System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤15 获取旧索引数据长度大小(" + countResponse.getCount() + ")");
 
                             //获取新索引数据长度
                             keyLowHighRequest.setIndexName(newIndexName);
                             countResponse = indexProtocol.count(keyLowHighRequest);
-                            System.out.println("数据库测试 步骤16 获取新索引数据长度大小(" + countResponse.getCount() + ")");
+                            System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤16 获取新索引数据长度大小(" + countResponse.getCount() + ")");
 
                             //提交事务
                             TxnRequest txnRequest = new TxnRequest();
                             txnRequest.setId(new UUID(indexName).toString());
                             txnRequest.setTxnId(txnResponse.getXid());
                             TxnCommitResponse txnCommitResponse = transactionProtocol.commitTxn(txnRequest);
-                            System.out.println("数据库测试 步骤17 提交操作" + (txnCommitResponse.isCommited() ? "成功" : "失败"));
+                            System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤17 提交操作" + (txnCommitResponse.isCommited() ? "成功" : "失败"));
 
-                            System.out.println("数据库测试 步骤18 第" + j + "次测试完成");
+                            System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤18 第" + j + "次测试完成");
                         }
                     } catch (Exception ex) {
                         ex.printStackTrace();

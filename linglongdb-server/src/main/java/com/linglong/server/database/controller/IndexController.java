@@ -4,8 +4,8 @@ import com.linglong.engine.core.frame.Index;
 import com.linglong.protocol.IndexProtocol;
 import com.linglong.protocol.message.*;
 import com.linglong.server.database.process.DatabaseProcessor;
-import com.linglong.server.database.process._IndexName;
-import com.linglong.server.database.process._KeyValueOptions;
+import com.linglong.server.database.process.IndexName;
+import com.linglong.server.database.process.KeyValueOptions;
 
 /**
  * 数据库索引控制器
@@ -21,7 +21,7 @@ public class IndexController extends AbsController implements IndexProtocol {
     @Override
     public CountResponse count(KeyLowHighRequest request) {
         try {
-            _KeyValueOptions options = databaseProcessor.newOptions()
+            KeyValueOptions options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .lowKey(request.getLowKey())
                     .highKey(request.getHighKey());
@@ -38,7 +38,7 @@ public class IndexController extends AbsController implements IndexProtocol {
     @Override
     public IndexStatsResponse stats(KeyLowHighRequest request) {
         try {
-            _KeyValueOptions options = databaseProcessor.newOptions()
+            KeyValueOptions options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .lowKey(request.getLowKey())
                     .highKey(request.getHighKey());
@@ -59,7 +59,7 @@ public class IndexController extends AbsController implements IndexProtocol {
     @Override
     public IndexDeleteResponse delete(IndexRequest request) {
         try {
-            boolean deleted = databaseProcessor.new IndexDelete().process(new _IndexName().indexName(request.getIndexName()));
+            boolean deleted = databaseProcessor.new IndexDelete().process(new IndexName().indexName(request.getIndexName()));
             IndexDeleteResponse response = response(request, IndexDeleteResponse.class);
             response.setDeleted(deleted);
             return response;
@@ -84,7 +84,7 @@ public class IndexController extends AbsController implements IndexProtocol {
     @Override
     public CountResponse evict(KeyLowHighRequest request) {
         try {
-            _KeyValueOptions options = databaseProcessor.newOptions()
+            KeyValueOptions options = databaseProcessor.newOptions()
                     .indexName(request.getIndexName())
                     .lowKey(request.getLowKey())
                     .highKey(request.getHighKey())
@@ -104,7 +104,7 @@ public class IndexController extends AbsController implements IndexProtocol {
         try {
             IndexRenameResponse response = response(request, IndexRenameResponse.class);
             response.setNewName(request.getNewName());
-            response.setRenamed(databaseProcessor.new IndexRename().process(new _IndexName().indexName(request.getIndexName()).newName(request.getNewName())));
+            response.setRenamed(databaseProcessor.new IndexRename().process(new IndexName().indexName(request.getIndexName()).newName(request.getNewName())));
             return response;
         } catch (Exception ex) {
             LOGGER.error("index rename error", ex);

@@ -43,7 +43,7 @@ public class DatabaseProcessorTest {
         processor.afterPropertiesSet();
         final String indexName = "test";
         for (int j = 0; j < 1000; j++) {
-            _TxnOptions txn = processor.new OpenTxn().process(null);
+            TxnOptions txn = processor.new OpenTxn().process(null);
             for (int i = 0; i < 5; i++) {
                 processor.new KeyValueStore().process(processor.newOptions().txn(txn.txnId).indexName(indexName).key(toBytes(i)).value(String.valueOf(i).getBytes()));
                 System.out.println("数据库测试 步骤0 写入" + i);
@@ -58,9 +58,9 @@ public class DatabaseProcessorTest {
                 }
             }));
             System.out.println("数据库测试 步骤2 已扫描完成.");
-            processor.new IndexDelete().process(new _IndexName().indexName(indexName));
+            processor.new IndexDelete().process(new IndexName().indexName(indexName));
             System.out.println("数据库测试 步骤3 已删除索引(" + indexName + ")完成");
-            _KeyValueOptions options = processor.newOptions().indexName(indexName);
+            KeyValueOptions options = processor.newOptions().indexName(indexName);
             processor.new IndexCount().process(options);
             System.out.println("数据库测试 步骤4 索引数据长度大小(" + options.count + ")");
             processor.new TxnCommitOrRollback().process(txn.commit());

@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 /**
  * Created by liuj-ai on 2021/3/24.
  */
-public class _KeyValueOptions extends _IndexName {
+public class KeyValueOptions extends IndexName {
     byte[] key;
     byte[] value;
     byte[] oldValue;
@@ -27,71 +27,71 @@ public class _KeyValueOptions extends _IndexName {
     //索引数据扫描<扫描数据,是否继续扫描>
     Consumer<Map.Entry<byte[], byte[]>> scanFunc;
 
-    public _KeyValueOptions key(byte[] key) {
+    public KeyValueOptions key(byte[] key) {
         this.key = key;
         return this;
     }
 
-    public _KeyValueOptions value(byte[] value) {
+    public KeyValueOptions value(byte[] value) {
         this.value = value;
         return this;
     }
 
-    public _KeyValueOptions oldValue(byte[] oldValue) {
+    public KeyValueOptions oldValue(byte[] oldValue) {
         this.oldValue = oldValue;
         return this;
     }
 
-    public _KeyValueOptions lowKey(byte[] lowKey) {
+    public KeyValueOptions lowKey(byte[] lowKey) {
         this.lowKey = lowKey;
         return this;
     }
 
-    public _KeyValueOptions highKey(byte[] highKey) {
+    public KeyValueOptions highKey(byte[] highKey) {
         this.highKey = highKey;
         return this;
     }
 
-    public _KeyValueOptions count(long count) {
+    public KeyValueOptions count(long count) {
         this.count = count;
         return this;
     }
 
-    public _KeyValueOptions newTxn() {
+    public KeyValueOptions newTxn() {
         this.newTxn = true;
         this.openedTxn = false;
         this.openedTxnId = null;
         return this;
     }
 
-    public _KeyValueOptions indexName(String name) {
+    public KeyValueOptions indexName(String name) {
         super.indexName(name);
         return this;
     }
 
-    public _KeyValueOptions txn(Long txnId) {
+    public KeyValueOptions txn(Long txnId) {
         this.openedTxn = true;
         this.newTxn = false;
         this.openedTxnId = txnId;
         return this;
     }
 
-    public _KeyValueOptions evict(KeyValueEvictFilter filter) {
+    public KeyValueOptions evict(KeyValueEvictFilter filter) {
         this.evictFilter = filter;
         return this;
     }
 
-    public _KeyValueOptions scanFunc(Consumer<Map.Entry<byte[], byte[]>> scanFunc) {
+    public KeyValueOptions scanFunc(Consumer<Map.Entry<byte[], byte[]>> scanFunc) {
         this.scanFunc = scanFunc;
         return this;
     }
 
-    public _KeyValueOptions updater(KeyValueUpdater updater) {
+    public KeyValueOptions updater(KeyValueUpdater updater) {
         this.updater = updater;
         return this;
     }
 
-    public _KeyValueOptions pid(String pid) {
+    public KeyValueOptions pid(String pid) {
         this.pid = pid;
         return this;
     }
