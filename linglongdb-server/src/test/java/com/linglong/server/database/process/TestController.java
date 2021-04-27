@@ -34,13 +34,13 @@ public class TestController {
 
         //执行数据库操作
         ExecutorService service = Executors.newFixedThreadPool(5);
-        for (int k = 0; k < 2; k++) {
+        for (int k = 0; k < 5; k++) {
             final String indexName = "index-test-" + k;
             service.submit(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        for (int j = 0; j < 1; j++) {
+                        for (int j = 0; j < 5; j++) {
                             //打开事务
                             Response txnResponse = transactionProtocol.openTxn();
                             //写入数据
