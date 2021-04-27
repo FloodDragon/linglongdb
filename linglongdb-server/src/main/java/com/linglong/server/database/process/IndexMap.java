@@ -11,19 +11,19 @@ import java.util.Map;
 /**
  * Created by liuj-ai on 2021/4/26.
  */
-public class _IndexMap {
+public class IndexMap {
     private final RWLock rwLock = new RWLock();
-    private final Map<String, _IndexEntry> indexMap = new LinkedHashMap<>();
+    private final Map<String, IndexEntry> indexMap = new LinkedHashMap<>();
 
-    _IndexEntry put(Index index) {
+    IndexEntry put(Index index) {
         if (index == null) {
             return null;
         } else {
             rwLock.acquireExclusive();
             try {
-                _IndexEntry indexEntry;
+                IndexEntry indexEntry;
                 if (!indexMap.containsKey(index.getNameString())) {
-                    indexMap.put(index.getNameString(), indexEntry = new _IndexEntry(index));
+                    indexMap.put(index.getNameString(), indexEntry = new IndexEntry(index));
                     return indexEntry;
                 } else {
                     return indexMap.get(index.getNameString());
@@ -34,7 +34,7 @@ public class _IndexMap {
         }
     }
 
-    _IndexEntry find(String idxName) {
+    IndexEntry find(String idxName) {
         if (StringUtils.isBlank(idxName)) {
             return null;
         } else {
@@ -54,13 +54,13 @@ public class _IndexMap {
             try {
                 rwLock.acquireExclusive();
                 if (names == null || names.length == 0) {
-                    for (Map.Entry<String, _IndexEntry> entry : indexMap.entrySet()) {
+                    for (Map.Entry<String, IndexEntry> entry : indexMap.entrySet()) {
                         entry.getValue().getIndex().close();
                     }
                     indexMap.clear();
                 } else {
                     for (String name : names) {
-                        _IndexEntry indexEntry = indexMap.remove(name);
+                        IndexEntry indexEntry = indexMap.remove(name);
                         if (indexEntry != null) {
                             indexEntry.getIndex().close();
                         }

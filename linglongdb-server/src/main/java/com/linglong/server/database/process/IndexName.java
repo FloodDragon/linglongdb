@@ -3,17 +3,17 @@ package com.linglong.server.database.process;
 /**
  * Created by liuj-ai on 2021/3/24.
  */
-public class _IndexName {
+public class IndexName {
 
     String idxName;
     String newName;
 
-    public _IndexName indexName(String name) {
+    public IndexName indexName(String name) {
         this.idxName = name;
         return this;
     }
 
-    public _IndexName newName(String newName) {
+    public IndexName newName(String newName) {
         this.newName = newName;
         return this;
     }
@@ -23,7 +23,7 @@ public class _IndexName {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        _IndexName indexName = (_IndexName) o;
+        IndexName indexName = (IndexName) o;
 
         if (!idxName.equals(indexName.idxName)) return false;
         return newName.equals(indexName.newName);

@@ -6,11 +6,11 @@ import com.linglong.engine.core.frame.Index;
 /**
  * Created by liuj-ai on 2021/4/27.
  */
-public class _IndexEntry {
+public class IndexEntry {
     private final Index index;
     private final RWLock rwLock = new RWLock();
 
-    _IndexEntry(Index index) {
+    IndexEntry(Index index) {
         this.index = index;
     }
 
