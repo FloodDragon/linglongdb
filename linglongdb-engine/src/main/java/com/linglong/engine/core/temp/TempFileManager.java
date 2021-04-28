@@ -2,7 +2,7 @@ package com.linglong.engine.core.temp;
 
 import com.linglong.base.common.CauseCloseable;
 import com.linglong.base.common.Utils;
-import com.linglong.base.io.FileFactory;
+import com.linglong.io.*;
 import com.linglong.base.common.ShutdownHook;
 
 import java.io.Closeable;

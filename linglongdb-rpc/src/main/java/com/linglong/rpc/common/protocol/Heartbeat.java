@@ -1,7 +1,7 @@
 package com.linglong.rpc.common.protocol;
 
 
-import com.linglong.rpc.common.utils.SystemClock;
+import com.linglong.base.utils.SystemClock;
 import com.linglong.rpc.serialization.msgpack.BeanMessage;
 
 /**

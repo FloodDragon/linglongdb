@@ -2,7 +2,7 @@ package com.linglong.rpc.common.protocol;
 
 
 import com.linglong.rpc.common.config.Constants;
-import com.linglong.rpc.common.utils.UUID;
+import com.linglong.base.utils.UUID;
 import com.linglong.rpc.serialization.msgpack.BeanMessage;
 
 import java.util.Arrays;

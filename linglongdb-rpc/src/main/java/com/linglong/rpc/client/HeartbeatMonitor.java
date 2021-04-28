@@ -5,7 +5,7 @@ import com.linglong.rpc.exception.RpcException;
 import com.linglong.rpc.common.life.AbstractService;
 import com.linglong.rpc.common.protocol.Heartbeat;
 import com.linglong.rpc.common.protocol.Packet;
-import com.linglong.rpc.common.utils.Daemon;
+import com.linglong.base.utils.Daemon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

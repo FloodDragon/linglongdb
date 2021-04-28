@@ -2,7 +2,7 @@ package com.linglong.engine.core.page;
 
 import com.linglong.base.common.Crypto;
 import com.linglong.base.exception.DatabaseException;
-import com.linglong.base.io.PageArray;
+import com.linglong.io.*;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;

@@ -10,7 +10,7 @@ import com.linglong.rpc.common.protocol.Packet;
 import com.linglong.rpc.common.remoting.Channel;
 import com.linglong.rpc.common.remoting.ChannelHandler;
 import com.linglong.rpc.common.remoting.RpcChannel;
-import com.linglong.rpc.common.utils.NetUtil;
+import com.linglong.base.utils.NetUtil;
 import com.linglong.rpc.server.event.ChannelInboundEvent;
 import com.linglong.rpc.server.event.DataStreamRequestEvent;
 import com.linglong.rpc.server.event.HeartbeatEvent;

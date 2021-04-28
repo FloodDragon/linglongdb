@@ -1,7 +1,7 @@
 package com.linglong.server.utils;
 
 import com.linglong.base.common.LocalHost;
-import com.linglong.rpc.common.utils.UUID;
+import com.linglong.base.utils.UUID;
 
 import java.io.*;
 import java.lang.reflect.Method;

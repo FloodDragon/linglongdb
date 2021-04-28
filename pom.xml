@@ -19,6 +19,7 @@
         <module>linglongdb-rpc</module>
         <module>linglongdb-protocol</module>
         <module>linglongdb-sql</module>
+        <module>linglongdb-io</module>
     </modules>
 
     <properties>

@@ -1,6 +1,6 @@
 package com.linglong.protocol.message;
 
-import com.linglong.rpc.common.utils.SystemClock;
+import com.linglong.base.utils.SystemClock;
 import com.linglong.rpc.serialization.msgpack.BeanMessage;
 
 /**
