@@ -8,7 +8,7 @@ import com.linglong.server.database.process.TxnOptions;
 /**
  * Created by liuj-ai on 2021/3/25.
  */
-public class TransactionController extends AbsController implements TransactionProtocol {
+public class TransactionController extends AbsController<TransactionController> implements TransactionProtocol {
 
     public TransactionController(DatabaseProcessor databaseProcessor) {
         super(TransactionProtocol.class, databaseProcessor);
@@ -49,5 +49,10 @@ public class TransactionController extends AbsController implements TransactionP
             LOGGER.error("rollback txn error", ex);
             return response(request, TxnRollbackResponse.class, ex);
         }
+    }
+
+    @Override
+    public TransactionController getInstance() {
+        return this;
     }
 }

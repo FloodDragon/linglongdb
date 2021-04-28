@@ -12,7 +12,7 @@ import com.linglong.server.database.process.KeyValueOptions;
  *
  * @author Stereo on 2021/3/17.
  */
-public class IndexController extends AbsController implements IndexProtocol {
+public class IndexController extends AbsController<IndexController> implements IndexProtocol {
 
     public IndexController(DatabaseProcessor processor) {
         super(IndexProtocol.class, processor);
@@ -110,5 +110,10 @@ public class IndexController extends AbsController implements IndexProtocol {
             LOGGER.error("index rename error", ex);
             return response(request, IndexRenameResponse.class, ex);
         }
+    }
+
+    @Override
+    public IndexController getInstance() {
+        return this;
     }
 }

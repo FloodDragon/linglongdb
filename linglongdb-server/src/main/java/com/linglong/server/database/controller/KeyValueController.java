@@ -11,7 +11,7 @@ import com.linglong.server.utils.MixAll;
 /**
  * Created by liuj-ai on 2021/3/25.
  */
-public class KeyValueController extends AbsController implements KeyValueProtocol {
+public class KeyValueController extends AbsController<KeyValueController> implements KeyValueProtocol {
 
     public KeyValueController(DatabaseProcessor databaseProcessor) {
         super(KeyValueProtocol.class, databaseProcessor);
@@ -200,5 +200,10 @@ public class KeyValueController extends AbsController implements KeyValueProtoco
             LOGGER.error("key value scan error", ex);
             return response(request, IndexScanResponse.class, ex);
         }
+    }
+
+    @Override
+    public KeyValueController getInstance() {
+        return this;
     }
 }

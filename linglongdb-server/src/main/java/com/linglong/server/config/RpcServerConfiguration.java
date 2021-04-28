@@ -23,9 +23,9 @@ public class RpcServerConfiguration {
     @Bean
     public IService[] services(DatabaseProcessor processor) {
         return new IService[]{
-                new IndexController(processor),
-                new KeyValueController(processor),
-                new TransactionController(processor)
+                new IndexController(processor).getInstance(),
+                new KeyValueController(processor).getInstance(),
+                new TransactionController(processor).getInstance()
         };
     }
 

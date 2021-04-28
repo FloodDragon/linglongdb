@@ -12,9 +12,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * TODO 需要增加拦截器功能
+ * <p>
  * Created by liuj-ai on 2021/3/22.
  */
-public abstract class AbsController extends Service {
+public abstract class AbsController<E> extends Service {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbsController.class);
 
@@ -24,6 +26,8 @@ public abstract class AbsController extends Service {
         super(cls);
         this.databaseProcessor = databaseProcessor;
     }
+
+    public abstract E getInstance();
 
     protected <R extends Response> R response(Request request, Class<R> rc, ErrorCode errorCode) {
         return response(request, rc, errorCode, null);
