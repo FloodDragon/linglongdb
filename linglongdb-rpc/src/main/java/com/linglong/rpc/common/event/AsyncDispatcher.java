@@ -1,7 +1,7 @@
 package com.linglong.rpc.common.event;
 
 import com.linglong.rpc.common.life.AbstractService;
-import com.linglong.rpc.common.utils.Daemon;
+import com.linglong.base.utils.Daemon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

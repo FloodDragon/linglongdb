@@ -7,7 +7,7 @@ import com.linglong.rpc.common.config.Config;
 import com.linglong.rpc.exception.RpcException;
 import com.linglong.rpc.common.life.AbstractService;
 import com.linglong.rpc.common.life.LifeService;
-import com.linglong.rpc.common.utils.NetUtil;
+import com.linglong.base.utils.NetUtil;
 import com.linglong.rpc.server.skeleton.AbstractSkeletonContext;
 import com.linglong.rpc.server.skeleton.SkeletonContext;
 import com.linglong.rpc.server.skeleton.liveliness.ILiveliness;

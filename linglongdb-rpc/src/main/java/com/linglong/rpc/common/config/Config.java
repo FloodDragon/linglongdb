@@ -1,7 +1,7 @@
 package com.linglong.rpc.common.config;
 
 
-import com.linglong.rpc.common.utils.NetUtil;
+import com.linglong.base.utils.NetUtil;
 
 import java.net.InetSocketAddress;
 

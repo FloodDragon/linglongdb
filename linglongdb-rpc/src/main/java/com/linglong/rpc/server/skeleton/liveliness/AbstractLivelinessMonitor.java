@@ -1,7 +1,7 @@
 package com.linglong.rpc.server.skeleton.liveliness;
 
 import com.linglong.rpc.common.life.AbstractService;
-import com.linglong.rpc.common.utils.Daemon;
+import com.linglong.base.utils.Daemon;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 

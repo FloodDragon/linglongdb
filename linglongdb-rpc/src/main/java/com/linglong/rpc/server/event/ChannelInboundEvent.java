@@ -3,7 +3,7 @@ package com.linglong.rpc.server.event;
 
 import com.linglong.rpc.common.event.Event;
 import com.linglong.rpc.common.remoting.Channel;
-import com.linglong.rpc.common.utils.SystemClock;
+import com.linglong.base.utils.SystemClock;
 import com.linglong.rpc.server.event.enums.ChannelInboundEnum;
 
 /**

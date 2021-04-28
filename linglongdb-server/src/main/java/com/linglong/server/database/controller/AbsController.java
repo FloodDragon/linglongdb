@@ -2,7 +2,7 @@ package com.linglong.server.database.controller;
 
 import com.linglong.protocol.message.Request;
 import com.linglong.protocol.message.Response;
-import com.linglong.rpc.common.utils.SystemClock;
+import com.linglong.base.utils.SystemClock;
 import com.linglong.rpc.server.skeleton.service.Service;
 import com.linglong.server.database.exception.ProcessException;
 import com.linglong.server.database.exception.ErrorCode;

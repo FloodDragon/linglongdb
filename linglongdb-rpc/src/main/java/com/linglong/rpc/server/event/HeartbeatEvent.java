@@ -5,7 +5,7 @@ import com.linglong.rpc.common.event.Event;
 import com.linglong.rpc.common.protocol.Heartbeat;
 import com.linglong.rpc.common.protocol.Packet;
 import com.linglong.rpc.common.remoting.Channel;
-import com.linglong.rpc.common.utils.SystemClock;
+import com.linglong.base.utils.SystemClock;
 import com.linglong.rpc.server.event.enums.HeartbeatEnum;
 
 /**

@@ -9,11 +9,10 @@ import com.linglong.rpc.client.DataStream;
 import com.linglong.rpc.client.DataStreamExecutor;
 import com.linglong.rpc.client.DataStreamHandler;
 import com.linglong.rpc.common.config.Config;
-import com.linglong.rpc.common.utils.UUID;
+import com.linglong.base.utils.UUID;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 /**

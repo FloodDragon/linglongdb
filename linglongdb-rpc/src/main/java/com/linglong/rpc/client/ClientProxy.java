@@ -1,7 +1,7 @@
 package com.linglong.rpc.client;
 
 
-import com.linglong.rpc.common.bytecode.Proxy;
+import com.linglong.base.bytecode.Proxy;
 import com.linglong.rpc.common.config.Config;
 import com.linglong.rpc.common.service.IService;
 
