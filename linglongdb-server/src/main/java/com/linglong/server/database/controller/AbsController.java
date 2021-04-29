@@ -1,33 +1,78 @@
 package com.linglong.server.database.controller;
 
+import com.linglong.base.bytecode.Proxy;
 import com.linglong.protocol.message.Request;
 import com.linglong.protocol.message.Response;
 import com.linglong.base.utils.SystemClock;
+import com.linglong.rpc.common.service.IService;
 import com.linglong.rpc.server.skeleton.service.Service;
+import com.linglong.server.database.controller.annotation.Leader;
 import com.linglong.server.database.exception.ProcessException;
 import com.linglong.server.database.exception.ErrorCode;
 import com.linglong.server.database.process.DatabaseProcessor;
+import com.linglong.server.database.process.LeaderCoordinator;
 import com.linglong.server.utils.MixAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+
 /**
- * TODO 需要增加拦截器功能
  * <p>
  * Created by liuj-ai on 2021/3/22.
  */
-public abstract class AbsController<E> extends Service {
+public abstract class AbsController<E extends IService> extends Service implements InvocationHandler {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbsController.class);
 
+    private final E proxy;
+    private Class<E> serviceClazz;
     protected DatabaseProcessor databaseProcessor;
+    protected LeaderCoordinator leaderCoordinator;
 
-    public AbsController(Class<?> cls, DatabaseProcessor databaseProcessor) {
+    public AbsController(Class<E> cls, DatabaseProcessor databaseProcessor) {
         super(cls);
+        this.serviceClazz = cls;
         this.databaseProcessor = databaseProcessor;
+        this.leaderCoordinator = databaseProcessor.getLeaderCoordinator();
+        this.proxy = createProxy();
     }
 
-    public abstract E getInstance();
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        IService service;
+        if (databaseProcessor.isReplicaEnabled()) {
+            Annotation[] annotations = method.getDeclaredAnnotations();
+            if (annotations != null) {
+                Leader leader = null;
+                for (Annotation ann : annotations) {
+                    if (ann.annotationType() == Leader.class) {
+                        leader = (Leader) ann;
+                    }
+                }
+                if (leader != null && leaderCoordinator.isNeedTransferToLeader()) {
+                    service = leaderCoordinator.getLeaderService(serviceClazz);
+                } else {
+                    service = this;
+                }
+            } else {
+                service = this;
+            }
+        } else {
+            service = this;
+        }
+        return method.invoke(service, args);
+    }
+
+    protected final E createProxy() {
+        return (E) Proxy.getProxy(serviceClazz).newInstance(this);
+    }
+
+    public final E getInstance() {
+        return this.proxy;
+    }
 
     protected <R extends Response> R response(Request request, Class<R> rc, ErrorCode errorCode) {
         return response(request, rc, errorCode, null);

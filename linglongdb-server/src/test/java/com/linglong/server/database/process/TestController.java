@@ -39,11 +39,11 @@ public class TestController {
                 @Override
                 public void run() {
                     try {
-                        for (int j = 0; j < 1; j++) {
+                        for (int j = 0; j < 5; j++) {
                             //打开事务
                             Response txnResponse = transactionProtocol.openTxn();
                             //写入数据
-                            long size = 10000;
+                            final long size = 10000;
                             for (int i = 0; i < size; i++) {
                                 try {
                                     KeyValueRequest insertKeyValue = new KeyValueRequest();

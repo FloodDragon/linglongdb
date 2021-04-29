@@ -24,7 +24,10 @@ public class LinglongdbConfiguration {
     }
 
     @Bean
-    public DatabaseProcessor databaseManager(LinglongdbProperties linglongdbProperties, ReplicationEventListener replicationEventListener) throws IOException {
-        return new DatabaseProcessor(linglongdbProperties, replicationEventListener);
+    public DatabaseProcessor databaseManager(
+            LinglongdbProperties linglongdbProperties,
+            RpcServerProperties rpcServerProperties,
+            ReplicationEventListener replicationEventListener) throws IOException {
+        return new DatabaseProcessor(linglongdbProperties, rpcServerProperties, replicationEventListener);
     }
 }

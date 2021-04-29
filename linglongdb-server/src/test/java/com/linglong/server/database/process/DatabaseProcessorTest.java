@@ -39,7 +39,7 @@ public class DatabaseProcessorTest {
         linglongdbProperties.setCheckpointDelayThreshold(60000);
         linglongdbProperties.setMaxCheckpointThreads(8);
         linglongdbProperties.setReplicaEnabled(false);
-        DatabaseProcessor processor = new DatabaseProcessor(linglongdbProperties, replicationEventListener);
+        DatabaseProcessor processor = new DatabaseProcessor(linglongdbProperties, null, replicationEventListener);
         processor.afterPropertiesSet();
         final String indexName = "test";
         for (int j = 0; j < 1000; j++) {

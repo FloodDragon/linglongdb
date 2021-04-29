@@ -13,6 +13,7 @@ import com.linglong.replication.DatabaseReplicator;
 import com.linglong.replication.Role;
 import com.linglong.replication.confg.ReplicatorConfig;
 import com.linglong.server.config.LinglongdbProperties;
+import com.linglong.server.config.RpcServerProperties;
 import com.linglong.server.database.exception.TxnNotFoundException;
 import com.linglong.server.utils.MixAll;
 import org.apache.commons.collections.CollectionUtils;
@@ -57,10 +58,13 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
     /* pid -> ProcessIterator */
     private final Map<String, ProcessIterator> processIteratorMap = new ConcurrentHashMap<>();
 
+    private RpcServerProperties rpcServerProperties;
     private LinglongdbProperties linglongdbProperties;
     private ReplicationEventListener replicationEventListener;
 
-    public DatabaseProcessor(LinglongdbProperties linglongdbProperties, ReplicationEventListener replicationEventListener) {
+    public DatabaseProcessor(LinglongdbProperties linglongdbProperties,
+                             RpcServerProperties rpcServerProperties,
+                             ReplicationEventListener replicationEventListener) {
         File file = new File(linglongdbProperties.getBaseDir());
         if (file.isFile()) {
             throw new IllegalArgumentException("linglongdb base dir must be directory: " + file.getAbsolutePath());
@@ -95,6 +99,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         if (linglongdbProperties.isReplicaEnabled() && (this.role = Role.getRole(linglongdbProperties.getReplicaRole())) == null) {
             throw new IllegalArgumentException("linglongdb replica role error");
         }
+        this.rpcServerProperties = rpcServerProperties;
         this.linglongdbProperties = linglongdbProperties;
         this.replicationEventListener = replicationEventListener;
     }
@@ -132,6 +137,7 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
             this.databaseReplicator = DatabaseReplicator.open(replicatorConfig);
             this.databaseConfig.replicate(databaseReplicator);
             this.database = Database.open(this.databaseConfig);
+            this.leaderCoordinator = new LeaderCoordinator(databaseReplicator, rpcServerProperties);
         } else {
             this.database = Database.open(this.databaseConfig);
         }
@@ -153,16 +159,16 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
         return database;
     }
 
-    public DatabaseReplicator getDatabaseReplicator() {
-        return databaseReplicator;
-    }
-
     public Role getRole() {
         return role;
     }
 
     public DurabilityMode getDurabilityMode() {
         return durabilityMode;
+    }
+
+    public LeaderCoordinator getLeaderCoordinator() {
+        return leaderCoordinator;
     }
 
     protected IndexEntry findIndex(String indexName) throws Exception {
