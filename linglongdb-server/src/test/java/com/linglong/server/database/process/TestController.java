@@ -21,8 +21,12 @@ import java.util.concurrent.TimeUnit;
 public class TestController {
 
     public static void main(String[] args) throws InterruptedException {
+        if (args == null || args.length == 0) {
+            System.out.println("请传入数据库服务器地址.");
+            return;
+        }
         //客户端开启
-        ClientProxy clientProxy = new ClientProxy(new Config("10.0.204.38", 7002));
+        ClientProxy clientProxy = new ClientProxy(new Config(args[0], 7002));
         clientProxy.start();
 
         //数据库创建协议
