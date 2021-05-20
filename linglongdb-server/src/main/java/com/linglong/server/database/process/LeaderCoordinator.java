@@ -7,6 +7,7 @@ import com.linglong.rpc.client.ClientProxy;
 import com.linglong.rpc.common.config.Config;
 import com.linglong.rpc.common.service.IService;
 import com.linglong.server.config.RpcServerProperties;
+import com.linglong.server.database.exception.NotLeaderException;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -29,93 +30,66 @@ public class LeaderCoordinator {
         private final Peer peer;
         private final int servicePort;
         private ClientProxy clientProxy;
-        private final Map<Class<?>, IService> remoteService = new HashMap<>();
-        private final Map<Method, IService> remoteMethodService = new HashMap<>();
 
         LeaderContext(int servicePort, Peer peer) {
             this.peer = peer;
             this.servicePort = servicePort;
+            init();
         }
 
-        synchronized void start() {
+        private synchronized void init() {
             InetSocketAddress address = (InetSocketAddress) peer.getAddress();
             Config config = new Config(address.getHostName(), servicePort);
             clientProxy = new ClientProxy(config);
             clientProxy.start();
+            peerLeaderContextMap.put(this.peer, this);
         }
 
-        synchronized void stop() {
-            remoteService.clear();
-            remoteMethodService.clear();
+        synchronized void destroy() {
+            peerLeaderContextMap.remove(this.peer);
             if (clientProxy != null) {
                 clientProxy.stop();
             }
         }
 
         <E extends IService> E getRemoteService(Class<E> serviceClazz) {
-            E service;
-            if (!remoteService.containsKey(serviceClazz)) {
-                synchronized (this) {
-                    if (!remoteService.containsKey(serviceClazz)) {
-                        service = clientProxy.create(serviceClazz);
-                        Method[] methods = serviceClazz.getDeclaredMethods();
-                        for (Method m : methods) {
-                            remoteMethodService.put(m, service);
-                        }
-                        remoteService.put(serviceClazz, service);
-                    }
-                }
+            if (clientProxy.isConnected()) {
+                return clientProxy.create(serviceClazz);
+            } else {
+                throw new NotLeaderException("disconnect from leader node.");
             }
-            return (E) remoteService.get(serviceClazz);
         }
     }
 
-
-    LeaderCoordinator(DatabaseReplicator replicator,
-                      RpcServerProperties rpcServerProperties) {
+    LeaderCoordinator(DatabaseReplicator replicator, RpcServerProperties rpcServerProperties) {
         this.replicator = replicator;
         this.rpcServerProperties = rpcServerProperties;
     }
 
-    /**
-     * coordinator  ->  判断读/写  ->   读 -> 走本地读
-     * 写 ->   判断Leader 否 -> 走RPC 广播到Leader进行处理写
-     * 是 -> 本地写
-     * -> IndexController
-     * -> LeaderCoordinator ( rpc client -> server ) -> CURD SERVICE
-     * -> TableController
-     * <p>
-     * <p>
-     * 协调器
-     * 1.当前节点是否是Leader
-     * 2.提供Leader peer client
-     * 3.转发到leader
-     */
     public boolean isNeedTransferToLeader() {
-        boolean isLeader = replicator.isLocalLeader();
-        return !isLeader;
+        return !replicator.isLocalLeader();
     }
 
-    /**
-     * 获取Leader节点Service
-     *
-     * @param serviceClazz
-     * @param <E>
-     * @return
-     * @throws Exception
-     */
     public <E extends IService> E getLeaderService(Class<E> serviceClazz) throws Exception {
         Peer peer = replicator.getLeaderPeer();
         LeaderContext leaderContext;
         if (!peerLeaderContextMap.containsKey(peer)) {
             synchronized (peer) {
                 if (!peerLeaderContextMap.containsKey(peer)) {
-                    leaderContext = new LeaderContext(rpcServerProperties.getServerPort(), peer);
-                    leaderContext.start();
+                    new LeaderContext(rpcServerProperties.getServerPort(), peer);
                 }
             }
         }
         leaderContext = peerLeaderContextMap.get(peer);
         return leaderContext.getRemoteService(serviceClazz);
+    }
+
+    synchronized void reset() {
+        if (!peerLeaderContextMap.isEmpty()) {
+            for (Map.Entry<Peer, LeaderContext> entry : peerLeaderContextMap.entrySet()) {
+                entry.getValue().destroy();
+            }
+            peerLeaderContextMap.clear();
+        }
     }
 }

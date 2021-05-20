@@ -4,6 +4,7 @@ import com.linglong.protocol.KeyValueProtocol;
 import com.linglong.protocol.message.*;
 import com.linglong.rpc.server.skeleton.service.DataStreamTransfer;
 import com.linglong.rpc.server.skeleton.service.ServiceContext;
+import com.linglong.server.database.controller.annotation.Leader;
 import com.linglong.server.database.process.DatabaseProcessor;
 import com.linglong.server.database.process.KeyValueOptions;
 import com.linglong.server.utils.MixAll;
@@ -18,6 +19,7 @@ public class KeyValueController extends AbsController<KeyValueProtocol> implemen
     }
 
     @Override
+    @Leader
     public KeyValueResponse insert(KeyValueRequest request) {
         try {
             KeyValueOptions options = databaseProcessor.newOptions()
@@ -35,6 +37,7 @@ public class KeyValueController extends AbsController<KeyValueProtocol> implemen
     }
 
     @Override
+    @Leader
     public Response store(KeyValueRequest request) {
         try {
             KeyValueOptions options = databaseProcessor.newOptions()
@@ -51,6 +54,7 @@ public class KeyValueController extends AbsController<KeyValueProtocol> implemen
     }
 
     @Override
+    @Leader
     public KeyValueResponse replace(KeyValueRequest request) {
         try {
             KeyValueOptions options = databaseProcessor.newOptions()
@@ -68,6 +72,7 @@ public class KeyValueController extends AbsController<KeyValueProtocol> implemen
     }
 
     @Override
+    @Leader
     public KeyValueResponse update(KeyValueRequest request) {
         try {
             KeyValueOptions options = databaseProcessor.newOptions()
@@ -86,6 +91,7 @@ public class KeyValueController extends AbsController<KeyValueProtocol> implemen
     }
 
     @Override
+    @Leader
     public KeyValueResponse delete(KeyValueRequest request) {
         try {
             KeyValueOptions options = databaseProcessor.newOptions()
@@ -102,6 +108,7 @@ public class KeyValueController extends AbsController<KeyValueProtocol> implemen
     }
 
     @Override
+    @Leader
     public KeyValueResponse remove(KeyValueRequest request) {
         try {
             KeyValueOptions options = databaseProcessor.newOptions()
@@ -119,6 +126,7 @@ public class KeyValueController extends AbsController<KeyValueProtocol> implemen
     }
 
     @Override
+    @Leader
     public KeyValueResponse exchange(KeyValueRequest request) {
         try {
             KeyValueOptions options = databaseProcessor.newOptions()

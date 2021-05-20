@@ -149,6 +149,9 @@ public class DatabaseProcessor implements InitializingBean, DisposableBean {
             this.database.close();
             this.new CleanIndex().process(null);
         }
+        if (this.leaderCoordinator != null) {
+            this.leaderCoordinator.reset();
+        }
     }
 
     public boolean isReplicaEnabled() {

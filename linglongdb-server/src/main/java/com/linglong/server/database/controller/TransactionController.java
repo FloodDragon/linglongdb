@@ -2,6 +2,7 @@ package com.linglong.server.database.controller;
 
 import com.linglong.protocol.TransactionProtocol;
 import com.linglong.protocol.message.*;
+import com.linglong.server.database.controller.annotation.Leader;
 import com.linglong.server.database.process.DatabaseProcessor;
 import com.linglong.server.database.process.TxnOptions;
 
@@ -15,6 +16,7 @@ public class TransactionController extends AbsController<TransactionProtocol> im
     }
 
     @Override
+    @Leader
     public Response openTxn() {
         try {
             TxnOptions txn = databaseProcessor.new OpenTxn().process(null);
@@ -28,6 +30,7 @@ public class TransactionController extends AbsController<TransactionProtocol> im
     }
 
     @Override
+    @Leader
     public TxnCommitResponse commitTxn(TxnRequest request) {
         try {
             TxnCommitResponse response = response(request, TxnCommitResponse.class);
@@ -40,6 +43,7 @@ public class TransactionController extends AbsController<TransactionProtocol> im
     }
 
     @Override
+    @Leader
     public TxnRollbackResponse rollbackTxn(TxnRequest request) {
         try {
             TxnRollbackResponse response = response(request, TxnRollbackResponse.class);
