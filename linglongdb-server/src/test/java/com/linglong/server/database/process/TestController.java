@@ -22,7 +22,7 @@ public class TestController {
 
     public static void main(String[] args) throws InterruptedException {
         //客户端开启
-        ClientProxy clientProxy = new ClientProxy(new Config("0.0.0.0", 7002));
+        ClientProxy clientProxy = new ClientProxy(new Config("10.2.76.44", 7002));
         clientProxy.start();
 
         //数据库创建协议
@@ -39,11 +39,11 @@ public class TestController {
                 @Override
                 public void run() {
                     try {
-                        for (int j = 0; j < 5; j++) {
+                        for (int j = 0; j < 1; j++) {
                             //打开事务
                             Response txnResponse = transactionProtocol.openTxn();
                             //写入数据
-                            final long size = 10000;
+                            final long size = 100;
                             for (int i = 0; i < size; i++) {
                                 try {
                                     KeyValueRequest insertKeyValue = new KeyValueRequest();
@@ -54,7 +54,7 @@ public class TestController {
                                     insertKeyValue.setValue(String.valueOf(i).getBytes());
                                     KeyValueResponse keyValueResponse = keyValueProtocol.insert(insertKeyValue);
                                     System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤0 写入" + i + (keyValueResponse.isSuccessful() ? "成功" : "失败"));
-                                    //Thread.sleep(1000L);
+                                    Thread.sleep(1000L);
                                 } catch (Exception ex) {
                                     ex.printStackTrace();
                                     System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤0 写入" + i + "失败");

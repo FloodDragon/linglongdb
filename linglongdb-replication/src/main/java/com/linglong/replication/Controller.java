@@ -28,7 +28,7 @@ import static com.linglong.base.common.IOUtils.rethrow;
  */
 final class Controller extends Latch implements StreamReplicator, Channel {
     private static final int MODE_FOLLOWER = 0, MODE_CANDIDATE = 1, MODE_LEADER = 2;
-    private static final int ELECTION_DELAY_LOW_MILLIS = 200, ELECTION_DELAY_HIGH_MILLIS = 300;
+    private static final int ELECTION_DELAY_LOW_MILLIS = 2000, ELECTION_DELAY_HIGH_MILLIS = 3000;//选举延迟修改为秒级
     private static final int QUERY_TERMS_RATE_MILLIS = 1;
     private static final int MISSING_DELAY_LOW_MILLIS = 400, MISSING_DELAY_HIGH_MILLIS = 600;
     private static final int SYNC_COMMIT_RETRY_MILLIS = 100;
