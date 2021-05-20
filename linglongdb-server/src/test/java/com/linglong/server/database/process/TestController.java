@@ -22,7 +22,7 @@ public class TestController {
 
     public static void main(String[] args) throws InterruptedException {
         //客户端开启
-        ClientProxy clientProxy = new ClientProxy(new Config("10.2.76.44", 7002));
+        ClientProxy clientProxy = new ClientProxy(new Config("10.0.204.38", 7002));
         clientProxy.start();
 
         //数据库创建协议
@@ -33,7 +33,7 @@ public class TestController {
 
         //执行数据库操作
         ExecutorService service = Executors.newFixedThreadPool(5);
-        for (int k = 0; k < 5; k++) {
+        for (int k = 0; k < 1; k++) {
             final String indexName = "index-test-" + k;
             service.submit(new Runnable() {
                 @Override
@@ -43,7 +43,7 @@ public class TestController {
                             //打开事务
                             Response txnResponse = transactionProtocol.openTxn();
                             //写入数据
-                            final long size = 100;
+                            final long size = 50;
                             for (int i = 0; i < size; i++) {
                                 try {
                                     KeyValueRequest insertKeyValue = new KeyValueRequest();
