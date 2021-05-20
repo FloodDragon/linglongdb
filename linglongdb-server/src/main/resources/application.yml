@@ -32,12 +32,12 @@ linglongdb:
   checkpointSizeThreshold: 1048576
   checkpointDelayThreshold: 60000
   maxCheckpointThreads: 8
-  replicaEnabled: false
+  replicaEnabled: true
   replicaPort: 7070
   replicaRole: NORMAL
   replicaGroupToken: 1
   #replicaSeedAddresses:
-  #  - localhost:7070
+  #  - 10.2.76.44:7070
   http:
     serverHost: 0.0.0.0
     serverPort: 7001
