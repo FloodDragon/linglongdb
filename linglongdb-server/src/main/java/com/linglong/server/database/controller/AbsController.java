@@ -40,23 +40,26 @@ public abstract class AbsController<E extends IService> extends Service implemen
         this.proxy = createProxy();
     }
 
+    private Leader findLeaderAnnotation(Method method) {
+        Leader leader = method.getAnnotation(Leader.class);
+        if (leader == null) {
+            Annotation[] annotations = method.getDeclaredAnnotations();
+            for (Annotation ann : annotations) {
+                if (ann.annotationType() == Leader.class) {
+                    leader = (Leader) ann;
+                }
+            }
+        }
+        return leader;
+    }
+
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         IService service;
         if (databaseProcessor.isReplicaEnabled()) {
-            Annotation[] annotations = method.getDeclaredAnnotations();
-            if (annotations != null) {
-                Leader leader = null;
-                for (Annotation ann : annotations) {
-                    if (ann.annotationType() == Leader.class) {
-                        leader = (Leader) ann;
-                    }
-                }
-                if (leader != null && leaderCoordinator.isNeedTransferToLeader()) {
-                    service = leaderCoordinator.getLeaderService(serviceClazz);
-                } else {
-                    service = this;
-                }
+            Leader leader = findLeaderAnnotation(method);
+            if (leader != null && leaderCoordinator.isNeedTransferToLeader()) {
+                service = leaderCoordinator.getLeaderService(serviceClazz);
             } else {
                 service = this;
             }

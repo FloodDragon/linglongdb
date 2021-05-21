@@ -47,7 +47,7 @@ public class TestController {
                             //打开事务
                             Response txnResponse = transactionProtocol.openTxn();
                             //写入数据
-                            final long size = 50;
+                            final long size = 100;
                             for (int i = 0; i < size; i++) {
                                 try {
                                     KeyValueRequest insertKeyValue = new KeyValueRequest();
