@@ -54,6 +54,7 @@ public abstract class AbsController<E extends IService> extends Service implemen
             }
             method = ReflectUtils.findMethodByMethodSignature(this.getClass(), method.getName(), parameterTypes);
         } catch (Exception e) {
+            //ignore
         }
         Leader leader = method.getAnnotation(Leader.class);
         if (leader == null) {
