@@ -1,6 +1,7 @@
 package com.linglong.server.database.controller;
 
 import com.linglong.base.bytecode.Proxy;
+import com.linglong.base.utils.ReflectUtils;
 import com.linglong.protocol.message.Request;
 import com.linglong.protocol.message.Response;
 import com.linglong.base.utils.SystemClock;
@@ -40,7 +41,20 @@ public abstract class AbsController<E extends IService> extends Service implemen
         this.proxy = createProxy();
     }
 
-    private Leader findLeaderAnnotation(Method method) {
+    private Leader findLeaderAnnotation(Method method, Object[] args) {
+        try {
+            String[] parameterTypes;
+            if (args != null) {
+                parameterTypes = new String[args.length];
+                for (int i = 0; i < args.length; i++) {
+                    parameterTypes[i] = args[i].getClass().getName();
+                }
+            } else {
+                parameterTypes = null;
+            }
+            method = ReflectUtils.findMethodByMethodSignature(this.getClass(), method.getName(), parameterTypes);
+        } catch (Exception e) {
+        }
         Leader leader = method.getAnnotation(Leader.class);
         if (leader == null) {
             Annotation[] annotations = method.getDeclaredAnnotations();
@@ -57,7 +71,7 @@ public abstract class AbsController<E extends IService> extends Service implemen
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         IService service;
         if (databaseProcessor.isReplicaEnabled()) {
-            Leader leader = findLeaderAnnotation(method);
+            Leader leader = findLeaderAnnotation(method, args);
             if (leader != null && leaderCoordinator.isNeedTransferToLeader()) {
                 service = leaderCoordinator.getLeaderService(serviceClazz);
             } else {
