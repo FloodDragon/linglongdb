@@ -39,7 +39,7 @@ public class LeaderCoordinator {
 
         private synchronized void init() {
             InetSocketAddress address = (InetSocketAddress) peer.getAddress();
-            Config config = new Config(address.getHostName(), servicePort);
+            Config config = new Config(address.getAddress().getHostAddress(), servicePort);
             clientProxy = new ClientProxy(config);
             clientProxy.start();
             peerLeaderContextMap.put(this.peer, this);
