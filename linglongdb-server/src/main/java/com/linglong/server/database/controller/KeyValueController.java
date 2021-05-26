@@ -146,6 +146,7 @@ public class KeyValueController extends AbsController<KeyValueProtocol> implemen
     }
 
     @Override
+    @Leader
     public ExistsResponse exists(KeyValueRequest request) {
         try {
             KeyValueOptions options = databaseProcessor.newOptions()
@@ -162,6 +163,7 @@ public class KeyValueController extends AbsController<KeyValueProtocol> implemen
     }
 
     @Override
+    @Leader
     public KeyValueResponse load(KeyValueRequest request) {
         try {
             KeyValueOptions options = databaseProcessor.newOptions()
@@ -180,6 +182,7 @@ public class KeyValueController extends AbsController<KeyValueProtocol> implemen
     }
 
     @Override
+    @Leader
     public IndexScanResponse scan(IndexRequest request) {
         try {
             DataStreamTransfer transfer = ServiceContext.getDataStreamTransfer();

@@ -47,7 +47,7 @@ public class TestController {
                             //打开事务
                             Response txnResponse = transactionProtocol.openTxn();
                             //写入数据
-                            final long size = 100;
+                            final long size = 10000;
                             for (int i = 0; i < size; i++) {
                                 try {
                                     KeyValueRequest insertKeyValue = new KeyValueRequest();
@@ -58,7 +58,7 @@ public class TestController {
                                     insertKeyValue.setValue(String.valueOf(i).getBytes());
                                     KeyValueResponse keyValueResponse = keyValueProtocol.insert(insertKeyValue);
                                     System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤0 写入" + i + (keyValueResponse.isSuccessful() ? "成功" : "失败"));
-                                    Thread.sleep(1000L);
+                                    //Thread.sleep(1000L);
                                 } catch (Exception ex) {
                                     ex.printStackTrace();
                                     System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤0 写入" + i + "失败");
