@@ -71,13 +71,9 @@ public abstract class AbsController<E extends IService> extends Service implemen
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         IService service;
-        if (databaseProcessor.isReplicaEnabled()) {
-            Leader leader = findLeaderAnnotation(method, args);
-            if (leader != null && leaderCoordinator.isNeedTransferToLeader()) {
-                service = leaderCoordinator.getLeaderService(serviceClazz);
-            } else {
-                service = this;
-            }
+        Leader leader;
+        if (databaseProcessor.isReplicaEnabled() && null != (leader = findLeaderAnnotation(method, args)) && leaderCoordinator.isNeedTransferToLeader()) {
+            service = leaderCoordinator.getLeaderService(serviceClazz);
         } else {
             service = this;
         }

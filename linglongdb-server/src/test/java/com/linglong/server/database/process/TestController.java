@@ -16,7 +16,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by liuj-ai on 2021/3/25.
+ * Created by liuj-ai on 2021/3/25.````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````
  */
 public class TestController {
 
@@ -58,7 +58,7 @@ public class TestController {
                                     insertKeyValue.setValue(String.valueOf(i).getBytes());
                                     KeyValueResponse keyValueResponse = keyValueProtocol.insert(insertKeyValue);
                                     System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤0 写入" + i + (keyValueResponse.isSuccessful() ? "成功" : "失败"));
-                                    //Thread.sleep(1000L);
+                                    Thread.sleep(500L);
                                 } catch (Exception ex) {
                                     ex.printStackTrace();
                                     System.out.println(Thread.currentThread().getName() + " 数据库测试 步骤0 写入" + i + "失败");
